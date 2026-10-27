@@ -9,3 +9,6 @@ Use restrained, short opacity/transform transitions. Do not animate every row, b
 Every data view covers loading, populated, empty, error/retry and permission-denied. Forms cover inline validation, server errors, pending state, double-submit prevention and success. Destructive actions require confirmation. Use semantic structure, keyboard controls, visible focus, input labels, dialog focus management, touch-friendly targets and chart text alternatives.
 ## Evidence
 Verify desktop/tablet/mobile, keyboard-only use and reduced-motion. Desktop/mobile screenshots must contain synthetic data only.
+
+## Shell implementation status
+The initial shell uses semantic landmarks, a skip-to-content link, visible keyboard focus, focus movement to the selected view heading, a keyboard-operable mobile menu with Escape-to-close, and a global reduced-motion override. These are implementation claims, not completed manual acceptance. The shell PR remains in progress until browser checks at desktop/tablet/mobile widths, keyboard-only navigation, reduced-motion behaviour and synthetic-only screenshots are recorded.
