@@ -19,7 +19,7 @@ const sectionCopy: Record<Section, { title: string; eyebrow: string; description
 };
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
-  let drawing: ReactNode;
+  let drawing: ReactNode = null;
   switch (name) {
     case "dashboard":
       drawing = <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>;
