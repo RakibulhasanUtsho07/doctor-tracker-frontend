@@ -417,20 +417,6 @@ function AuthStatusView({ error, onRetry, checking = false }: { error: string; o
   );
 }
 
-function ModulePlaceholder({ section, onNavigate }: { section: Exclude<Section, "dashboard">; onNavigate: (next: Section) => void }) {
-  const isDoctors = section === "doctors";
-  return (
-    <section className="placeholder-page" aria-labelledby="placeholder-heading">
-      <div className={"placeholder-illustration " + (isDoctors ? "placeholder-illustration--green" : "placeholder-illustration--lavender")}><Icon name={isDoctors ? "doctors" : "patients"} size={36} /></div>
-      <p className="section-kicker">{isDoctors ? "STEP 8 · DOCTOR MANAGEMENT" : "STEP 9 · PATIENT MANAGEMENT"}</p>
-      <h2 id="placeholder-heading">{isDoctors ? "Your doctor directory starts here." : "Patient records, handled with care."}</h2>
-      <p className="placeholder-description">{isDoctors ? "The responsive shell is ready. Search, filters, forms and persisted doctor records will be added in the doctor-screen milestone." : "This area is reserved for patient search, editing and relationship-safe actions in the patient-screen milestone."}</p>
-      <div className="placeholder-notice" role="status"><span className="placeholder-notice-icon"><Icon name="database" size={18} /></span><span><strong>No records are displayed</strong><small>This page is a navigation placeholder. It is not connected to the API and does not contain sample patient data.</small></span></div>
-      <button type="button" className="secondary-button" onClick={() => onNavigate("dashboard")}><Icon name="chevron-right" size={16} /> Return to dashboard</button>
-    </section>
-  );
-}
-
 export default function AdminShell() {
   const [section, setSection] = useState<Section>("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
