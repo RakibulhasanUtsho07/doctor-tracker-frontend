@@ -283,6 +283,26 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await page.getByRole("button", { name: "Create patient" }).click();
   await expect(page.getByRole("heading", { name: "Synthetic Patient One" })).toBeVisible();
 
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
+  await page.getByRole("button", { name: "Dr. Amina Rahman" }).click();
+  await expect(page.getByText("Synthetic Patient One")).toBeVisible();
+  await page.getByRole("button", { name: "View all" }).click();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "Synthetic Patient One" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset" }).click();
+  await page.getByRole("button", { name: "Synthetic Patient One" }).click();
+  await page.getByRole("button", { name: "Edit details" }).click();
+  await page.getByLabel(/Condition/).fill("Routine follow-up updated");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { name: "Synthetic Patient One" })).toBeVisible();
+  expect(state.patients.find((patient) => patient.name === "Synthetic Patient One")?.condition).toBe("Routine follow-up updated");
+
+  await page.getByLabel("Search patients").fill("Synthetic Patient One");
+  await page.getByLabel("Condition (exact)").fill("Routine follow-up updated");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page.getByRole("row").filter({ hasText: "Synthetic Patient One" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset" }).click();
+
   await page.getByRole("button", { name: "Detach from doctor" }).click();
   const detachDialog = page.getByRole("dialog", { name: "Detach this patient from the doctor?" });
   await expect(detachDialog).toBeVisible();
@@ -316,6 +336,10 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("patient-management-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "Sign out of the administrator session" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  expect(state.session).toBe(false);
 
   expect(state.requests.some((request) => request.method === "POST" && request.path === "/doctors" && request.headers["x-csrf-token"] === CSRF)).toBe(true);
   expect(state.requests.some((request) => request.method === "POST" && request.path === "/patients" && request.headers["x-csrf-token"] === CSRF)).toBe(true);
