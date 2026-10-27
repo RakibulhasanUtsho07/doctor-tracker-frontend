@@ -296,3 +296,124 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
     await staleSessionProbe.dispose();
   }
 });
+
+test("real UI reassigns a patient and paginates persisted records", async ({ page }) => {
+  test.setTimeout(180_000);
+  const suffix = randomUUID().slice(0, 8);
+  const destinationDoctorName = "Dr. Pagination Destination " + suffix;
+  const destinationDoctorEmail = "pagination-destination-" + suffix + "@example.test";
+  const patientNames = Array.from({ length: 11 }, (_, index) =>
+    "Pagination Patient " + suffix + " " + String(index + 1).padStart(2, "0")
+  );
+  const oldestPatientName = patientNames[0];
+
+  await signIn(page);
+
+  const sourceDoctor = await page.evaluate(async (api) => {
+    const response = await fetch(api + "/doctors?page=1&limit=100", { credentials: "include" });
+    const body = await response.json();
+    if (!response.ok) throw new Error("Could not load an existing doctor for the reassignment journey.");
+    const doctor = body?.data?.doctors?.[0];
+    if (!doctor?.id || !doctor?.name) throw new Error("The integration database needs an existing source doctor.");
+    return { id: doctor.id, name: doctor.name };
+  }, API);
+
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  const doctorForm = page.locator(".doctor-editor form");
+  await doctorForm.getByLabel(/Full name/).fill(destinationDoctorName);
+  await doctorForm.getByLabel(/^Specialization/).fill("Family Medicine");
+  await doctorForm.getByLabel(/Hospital \/ clinic/).fill("Pagination E2E Clinic");
+  await doctorForm.getByLabel(/^Phone/).fill("+880 1700-100002");
+  await doctorForm.getByLabel(/^Email address/).fill(destinationDoctorEmail);
+  const doctorCreated = page.waitForResponse((response) =>
+    response.url() === API + "/doctors" && response.request().method() === "POST"
+  );
+  await doctorForm.getByRole("button", { name: "Create doctor" }).click();
+  const doctorResponse = await doctorCreated;
+  expect(doctorResponse.status()).toBe(201);
+  const doctorBody = await doctorResponse.json();
+  const destinationDoctorId = doctorBody?.data?.doctor?.id;
+  expect(destinationDoctorId).toMatch(/^[a-f\d]{24}$/i);
+  await expect(page.getByRole("heading", { name: destinationDoctorName })).toBeVisible();
+
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Patients/ }).click();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+
+  for (const patientName of patientNames) {
+    await page.getByRole("button", { name: /Add patient/ }).click();
+    await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
+    await page.getByLabel(/Patient name/).fill(patientName);
+    await page.getByLabel(/Doctor association/).selectOption(sourceDoctor.id);
+    await page.locator(".patient-editor form").getByLabel(/^Condition/).fill("Pagination acceptance " + suffix);
+    const patientCreated = page.waitForResponse((response) =>
+      response.url() === API + "/patients" && response.request().method() === "POST"
+    );
+    await page.getByRole("button", { name: "Create patient" }).click();
+    const patientResponse = await patientCreated;
+    expect(patientResponse.status(), patientName).toBe(201);
+    await expect(page.getByRole("heading", { name: patientName })).toBeVisible();
+  }
+
+  await page.getByLabel("Rows per page").selectOption("10");
+  await expect(page.getByText(/^Page 1 of [2-9]\d*$/)).toBeVisible();
+  await expect(page.locator(".patient-table tbody").getByRole("button", {
+    name: oldestPatientName, exact: true
+  })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next page" })).toBeEnabled();
+
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(page.getByText(/^Page 2 of \d+$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Previous page" })).toBeEnabled();
+  await expect(page.locator(".patient-table tbody").getByRole("button", {
+    name: oldestPatientName, exact: true
+  })).toBeVisible();
+
+  await page.locator(".patient-table tbody").getByRole("button", {
+    name: oldestPatientName, exact: true
+  }).click();
+  await expect(page.getByRole("heading", { name: oldestPatientName })).toBeVisible();
+  await page.getByRole("button", { name: "Edit details" }).click();
+  await expect(page.getByRole("heading", { name: "Update patient details" })).toBeVisible();
+  await page.getByLabel(/Doctor association/).selectOption(destinationDoctorId);
+  const patientUpdated = page.waitForResponse((response) =>
+    response.url().startsWith(API + "/patients/") && response.request().method() === "PATCH"
+  );
+  await page.getByRole("button", { name: "Save changes" }).click();
+  const updateResponse = await patientUpdated;
+  expect(updateResponse.status()).toBe(200);
+  await expect(page.locator(".patient-detail-grid").getByText(destinationDoctorName, { exact: true })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your practice, in focus" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Patients/ }).click();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await page.getByLabel("Search patients").fill(oldestPatientName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const reassignedRow = page.getByRole("row").filter({ hasText: oldestPatientName });
+  await expect(reassignedRow).toBeVisible();
+  await expect(reassignedRow.getByText(destinationDoctorName, { exact: true })).toBeVisible();
+
+  const persisted = await page.evaluate(async ({ api, name }) => {
+    const url = new URL(api + "/patients");
+    url.searchParams.set("search", name);
+    url.searchParams.set("page", "1");
+    url.searchParams.set("limit", "10");
+    const response = await fetch(url.toString(), { credentials: "include" });
+    const body = await response.json();
+    return {
+      status: response.status,
+      patients: body?.data?.patients ?? [],
+      pagination: body?.meta?.pagination
+    };
+  }, { api: API, name: oldestPatientName });
+  expect(persisted.status).toBe(200);
+  expect(persisted.pagination.total).toBe(1);
+  expect(persisted.patients).toHaveLength(1);
+  expect(persisted.patients[0].name).toBe(oldestPatientName);
+  expect(persisted.patients[0].doctorId).toBe(destinationDoctorId);
+});
