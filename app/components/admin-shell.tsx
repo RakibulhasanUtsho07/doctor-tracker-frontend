@@ -5,7 +5,7 @@ import type { FormEvent, ReactNode } from "react";
 import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
 
 type Section = "dashboard" | "doctors" | "patients";
-type IconName = "dashboard" | "doctors" | "patients" | "menu" | "close" | "shield" | "arrow-up-right" | "sparkles" | "activity" | "calendar" | "database" | "chevron-right" | "layers" | "clock";
+type IconName = "dashboard" | "doctors" | "patients" | "menu" | "close" | "shield" | "arrow-up-right" | "sparkles" | "activity" | "calendar" | "database" | "chevron-right" | "layers" | "clock" | "sign-out";
 
 const navigation: Array<{ id: Section; label: string; description: string; icon: IconName }> = [
   { id: "dashboard", label: "Dashboard", description: "Overview and activity", icon: "dashboard" },
@@ -74,6 +74,9 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     case "clock":
       drawing = <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>;
       break;
+    case "sign-out":
+      drawing = <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>;
+      break;
   }
   return <svg aria-hidden="true" focusable="false" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{drawing}</svg>;
 }
@@ -87,7 +90,7 @@ function AppBrand({ onActivate }: { onActivate: () => void }) {
   );
 }
 
-function Sidebar({ section, onNavigate, isOpen, onClose }: { section: Section; onNavigate: (next: Section) => void; isOpen: boolean; onClose: () => void }) {
+function Sidebar({ section, onNavigate, isOpen, onClose, user }: { section: Section; onNavigate: (next: Section) => void; isOpen: boolean; onClose: () => void; user: AdminUser }) {
   return (
     <>
       {isOpen && <button type="button" className="mobile-scrim" aria-label="Close navigation menu" onClick={onClose} />}
@@ -117,9 +120,9 @@ function Sidebar({ section, onNavigate, isOpen, onClose }: { section: Section; o
           <div><strong>Privacy comes first</strong><p>Patient information stays out of this preview. Secure API integration comes next.</p></div>
         </div>
         <div className="sidebar-profile">
-          <span className="profile-avatar" aria-hidden="true">UI</span>
-          <span className="profile-copy"><strong>Preview user</strong><small>Not signed in</small></span>
-          <span className="profile-status" title="Preview only" aria-label="Preview only" />
+          <span className="profile-avatar" aria-hidden="true">{user.email.slice(0, 2).toUpperCase()}</span>
+          <span className="profile-copy"><strong>{user.email}</strong><small>{user.role === "ADMIN" ? "Administrator" : user.role}</small></span>
+          <span className="profile-status profile-status--active" title="Authenticated session" aria-label="Authenticated session" />
         </div>
       </aside>
     </>
@@ -428,11 +431,106 @@ function ModulePlaceholder({ section, onNavigate }: { section: Exclude<Section, 
 export default function AdminShell() {
   const [section, setSection] = useState<Section>("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [sessionCheckKey, setSessionCheckKey] = useState(0);
+  const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginPending, setLoginPending] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [rangeError, setRangeError] = useState("");
+  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousSectionRef = useRef<Section>("dashboard");
   const restoreMenuFocusRef = useRef(false);
   const copy = sectionCopy[section];
+
+  useEffect(() => {
+    if (!getApiBaseUrl()) {
+      setAuthError("Set NEXT_PUBLIC_API_BASE_URL in the frontend environment and restart the app.");
+      setAuthStatus("unavailable");
+      return;
+    }
+
+    const controller = new AbortController();
+    let active = true;
+    apiRequest<AuthSession>("/auth/me", { signal: controller.signal })
+      .then((result) => {
+        if (!active) return;
+        setSession(result);
+        setAuthError("");
+        setAuthStatus("signed-in");
+      })
+      .catch((error: unknown) => {
+        if (!active || (error instanceof Error && error.name === "AbortError")) return;
+        if (error instanceof ApiClientError && error.status === 401) {
+          setSession(null);
+          setAuthError("");
+          setAuthStatus("signed-out");
+          return;
+        }
+        setSession(null);
+        setAuthError(error instanceof Error ? error.message : "The administrator session could not be verified.");
+        setAuthStatus("unavailable");
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [sessionCheckKey]);
+
+  useEffect(() => {
+    if (authStatus !== "signed-in") return;
+
+    const controller = new AbortController();
+    let active = true;
+    const query = appliedRange
+      ? "?from=" + encodeURIComponent(appliedRange.from) + "&to=" + encodeURIComponent(appliedRange.to)
+      : "";
+    setDashboardLoading(true);
+    setDashboardError("");
+
+    apiRequest<DashboardSummary>("/dashboard/summary" + query, { signal: controller.signal })
+      .then((result) => {
+        if (!active) return;
+        setDashboardData(result);
+        setFromDate(result.dateStatistics.from);
+        setToDate(result.dateStatistics.to);
+        setRangeError("");
+      })
+      .catch((error: unknown) => {
+        if (!active || (error instanceof Error && error.name === "AbortError")) return;
+        if (error instanceof ApiClientError && error.status === 401) {
+          setSession(null);
+          setAuthNotice("Your administrator session expired. Sign in again to continue.");
+          setAuthStatus("signed-out");
+          return;
+        }
+        if (error instanceof ApiClientError && error.status === 403) {
+          setDashboardError("This account is not permitted to view the dashboard. Contact your system administrator.");
+          return;
+        }
+        setDashboardError(error instanceof Error ? error.message : "The dashboard request failed.");
+      })
+      .finally(() => {
+        if (active) setDashboardLoading(false);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [authStatus, appliedRange, refreshCount]);
 
   useEffect(() => {
     if (previousSectionRef.current !== section) {
@@ -461,6 +559,98 @@ export default function AdminShell() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileNavOpen]);
 
+  async function handleSignIn(email: string, password: string): Promise<boolean> {
+    setLoginPending(true);
+    setLoginError("");
+    try {
+      const result = await apiRequest<AuthSession>("/auth/login", {
+        method: "POST",
+        body: { email, password }
+      });
+      setSession(result);
+      setAuthStatus("signed-in");
+      setAuthNotice("");
+      setAuthError("");
+      setDashboardData(null);
+      setDashboardError("");
+      setFromDate("");
+      setToDate("");
+      setAppliedRange(null);
+      setLogoutError("");
+      return true;
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 429) {
+        setLoginError("Too many sign-in attempts. Wait for the rate limit to reset, then try again.");
+      } else if (error instanceof ApiClientError && error.status === 401) {
+        setLoginError("Email or password is incorrect.");
+      } else {
+        setLoginError(error instanceof Error ? error.message : "Sign-in failed. Please try again.");
+      }
+      return false;
+    } finally {
+      setLoginPending(false);
+    }
+  }
+
+  async function handleSignOut() {
+    if (!session || logoutPending) return;
+    setLogoutPending(true);
+    setLogoutError("");
+    try {
+      await apiRequest<void>("/auth/logout", {
+        method: "POST",
+        csrfToken: session.csrfToken
+      });
+      setSession(null);
+      setDashboardData(null);
+      setAuthNotice("You have been signed out.");
+      setLoginError("");
+      setAuthStatus("signed-out");
+      setMobileNavOpen(false);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        setSession(null);
+        setDashboardData(null);
+        setAuthNotice("Your administrator session has expired.");
+        setAuthStatus("signed-out");
+      } else {
+        setLogoutError(error instanceof Error ? error.message : "Sign-out could not be confirmed. Check the connection and retry.");
+      }
+    } finally {
+      setLogoutPending(false);
+    }
+  }
+
+  function applyDateRange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRangeError("");
+    if (!fromDate || !toDate) {
+      setRangeError("Choose both a start date and an end date.");
+      return;
+    }
+    if (fromDate > toDate) {
+      setRangeError("The start date must be on or before the end date.");
+      return;
+    }
+    const fromTime = Date.parse(fromDate + "T00:00:00Z");
+    const toTime = Date.parse(toDate + "T00:00:00Z");
+    const inclusiveDays = Math.floor((toTime - fromTime) / 86400000) + 1;
+    if (inclusiveDays > 366) {
+      setRangeError("Choose a date range of 366 days or fewer.");
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (fromDate > today || toDate > today) {
+      setRangeError("Future dates are not supported.");
+      return;
+    }
+    setAppliedRange({ from: fromDate, to: toDate });
+  }
+
+  function refreshDashboard() {
+    setRefreshCount((count) => count + 1);
+  }
+
   function closeNavigation() {
     restoreMenuFocusRef.current = true;
     setMobileNavOpen(false);
@@ -473,24 +663,55 @@ export default function AdminShell() {
     setMobileNavOpen(false);
   }
 
+  if (authStatus === "checking") {
+    return <AuthStatusView error="Checking the administrator session with the API…" onRetry={() => setSessionCheckKey((key) => key + 1)} checking />;
+  }
+  if (authStatus === "unavailable") {
+    return <AuthStatusView error={authError} onRetry={() => { setAuthError(""); setAuthStatus("checking"); setSessionCheckKey((key) => key + 1); }} />;
+  }
+  if (authStatus === "signed-out" || !session) {
+    return <SignInView onSubmit={handleSignIn} pending={loginPending} error={loginError} notice={authNotice} />;
+  }
+
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Sidebar section={section} onNavigate={navigate} isOpen={mobileNavOpen} onClose={closeNavigation} />
+      <Sidebar section={section} onNavigate={navigate} isOpen={mobileNavOpen} onClose={closeNavigation} user={session.user} />
       <div className="main-shell">
         <header className="topbar">
           <div className="topbar-leading">
             <button ref={menuButtonRef} type="button" className="icon-button mobile-menu-button" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileNavOpen} aria-controls="primary-sidebar" onClick={() => mobileNavOpen ? closeNavigation() : setMobileNavOpen(true)}><Icon name={mobileNavOpen ? "close" : "menu"} size={20} /></button>
             <nav className="breadcrumbs" aria-label="Breadcrumb"><span>Workspace</span><Icon name="chevron-right" size={14} /><strong aria-current="page">{copy.title}</strong></nav>
           </div>
-          <div className="topbar-trailing"><span className="preview-pill"><span /> UI PREVIEW</span><span className="topbar-divider" aria-hidden="true" /><span className="topbar-avatar" aria-hidden="true">UI</span><span className="topbar-user"><strong>Preview user</strong><small>Preview workspace</small></span></div>
+          <div className="topbar-trailing">
+            <span className="preview-pill session-pill"><span /> API CONNECTED</span>
+            <span className="topbar-divider" aria-hidden="true" />
+            <span className="topbar-avatar" aria-hidden="true">{session.user.email.slice(0, 2).toUpperCase()}</span>
+            <span className="topbar-user"><strong>{session.user.email}</strong><small>{session.user.role}</small></span>
+            <button type="button" className="signout-button" onClick={handleSignOut} disabled={logoutPending} aria-label="Sign out of the administrator session">{logoutPending ? "Signing out…" : <><Icon name="sign-out" size={17} /> <span>Sign out</span></>}</button>
+          </div>
         </header>
         <main id="main-content" className="main-content" tabIndex={-1}>
           <div className="page-intro">
             <div><p className="section-kicker"><span className="intro-kicker-dot" /> {copy.eyebrow}</p><h1 ref={pageHeadingRef} tabIndex={-1}>{section === "dashboard" ? "Good systems make better care." : copy.title}</h1><p className="page-subtitle">{copy.description}</p></div>
-            <div className="page-intro-side"><span className="intro-date-icon"><Icon name="clock" size={16} /></span><span><strong>Foundation phase</strong><small>Live data not connected</small></span></div>
+            <div className="page-intro-side"><span className="intro-date-icon"><Icon name="shield" size={16} /></span><span><strong>Secure session</strong><small>Administrator authenticated</small></span></div>
           </div>
-          {section === "dashboard" ? <DashboardView onNavigate={navigate} /> : <ModulePlaceholder section={section} onNavigate={navigate} />}
+          {logoutError && <div className="dashboard-error logout-error" role="alert"><Icon name="activity" size={18} /><span><strong>Could not confirm sign-out</strong><small>{logoutError}</small></span><button type="button" className="secondary-button" onClick={handleSignOut} disabled={logoutPending}>Retry</button></div>}
+          {section === "dashboard"
+            ? <DashboardView
+                onNavigate={navigate}
+                data={dashboardData}
+                loading={dashboardLoading}
+                error={dashboardError}
+                fromDate={fromDate}
+                toDate={toDate}
+                rangeError={rangeError}
+                onFromChange={(value) => { setFromDate(value); setRangeError(""); }}
+                onToChange={(value) => { setToDate(value); setRangeError(""); }}
+                onRangeSubmit={applyDateRange}
+                onRefresh={refreshDashboard}
+              />
+            : <ModulePlaceholder section={section} onNavigate={navigate} />}
           <footer className="app-footer"><span><span className="footer-mark" aria-hidden="true">+</span> Doctor Tracker <span className="footer-separator">·</span> Admin workspace</span><span>Built for clarity, designed for care.</span></footer>
         </main>
       </div>
