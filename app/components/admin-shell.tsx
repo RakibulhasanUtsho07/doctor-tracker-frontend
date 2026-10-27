@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
+import DoctorManagement from "./doctor-management";
 
 type Section = "dashboard" | "doctors" | "patients";
 type IconName = "dashboard" | "doctors" | "patients" | "menu" | "close" | "shield" | "arrow-up-right" | "sparkles" | "activity" | "calendar" | "database" | "chevron-right" | "layers" | "clock" | "sign-out";
@@ -15,7 +16,7 @@ const navigation: Array<{ id: Section; label: string; description: string; icon:
 
 const sectionCopy: Record<Section, { title: string; eyebrow: string; description: string }> = {
   dashboard: { title: "Dashboard", eyebrow: "WORKSPACE OVERVIEW", description: "A clear starting point for the people and work behind your practice." },
-  doctors: { title: "Doctors", eyebrow: "CARE TEAM", description: "The doctor directory will live here when the API-connected screens are added." },
+  doctors: { title: "Doctors", eyebrow: "CARE TEAM", description: "Search and maintain persisted doctor records with validated, administrator-only API actions." },
   patients: { title: "Patients", eyebrow: "PATIENT RECORDS", description: "A focused workspace for patient records and doctor relationships is coming next." }
 };
 
@@ -117,7 +118,7 @@ function Sidebar({ section, onNavigate, isOpen, onClose, user }: { section: Sect
         <div className="sidebar-spacer" />
         <div className="privacy-card">
           <span className="privacy-icon"><Icon name="shield" size={17} /></span>
-          <div><strong>Privacy comes first</strong><p>Patient information stays out of this preview. Secure API integration comes next.</p></div>
+          <div><strong>Privacy comes first</strong><p>Patient details stay out of this directory until the dedicated patient-management screen is available.</p></div>
         </div>
         <div className="sidebar-profile">
           <span className="profile-avatar" aria-hidden="true">{user.email.slice(0, 2).toUpperCase()}</span>
@@ -453,6 +454,13 @@ export default function AdminShell() {
   const previousSectionRef = useRef<Section>("dashboard");
   const restoreMenuFocusRef = useRef(false);
   const copy = sectionCopy[section];
+  const handleSessionExpired = useCallback(() => {
+    setSession(null);
+    setDashboardData(null);
+    setAuthNotice("Your administrator session expired. Sign in again to continue.");
+    setAuthStatus("signed-out");
+    setMobileNavOpen(false);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -710,7 +718,9 @@ export default function AdminShell() {
                 onRangeSubmit={applyDateRange}
                 onRefresh={refreshDashboard}
               />
-            : <ModulePlaceholder section={section} onNavigate={navigate} />}
+            : section === "doctors"
+              ? <DoctorManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} />
+              : <ModulePlaceholder section={section} onNavigate={navigate} />}
           <footer className="app-footer"><span><span className="footer-mark" aria-hidden="true">+</span> Doctor Tracker <span className="footer-separator">·</span> Admin workspace</span><span>Built for clarity, designed for care.</span></footer>
         </main>
       </div>
