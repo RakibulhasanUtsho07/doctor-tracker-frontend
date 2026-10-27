@@ -241,6 +241,7 @@ export default function AdminShell() {
 
   function navigate(next: Section) {
     restoreMenuFocusRef.current = false;
+    if (section === next) pageHeadingRef.current?.focus();
     setSection(next);
     setMobileNavOpen(false);
   }
