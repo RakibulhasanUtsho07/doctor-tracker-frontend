@@ -36,7 +36,8 @@ async function installSyntheticApi(page, options = {}) {
   const state = {
     authenticated: false,
     doctors: options.seedDoctor || options.seedPatient ? [{ ...DOCTOR_RECORD }] : [],
-    patients: options.seedPatient ? [{ ...PATIENT_RECORD }] : []
+    patients: options.seedPatient ? [{ ...PATIENT_RECORD }] : [],
+    failNextAction: options.failNextAction ?? null
   };
   const corsHeaders = {
     "access-control-allow-origin": "http://127.0.0.1:3000",
@@ -137,6 +138,17 @@ async function installSyntheticApi(page, options = {}) {
         pagination: { page: 1, limit: 10, total: rows.length, totalPages: Math.ceil(rows.length / 10) }
       });
     }
+    const detachAction = path.match(/^\/doctors\/([a-f\d]{24})\/patients\/([a-f\d]{24})$/i);
+    if (detachAction && method === "DELETE") {
+      if (state.failNextAction === "detach") {
+        state.failNextAction = null;
+        return send(503, "Synthetic detach failure. Try again.");
+      }
+      const patient = state.patients.find((entry) => entry.id === detachAction[2]);
+      if (!patient || patient.doctorId !== detachAction[1]) return send(404, "Patient association not found.");
+      patient.doctorId = null;
+      return send(204);
+    }
     if (path === "/patients" && method === "GET") {
       const pageNumber = Number(url.searchParams.get("page") ?? "1");
       const limit = Number(url.searchParams.get("limit") ?? "20");
@@ -164,6 +176,17 @@ async function installSyntheticApi(page, options = {}) {
     if (patientDetail && method === "GET") {
       const patient = state.patients.find((entry) => entry.id === patientDetail[1]);
       return patient ? send(200, { patient }) : send(404, "Patient not found.");
+    }
+
+    if (patientDetail && method === "DELETE") {
+      if (state.failNextAction === "delete") {
+        state.failNextAction = null;
+        return send(503, "Synthetic deletion failure. Try again.");
+      }
+      const index = state.patients.findIndex((entry) => entry.id === patientDetail[1]);
+      if (index === -1) return send(404, "Patient not found.");
+      state.patients.splice(index, 1);
+      return send(204);
     }
     return send(404, "No accessibility-test route matches this request.");
   });
@@ -408,4 +431,52 @@ test("delete confirmation dialog has a keyboard focus loop and restores focus on
   await cancel.click();
   await expect(dialog).toBeHidden();
   await expect(deleteTrigger).toBeFocused();
+});
+
+test("detach confirmation restores focus, keeps failures actionable, and preserves the patient on retry", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedPatient: true, failNextAction: "detach" });
+  await signIn(page, { doctorCount: 1 });
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+
+  const patientRow = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name });
+  const detachTrigger = patientRow.getByRole("button", { name: "Detach", exact: true });
+  await expect(detachTrigger).toBeVisible();
+  await detachTrigger.focus();
+  await page.keyboard.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "Detach this patient from the doctor?" });
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  const confirm = dialog.getByRole("button", { name: "Detach and preserve" });
+  await expect(cancel).toBeFocused();
+  await scanScreen(page, testInfo, "patient-detach-dialog");
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(detachTrigger).toBeFocused();
+
+  await detachTrigger.press("Enter");
+  await expect(cancel).toBeFocused();
+  await cancel.click();
+  await expect(dialog).toBeHidden();
+  await expect(detachTrigger).toBeFocused();
+
+  await detachTrigger.press("Enter");
+  await expect(confirm).toBeVisible();
+  await confirm.click();
+
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("alert")).toHaveText("Synthetic detach failure. Try again.");
+  await expect(cancel).toBeFocused();
+  await expect(confirm).toBeEnabled();
+
+  await confirm.focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Patient detached from the doctor. The patient record was preserved.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeFocused();
+
+  const preservedRow = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name });
+  await expect(preservedRow).toContainText("Unassigned");
+  await expect(preservedRow.getByRole("button", { name: "Detach", exact: true })).toHaveCount(0);
+  await expect(preservedRow.getByRole("button", { name: "Delete", exact: true })).toBeVisible();
 });
