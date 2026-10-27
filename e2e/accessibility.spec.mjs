@@ -85,6 +85,15 @@ async function installSyntheticApi(page) {
   });
 }
 
+async function navigateToSection(page, label, mobile) {
+  if (mobile) {
+    const openMenu = page.getByRole("banner").getByRole("button", { name: "Open navigation" });
+    await openMenu.click();
+  }
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: new RegExp(label) }).click();
+}
+
 async function signIn(page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
@@ -137,12 +146,12 @@ test("WCAG 2.1 A/AA scan blocks serious and critical violations on sign-in and w
   await signIn(page);
   await scanScreen(page, testInfo, "dashboard");
 
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
+  await navigateToSection(page, "Doctors", testInfo.project.name === "chromium-mobile");
   await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
   await expect(page.locator(".doctor-empty-state")).toBeVisible();
   await scanScreen(page, testInfo, "doctors");
 
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Patients/ }).click();
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
   await expect(page.locator(".patient-empty-state")).toBeVisible();
   await scanScreen(page, testInfo, "patients");
