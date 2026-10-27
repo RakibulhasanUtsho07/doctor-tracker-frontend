@@ -21,15 +21,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6.1.0
         with:
           version: 11.21.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -41,7 +41,7 @@ jobs:
         run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1 @axe-core/playwright@4.14.0
 
       - name: Cache Playwright Chromium
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload axe reports, screenshots and Playwright diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: doctor-tracker-accessibility-e2e
           path: |
