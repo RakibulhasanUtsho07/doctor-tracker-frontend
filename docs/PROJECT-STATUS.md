@@ -73,3 +73,9 @@ On exact workflow commit `d109b8e56bf79d83e111fdee3885d0cee348dadc`, all five PR
 - [Frontend dependency security audit #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664) — passed with no high/critical published package advisories; [raw JSON report](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664/artifacts/12750417155).
 
 All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warning no longer appears. Parallel workflow jobs can still emit non-fatal cache-reservation warnings when they contend for the same cache key; they did not fail a job and are separate from the resolved home-layout warning. This change does not close manual screen-reader/device, deployed HTTPS/session, broader security, performance-target or deployed-smoke gates; keep the stacked PRs draft and do not promote to `dev`/`main`.
+
+## Deployment preflight automation — 2026-10-27
+
+Added `.github/workflows/deployment-preflight.yml` and a read-only Node preflight probe for a deployed frontend/API pair. When run with real URLs it checks the HTTPS frontend HTML response, API liveness/readiness and exact-origin credentialed CORS headers. It sends GET/OPTIONS only, does not authenticate or mutate records, and logs no response bodies or credentials. Unit tests are part of the standard frontend test command.
+
+No public frontend/API URLs or deployed SHAs are currently recorded, so the live preflight has not been run and is BLOCKED; deployment remains NOT STARTED. Even a successful preflight would not close browser cookie/session, CSRF rejection, CRUD persistence, manual accessibility/device, broader security or performance gates.
