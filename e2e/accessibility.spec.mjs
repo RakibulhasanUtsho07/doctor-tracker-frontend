@@ -11,9 +11,33 @@ const USER = {
   csrfToken: CSRF,
   expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
 };
+const DOCTOR_ID = "bbbbbbbbbbbbbbbbbbbbbbbb";
+const PATIENT_ID = "cccccccccccccccccccccccc";
+const DOCTOR_RECORD = {
+  id: DOCTOR_ID,
+  name: "Dr. Ada Example",
+  specialization: "Family Medicine",
+  hospital: "Example Clinic",
+  phone: "+880 1700 000000",
+  email: "ada@example.test",
+  createdAt: "2026-01-02T00:00:00.000Z",
+  updatedAt: "2026-01-02T00:00:00.000Z"
+};
+const PATIENT_RECORD = {
+  id: PATIENT_ID,
+  doctorId: DOCTOR_ID,
+  name: "Sam Patient",
+  condition: "Routine follow-up",
+  createdAt: "2026-01-03T00:00:00.000Z",
+  updatedAt: "2026-01-03T00:00:00.000Z"
+};
 
-async function installSyntheticApi(page) {
-  const state = { authenticated: false };
+async function installSyntheticApi(page, options = {}) {
+  const state = {
+    authenticated: false,
+    doctors: options.seedDoctor || options.seedPatient ? [{ ...DOCTOR_RECORD }] : [],
+    patients: options.seedPatient ? [{ ...PATIENT_RECORD }] : []
+  };
   const corsHeaders = {
     "access-control-allow-origin": "http://127.0.0.1:3000",
     "access-control-allow-credentials": "true",
@@ -28,6 +52,7 @@ async function installSyntheticApi(page) {
     const url = new URL(request.url());
     const path = url.pathname.replace("/api/v1", "");
     const method = request.method().toUpperCase();
+    const body = method === "POST" || method === "PATCH" ? request.postDataJSON() : {};
 
     if (method === "OPTIONS") {
       await route.fulfill({ status: 204, headers: corsHeaders });
@@ -66,20 +91,79 @@ async function installSyntheticApi(page) {
     if (path === "/dashboard/summary" && method === "GET") {
       const today = new Date().toISOString().slice(0, 10);
       return send(200, {
-        totals: { doctors: 0, patients: 0 },
-        patientsPerDoctor: [],
+        totals: { doctors: state.doctors.length, patients: state.patients.length },
+        patientsPerDoctor: state.doctors.map((doctor) => ({
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          patientCount: state.patients.filter((patient) => patient.doctorId === doctor.id).length
+        })),
         dateStatistics: {
           from: url.searchParams.get("from") ?? today,
           to: url.searchParams.get("to") ?? today,
-          days: [{ date: today, doctorsCreated: 0, patientsCreated: 0 }]
+          days: [{ date: today, doctorsCreated: state.doctors.length, patientsCreated: state.patients.length }]
         }
       });
     }
     if (path === "/doctors" && method === "GET") {
-      return send(200, { doctors: [] }, { pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      const pageNumber = Number(url.searchParams.get("page") ?? "1");
+      const limit = Number(url.searchParams.get("limit") ?? "20");
+      const visible = state.doctors.slice((pageNumber - 1) * limit, pageNumber * limit);
+      return send(200, { doctors: visible }, {
+        pagination: { page: pageNumber, limit, total: state.doctors.length, totalPages: Math.ceil(state.doctors.length / limit) }
+      });
+    }
+    if (path === "/doctors" && method === "POST") {
+      const duplicate = state.doctors.some((doctor) => doctor.email.toLowerCase() === String(body.email ?? "").toLowerCase());
+      if (duplicate) return send(409, "A doctor with this email already exists.");
+      const doctor = { ...DOCTOR_RECORD, ...body, id: "dddddddddddddddddddddddd", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      state.doctors.push(doctor);
+      return send(201, { doctor });
+    }
+    const doctorDetail = path.match(/^\\/doctors\\/([a-f\\d]{24})$/i);
+    if (doctorDetail && method === "GET") {
+      const doctor = state.doctors.find((entry) => entry.id === doctorDetail[1]);
+      return doctor ? send(200, { doctor }) : send(404, "Doctor not found.");
+    }
+    if (doctorDetail && method === "PATCH") {
+      const doctor = state.doctors.find((entry) => entry.id === doctorDetail[1]);
+      if (!doctor) return send(404, "Doctor not found.");
+      Object.assign(doctor, body, { updatedAt: new Date().toISOString() });
+      return send(200, { doctor });
+    }
+    const associatedPatients = path.match(/^\\/doctors\\/([a-f\\d]{24})\\/patients$/i);
+    if (associatedPatients && method === "GET") {
+      const rows = state.patients.filter((patient) => patient.doctorId === associatedPatients[1]);
+      return send(200, { patients: rows.slice(0, 10) }, {
+        pagination: { page: 1, limit: 10, total: rows.length, totalPages: Math.ceil(rows.length / 10) }
+      });
     }
     if (path === "/patients" && method === "GET") {
-      return send(200, { patients: [] }, { pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      const pageNumber = Number(url.searchParams.get("page") ?? "1");
+      const limit = Number(url.searchParams.get("limit") ?? "20");
+      const visible = state.patients.slice((pageNumber - 1) * limit, pageNumber * limit);
+      return send(200, { patients: visible }, {
+        pagination: { page: pageNumber, limit, total: state.patients.length, totalPages: Math.ceil(state.patients.length / limit) }
+      });
+    }
+    if (path === "/patients" && method === "POST") {
+      if (body.condition === "force-validation-error") {
+        return send(400, "Condition failed validation for the synthetic accessibility scenario.");
+      }
+      const patient = {
+        ...PATIENT_RECORD,
+        ...body,
+        id: "eeeeeeeeeeeeeeeeeeeeeeee",
+        doctorId: body.doctorId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      state.patients.push(patient);
+      return send(201, { patient });
+    }
+    const patientDetail = path.match(/^\\/patients\\/([a-f\\d]{24})$/i);
+    if (patientDetail && method === "GET") {
+      const patient = state.patients.find((entry) => entry.id === patientDetail[1]);
+      return patient ? send(200, { patient }) : send(404, "Patient not found.");
     }
     return send(404, "No accessibility-test route matches this request.");
   });
@@ -217,4 +301,110 @@ test("mobile navigation is keyboard operable and restores focus after Escape", a
   const restoredMenuButton = page.getByRole("banner").getByRole("button", { name: "Open navigation" });
   await expect(restoredMenuButton).toHaveAttribute("aria-expanded", "false");
   await expect(restoredMenuButton).toBeFocused();
+});
+
+
+test("doctor create/edit forms support keyboard navigation and announce duplicate-email errors", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedDoctor: true });
+  await signIn(page);
+  await navigateToSection(page, "Doctors", testInfo.project.name === "chromium-mobile");
+  const doctorRow = page.locator(".doctor-table").getByRole("button", { name: DOCTOR_RECORD.name, exact: true });
+  await expect(doctorRow).toBeVisible();
+  await doctorRow.click();
+  await expect(page.getByRole("heading", { name: DOCTOR_RECORD.name, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit details" }).click();
+
+  const editForm = page.locator(".doctor-form");
+  await expect(page.getByRole("heading", { name: "Update doctor details" })).toBeFocused();
+  await expect(editForm.locator('input[name="name"]')).toHaveValue(DOCTOR_RECORD.name);
+  await scanScreen(page, testInfo, "doctor-edit-form");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(editForm.locator('input[name="name"]')).toBeFocused();
+
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeFocused();
+  const createForm = page.locator(".doctor-form");
+  await createForm.locator('input[name="name"]').fill("Dr. Duplicate Example");
+  await createForm.locator('input[name="specialization"]').fill("Family Medicine");
+  await createForm.locator('input[name="hospital"]').fill("Example Clinic");
+  await createForm.locator('input[name="phone"]').fill("+880 1700 000001");
+  await createForm.locator('input[name="email"]').fill(DOCTOR_RECORD.email);
+  await createForm.getByRole("button", { name: "Create doctor" }).click();
+
+  const email = createForm.locator('input[name="email"]');
+  await expect(email).toHaveAttribute("aria-invalid", "true");
+  await expect(email).toHaveAttribute("aria-describedby", "doctor-field-error-email");
+  await expect(page.locator("#doctor-field-error-email")).toHaveText("A doctor with this email already exists.");
+  await scanScreen(page, testInfo, "doctor-create-validation");
+});
+
+test("patient create/edit form validation errors are linked to their fields", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedDoctor: true, seedPatient: true });
+  await signIn(page);
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+  await page.getByRole("button", { name: /Add patient/ }).click();
+
+  const createForm = page.locator(".patient-form");
+  await expect(page.getByRole("heading", { name: "Add a patient" })).toBeFocused();
+  await expect(createForm.getByLabel(/Doctor association/).locator("option").nth(1)).toHaveText("Dr. Ada Example — Family Medicine");
+  await scanScreen(page, testInfo, "patient-create-form");
+  await createForm.locator('input[name="name"]').fill("Synthetic Patient Validation");
+  await createForm.locator('select[name="doctorId"]').selectOption(DOCTOR_ID);
+  await createForm.locator('input[name="condition"]').fill("force-validation-error");
+  await createForm.getByRole("button", { name: "Create patient" }).click();
+
+  const condition = createForm.locator('input[name="condition"]');
+  await expect(condition).toHaveAttribute("aria-invalid", "true");
+  await expect(condition).toHaveAttribute("aria-describedby", "patient-field-error-condition");
+  await expect(page.locator("#patient-field-error-condition")).toHaveText("Condition failed validation for the synthetic accessibility scenario.");
+  await scanScreen(page, testInfo, "patient-create-validation");
+
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.locator(".patient-table").getByRole("button", { name: PATIENT_RECORD.name, exact: true }).click();
+  await expect(page.getByRole("heading", { name: PATIENT_RECORD.name, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit details" }).click();
+  const editForm = page.locator(".patient-form");
+  await expect(page.getByRole("heading", { name: "Update patient details" })).toBeFocused();
+  await expect(editForm.locator('input[name="name"]')).toHaveValue(PATIENT_RECORD.name);
+  await scanScreen(page, testInfo, "patient-edit-form");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(editForm.locator('input[name="name"]')).toBeFocused();
+});
+
+test("delete confirmation dialog has a keyboard focus loop and restores focus on dismissal", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedPatient: true });
+  await signIn(page);
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+
+  const deleteTrigger = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name })
+    .getByRole("button", { name: "Delete", exact: true });
+  await expect(deleteTrigger).toBeVisible();
+  await deleteTrigger.click();
+  const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  const confirm = dialog.getByRole("button", { name: "Delete permanently" });
+  await expect(dialog).toBeVisible();
+  await expect(cancel).toBeFocused();
+  await scanScreen(page, testInfo, "patient-delete-dialog");
+
+  await page.keyboard.press("Tab");
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(deleteTrigger).toBeFocused();
+
+  await deleteTrigger.click();
+  await expect(cancel).toBeFocused();
+  await cancel.click();
+  await expect(dialog).toBeHidden();
+  await expect(deleteTrigger).toBeFocused();
 });
