@@ -18,7 +18,7 @@ const navigation: Array<{ id: Section; label: string; description: string; icon:
 const sectionCopy: Record<Section, { title: string; eyebrow: string; description: string }> = {
   dashboard: { title: "Dashboard", eyebrow: "WORKSPACE OVERVIEW", description: "A clear starting point for the people and work behind your practice." },
   doctors: { title: "Doctors", eyebrow: "CARE TEAM", description: "Search and maintain persisted doctor records with validated, administrator-only API actions." },
-  patients: { title: "Patients", eyebrow: "PATIENT RECORDS", description: "A focused workspace for patient records and doctor relationships is coming next." }
+  patients: { title: "Patients", eyebrow: "PATIENT RECORDS", description: "Search and maintain patient records with explicit, relationship-safe doctor actions." }
 };
 
 type AdminUser = { id: string; email: string; role: string };
@@ -120,7 +120,7 @@ function Sidebar({ section, onNavigate, isOpen, onClose, user }: { section: Sect
         <div className="sidebar-spacer" />
         <div className="privacy-card">
           <span className="privacy-icon"><Icon name="shield" size={17} /></span>
-          <div><strong>Privacy comes first</strong><p>Patient details stay out of this directory until the dedicated patient-management screen is available.</p></div>
+          <div><strong>Privacy comes first</strong><p>Patient information is handled through authenticated API requests and explicitly confirmed relationship or deletion actions.</p></div>
         </div>
         <div className="sidebar-profile">
           <span className="profile-avatar" aria-hidden="true">{user.email.slice(0, 2).toUpperCase()}</span>
