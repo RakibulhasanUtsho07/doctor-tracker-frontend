@@ -18,6 +18,7 @@ type Doctor = {
 type DoctorDraft = Pick<Doctor, "name" | "specialization" | "hospital" | "phone" | "email">;
 type DoctorField = keyof DoctorDraft;
 type DoctorListPayload = { doctors: Doctor[] };
+type PatientSummary = { id: string; doctorId: string | null; name: string; condition?: string; createdAt: string; updatedAt: string };
 type EditorMode = "create" | "edit";
 
 type AppliedFilters = {
@@ -74,10 +75,14 @@ function fieldForServerMessage(message: string): DoctorField | null {
 
 export default function DoctorManagement({
   csrfToken,
-  onSessionExpired
+  onSessionExpired,
+  onAddPatient,
+  onViewPatients
 }: {
   csrfToken: string;
   onSessionExpired: () => void;
+  onAddPatient: (doctor: { id: string; name: string; specialization: string; hospital: string }) => void;
+  onViewPatients: (doctor: { id: string; name: string; specialization: string; hospital: string }) => void;
 }) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0 });
@@ -99,6 +104,11 @@ export default function DoctorManagement({
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const detailController = useRef<AbortController | null>(null);
+  const [associatedPatients, setAssociatedPatients] = useState<PatientSummary[]>([]);
+  const [associatedPatientsTotal, setAssociatedPatientsTotal] = useState(0);
+  const [associatedPatientsLoading, setAssociatedPatientsLoading] = useState(false);
+  const [associatedPatientsError, setAssociatedPatientsError] = useState("");
+  const [associationReload, setAssociationReload] = useState(0);
 
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
   const [draft, setDraft] = useState<DoctorDraft>(emptyDraft);
@@ -152,6 +162,32 @@ export default function DoctorManagement({
   }, [filters, page, limit, reloadCount, onSessionExpired]);
 
   useEffect(() => () => detailController.current?.abort(), []);
+
+  useEffect(() => {
+    if (!selectedDoctor) {
+      setAssociatedPatients([]);
+      setAssociatedPatientsTotal(0);
+      setAssociatedPatientsError("");
+      return;
+    }
+    const controller = new AbortController();
+    let active = true;
+    setAssociatedPatientsLoading(true);
+    apiRequestWithMeta<{ patients: PatientSummary[] }>("/doctors/" + encodeURIComponent(selectedDoctor.id) + "/patients?page=1&limit=10", { signal: controller.signal })
+      .then(({ data, meta }) => {
+        if (!active) return;
+        setAssociatedPatients(data.patients);
+        setAssociatedPatientsTotal(meta?.pagination?.total ?? data.patients.length);
+        setAssociatedPatientsError("");
+      })
+      .catch((error: unknown) => {
+        if (!active || (error instanceof Error && error.name === "AbortError")) return;
+        if (error instanceof ApiClientError && error.status === 401) { onSessionExpired(); return; }
+        setAssociatedPatientsError(errorMessage(error, "Associated patients could not be loaded."));
+      })
+      .finally(() => { if (active) setAssociatedPatientsLoading(false); });
+    return () => { active = false; controller.abort(); };
+  }, [selectedDoctor?.id, associationReload, onSessionExpired]);
 
   useEffect(() => {
     if (editorMode) editorHeadingRef.current?.focus();
@@ -401,7 +437,20 @@ export default function DoctorManagement({
                 <div><dt>Last updated (UTC)</dt><dd>{formatUtcDate(selectedDoctor.updatedAt)}</dd></div>
                 <div className="doctor-detail-id"><dt>Record identifier</dt><dd>{selectedDoctor.id}</dd></div>
               </dl>
-              <p className="doctor-detail-note">Patient associations are not displayed here because the current API contract does not yet expose the doctor-patients endpoint.</p>
+              <section className="doctor-associated-patients" aria-labelledby="doctor-associated-heading" aria-busy={associatedPatientsLoading}>
+                <div className="doctor-associated-heading">
+                  <div><p className="section-kicker">CARE RELATIONSHIPS</p><h4 id="doctor-associated-heading">Associated patients <span>{associatedPatientsTotal.toLocaleString()}</span></h4><p>Detaching a patient preserves the patient record.</p></div>
+                  <div className="doctor-detail-actions">
+                    <button type="button" className="secondary-button" onClick={() => onViewPatients(selectedDoctor)}>View all</button>
+                    <button type="button" className="primary-button" onClick={() => onAddPatient(selectedDoctor)}>+ Add patient</button>
+                  </div>
+                </div>
+                {associatedPatientsError && <p className="doctor-error" role="alert">{associatedPatientsError} <button type="button" className="secondary-button" onClick={() => setAssociationReload((value) => value + 1)}>Retry</button></p>}
+                {associatedPatientsLoading && <p className="doctor-loading" role="status">Loading associated patients…</p>}
+                {!associatedPatientsLoading && !associatedPatientsError && associatedPatients.length === 0 && <p className="doctor-associated-empty">No patients are currently associated with this doctor.</p>}
+                {!associatedPatientsLoading && associatedPatients.length > 0 && <ul className="doctor-associated-list">{associatedPatients.map((patient) => <li key={patient.id}><span><strong>{patient.name}</strong><small>{patient.condition ?? "No condition recorded"}</small></span><span className="doctor-associated-date">{formatUtcDate(patient.createdAt)}</span></li>)}</ul>}
+                {associatedPatientsTotal > associatedPatients.length && <p className="doctor-detail-note">Showing the first {associatedPatients.length} associated patients. Use “View all” to search or paginate the complete relationship list.</p>}
+              </section>
             </>
           )}
         </section>
