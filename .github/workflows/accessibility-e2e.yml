@@ -38,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install pinned Playwright and axe runner
-        run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1 @axe-core/playwright@4.10.3
+        run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1 @axe-core/playwright@4.14.0
 
       - name: Cache Playwright Chromium
         uses: actions/cache@v4
