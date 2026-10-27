@@ -456,7 +456,12 @@ test("real UI reassigns a patient and paginates persisted records", async ({ pag
   expect(persisted.patients[0].name).toBe(oldestPatientName);
   expect(persisted.patients[0].doctorId).toBe(destinationDoctorId);
 
-  // A filter submitted while on page 2 must reset the displayed page and count.
+  // Filter reset-to-page-one, deterministic 11-row fixture, and changing page size must stay in sync.
+  await page.getByLabel("Search patients").fill("");
+  await page.getByLabel("Condition (exact)").fill("Pagination acceptance " + suffix);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page.locator(".patient-total-count")).toHaveText("11");
+
   await page.getByLabel("Rows per page").selectOption("10");
   await expect(page.getByText(/^Page 1 of 2$/)).toBeVisible();
   await page.getByRole("button", { name: "Next page" }).click();
