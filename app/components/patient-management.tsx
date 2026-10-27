@@ -125,12 +125,7 @@ export default function PatientManagement({
 
   useEffect(() => {
     const query = doctorChoiceSearch.trim();
-    if (query.length < 2) {
-      setDoctorSearchPending(false);
-      setDoctorSearchError("");
-      setDoctorSearchTotal(null);
-      return;
-    }
+    if (query.length < 2) return;
 
     const controller = new AbortController();
     let active = true;
@@ -471,7 +466,13 @@ export default function PatientManagement({
             maxLength={100}
             autoComplete="off"
             placeholder="Enter at least 2 characters"
-            onChange={(event) => setDoctorChoiceSearch(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setDoctorChoiceSearch(value);
+              setDoctorSearchError("");
+              setDoctorSearchTotal(null);
+              setDoctorSearchPending(value.trim().length >= 2);
+            }}
           />
         </label>
         {doctorChoiceSearch.trim().length < 2

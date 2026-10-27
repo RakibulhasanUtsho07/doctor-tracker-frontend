@@ -217,7 +217,12 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await page.getByRole("button", { name: "Reset" }).click();
   await page.getByRole("button", { name: preservedName, exact: true }).click();
   await page.getByRole("button", { name: "Edit details" }).click();
-  await page.locator(".patient-editor form").getByLabel(/^Condition/).fill("Routine follow-up updated");
+  const conditionInput = page.locator(".patient-editor form").getByLabel(/^Condition/);
+  await conditionInput.fill("");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("#patient-field-error-condition"))
+    .toHaveText("The current API cannot clear an existing condition. Enter a replacement or cancel.");
+  await conditionInput.fill("Routine follow-up updated");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("heading", { name: preservedName })).toBeVisible();
 
@@ -478,29 +483,32 @@ test("real UI finds a doctor beyond the first 100 and persists patient reassignm
       throw new Error("Could not obtain the active test session's in-memory CSRF token.");
     }
 
-    const created = [];
-    for (let start = 0; start < 105; start += 15) {
+    async function createSyntheticDoctor(index) {
+      const name = "Dr. Beyond First Page " + suffix + " " + String(index).padStart(3, "0");
+      const response = await fetch(api + "/doctors", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        body: JSON.stringify({
+          name,
+          specialization: "Family Medicine",
+          hospital: "Boundary Acceptance Clinic",
+          phone: "+880 1700 200000",
+          email: "beyond-" + suffix + "-" + String(index).padStart(3, "0") + "@example.test"
+        })
+      });
+      const body = await response.json();
+      if (response.status !== 201 || !body?.data?.doctor?.id) {
+        throw new Error("Could not create the synthetic doctor boundary fixture at index " + index + ": " + response.status);
+      }
+      return { id: body.data.doctor.id, name };
+    }
+
+    const target = await createSyntheticDoctor(0);
+    const created = [target];
+    for (let start = 1; start < 105; start += 15) {
       const batch = Array.from({ length: Math.min(15, 105 - start) }, (_, offset) => start + offset);
-      const results = await Promise.all(batch.map(async (index) => {
-        const name = "Dr. Beyond First Page " + suffix + " " + String(index).padStart(3, "0");
-        const response = await fetch(api + "/doctors", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-          body: JSON.stringify({
-            name,
-            specialization: "Family Medicine",
-            hospital: "Boundary Acceptance Clinic",
-            phone: "+880 1700 200000",
-            email: "beyond-" + suffix + "-" + String(index).padStart(3, "0") + "@example.test"
-          })
-        });
-        const body = await response.json();
-        if (response.status !== 201 || !body?.data?.doctor?.id) {
-          throw new Error("Could not create the synthetic doctor boundary fixture at index " + index + ": " + response.status);
-        }
-        return { id: body.data.doctor.id, name };
-      }));
+      const results = await Promise.all(batch.map(createSyntheticDoctor));
       created.push(...results);
     }
 
@@ -510,7 +518,6 @@ test("real UI finds a doctor beyond the first 100 and persists patient reassignm
     const secondBody = await secondResponse.json();
     const firstPage = firstBody?.data?.doctors ?? [];
     const secondPage = secondBody?.data?.doctors ?? [];
-    const target = created[0];
     if (firstResponse.status !== 200 || secondResponse.status !== 200 ||
         firstPage.length !== 100 || firstPage.some((doctor) => doctor.id === target.id) ||
         !secondPage.some((doctor) => doctor.id === target.id)) {
