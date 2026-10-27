@@ -45,3 +45,8 @@ Run and record the remaining manual accessibility/responsive checks, then comple
 - [Accessibility #64](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941652) passed 17 tests with 1 expected desktop-only skip; [reports/screenshots/Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941652/artifacts/12744490643).
 - [Real API + MongoDB #85](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524948333) passed 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524948333/artifacts/12742793169).
 - The synthetic test checks the error alert and retained row after failure, retry by keyboard, successful deletion/removal and safe directory-heading focus. The release remains PARTIAL pending manual screen-reader/device, production HTTPS/cookie, security/performance and deployed-smoke gates.
+
+
+## Manual release readiness — 2026-10-27
+- A reproducible checklist is available in [docs/14-manual-release-acceptance.md](14-manual-release-acceptance.md). It defines exact fields to capture, browser/assistive-technology steps, responsive viewports, HTTPS/session checks, security/performance evidence and deployed smoke using synthetic records only.
+- This is process documentation only. No human screen-reader/device session, production HTTPS/cookie verification, security/performance sign-off or deployed smoke was executed by adding the runbook. Those gates remain open; overall release remains PARTIAL.
