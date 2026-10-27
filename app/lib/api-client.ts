@@ -15,6 +15,23 @@ export class ApiClientError extends Error {
   }
 }
 
+export interface ApiPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ApiMeta {
+  requestId?: string;
+  pagination?: ApiPagination;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  meta?: ApiMeta;
+}
+
 export interface ApiRequestOptions extends Omit<RequestInit, "body" | "headers"> {
   body?: unknown;
   csrfToken?: string;
@@ -23,6 +40,7 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body" | "headers">
 
 interface ApiEnvelope<T> {
   data?: T;
+  meta?: ApiMeta;
   error?: ApiErrorPayload;
 }
 
@@ -32,7 +50,10 @@ export function getApiBaseUrl(): string | null {
   return configured.replace(/\/+$/, "");
 }
 
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+export async function apiRequestWithMeta<T>(
+  path: string,
+  options: ApiRequestOptions = {}
+): Promise<ApiResponse<T>> {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
     throw new ApiClientError(
@@ -62,7 +83,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     throw new ApiClientError(0, "NETWORK_ERROR", "The API could not be reached. Check the API URL and network connection.");
   }
 
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return { data: undefined as T };
 
   let envelope: ApiEnvelope<T>;
   try {
@@ -82,5 +103,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   if (!("data" in envelope)) {
     throw new ApiClientError(response.status, "INVALID_RESPONSE", "The API response did not contain data.");
   }
-  return envelope.data as T;
+  return { data: envelope.data as T, meta: envelope.meta };
+}
+
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  const result = await apiRequestWithMeta<T>(path, options);
+  return result.data;
 }
