@@ -106,3 +106,29 @@ test("metadata-aware API requests preserve pagination metadata without changing 
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("doctor duplicate-email conflicts preserve their HTTP status and safe error code", async () => {
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000/api/v1";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: { code: "DOCTOR_EMAIL_EXISTS", message: "A doctor with this email already exists." },
+    meta: { requestId: "duplicate-test" }
+  }), { status: 409, headers: { "Content-Type": "application/json" } });
+
+  try {
+    await assert.rejects(
+      apiRequest("/doctors", {
+        method: "POST",
+        body: { name: "Synthetic Doctor", email: "doctor@example.com" },
+        csrfToken: "csrf-test-token"
+      }),
+      (error) => error instanceof ApiClientError &&
+        error.status === 409 &&
+        error.code === "DOCTOR_EMAIL_EXISTS" &&
+        error.message === "A doctor with this email already exists."
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
