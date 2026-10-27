@@ -5,7 +5,7 @@
 4. [x] Backend doctor schema/indexes and CRUD/search/filter/pagination — [API PR #13](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/13), [CI #36](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40492089848).
 5. [x] Backend patient CRUD, filters and relationship/deletion semantics — [API PR #15](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/15), [CI #42](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40493600732).
 6. [x] Dashboard aggregation and reconciled metrics — [API PR #17](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/17), [CI #50](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40494982241).
-7. [ ] Responsive frontend shell and accessible motion — implementation in [draft PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9); CI, manual browser/accessibility review and screenshot evidence remain pending.
+7. [ ] Responsive frontend shell and accessible motion — implementation in [draft PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9); [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint/build on code commit `dda345a84530ff224d30ace034af09ec369b717a`; manual browser/accessibility review and screenshot evidence remain pending.
 8. [ ] Sign-in/dashboard integration — [frontend issue #3](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/3).
 9. [ ] Doctor screens — [frontend issue #4](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/4).
 10. [ ] Patient screens — [frontend issue #5](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/5).
