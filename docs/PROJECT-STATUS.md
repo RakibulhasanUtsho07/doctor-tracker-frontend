@@ -21,7 +21,7 @@ Last verified: 2026-10-27
 ## Remaining release gates
 - Manual assistive-technology and screen-reader walkthroughs, exhaustive keyboard-only forms/dialogs and physical desktop/tablet/mobile touch review.
 - Production HTTPS/cookie policy and deployed smoke test, plus performance/security review.
-- Stacked PRs #9–#16 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
+- Stacked PRs #9–#17 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
@@ -31,3 +31,10 @@ Run and record the remaining manual accessibility/responsive checks, then comple
 - Accessibility run: 13 passed, 1 expected desktop-only skip; [axe JSON, screenshots and Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034573/artifacts/12741611304). Coverage now includes create/edit forms, duplicate-email/API validation error association, keyboard navigation, confirmation Tab/Shift+Tab loop, Escape/Cancel focus return and contrast on newly exposed states.
 - Real API run: 24/24 HTTP/unit, 4/4 MongoDB integration and 2/2 real-backend Chromium journeys passed on the same tested head.
 - Manual screen-reader/assistive technology, device/touch, production HTTPS/cookie behavior, performance/security and deployed smoke remain open; the release remains PARTIAL and all dependent PRs stay draft.
+
+## Patient-detach failure and focus acceptance — 2026-10-27
+- Stacked draft [PR #17](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/17) adds synthetic DELETE behavior and a retryable detach failure to the accessibility suite. Exact tested app/test commit: `51cc8f18e1ae8b74f776641ac18684c47a94f445`.
+- [Frontend CI #262](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243814) passed; [synthetic browser E2E #126](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243720) passed 2/2 journeys.
+- [Accessibility #53](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906) passed 14 tests with 1 expected desktop-only skip; [axe/screenshots/Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906/artifacts/12743151344).
+- [Real API + MongoDB #74](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822) passed 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822/artifacts/12740709905).
+- The new synthetic test verifies Escape/Cancel focus restoration, retry after a 503 action failure, the alert message, patient preservation with an Unassigned association, and directory-heading focus after success. These are scoped automated checks only. Manual assistive-technology/device, production HTTPS/cookie, security/performance and deployed-smoke gates remain open; the release remains PARTIAL.
