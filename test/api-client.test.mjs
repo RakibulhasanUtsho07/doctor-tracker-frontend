@@ -132,3 +132,39 @@ test("doctor duplicate-email conflicts preserve their HTTP status and safe error
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("patient delete and doctor detachment are credentialed CSRF-protected no-content requests", async () => {
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000/api/v1";
+  const originalFetch = globalThis.fetch;
+  const captured = [];
+  globalThis.fetch = async (url, init) => {
+    captured.push({ url: String(url), method: init.method, credentials: init.credentials, csrf: init.headers.get("X-CSRF-Token") });
+    return new Response(null, { status: 204 });
+  };
+
+  try {
+    const csrfToken = "patient-action-csrf-token";
+    assert.equal(await apiRequest("/patients/111111111111111111111111", { method: "DELETE", csrfToken }), undefined);
+    assert.equal(await apiRequest("/doctors/222222222222222222222222/patients/111111111111111111111111", {
+      method: "DELETE",
+      csrfToken
+    }), undefined);
+    assert.deepEqual(captured, [
+      {
+        url: "http://localhost:4000/api/v1/patients/111111111111111111111111",
+        method: "DELETE",
+        credentials: "include",
+        csrf: csrfToken
+      },
+      {
+        url: "http://localhost:4000/api/v1/doctors/222222222222222222222222/patients/111111111111111111111111",
+        method: "DELETE",
+        credentials: "include",
+        csrf: csrfToken
+      }
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
