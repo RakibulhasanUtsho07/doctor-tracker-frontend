@@ -480,3 +480,37 @@ test("detach confirmation restores focus, keeps failures actionable, and preserv
   await expect(preservedRow.getByRole("button", { name: "Detach", exact: true })).toHaveCount(0);
   await expect(preservedRow.getByRole("button", { name: "Delete", exact: true })).toBeVisible();
 });
+
+test("delete confirmation keeps the record on failure and removes it after keyboard retry", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedPatient: true, failNextAction: "delete" });
+  await signIn(page, { doctorCount: 1 });
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+
+  const patientRow = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name });
+  const deleteTrigger = patientRow.getByRole("button", { name: "Delete", exact: true });
+  await expect(deleteTrigger).toBeVisible();
+  await deleteTrigger.focus();
+  await page.keyboard.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  const confirm = dialog.getByRole("button", { name: "Delete permanently" });
+  await expect(cancel).toBeFocused();
+  await scanScreen(page, testInfo, "patient-delete-failure-dialog");
+
+  await confirm.focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("alert")).toHaveText("Synthetic deletion failure. Try again.");
+  await expect(confirm).toBeEnabled();
+  await expect(patientRow).toHaveCount(1);
+  await expect(patientRow).toContainText(PATIENT_RECORD.name);
+  await expect(patientRow.getByRole("button", { name: "Delete", exact: true })).toBeVisible();
+
+  await confirm.focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Patient record permanently deleted.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeFocused();
+  await expect(patientRow).toHaveCount(0);
+});
