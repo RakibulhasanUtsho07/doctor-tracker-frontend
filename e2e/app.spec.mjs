@@ -266,12 +266,13 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
   await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
   await page.getByRole("button", { name: /Add doctor/ }).click();
-  await page.getByLabel(/Full name/).fill("Dr. Amina Rahman");
-  await page.getByLabel(/Specialization/).fill("Cardiology");
-  await page.getByLabel(/Hospital \/ clinic/).fill("Synthetic City Hospital");
-  await page.getByLabel("Phone").fill("+880 1700-000001");
-  await page.getByLabel("Email address").fill("amina@example.test");
-  await page.getByRole("button", { name: "Create doctor" }).click();
+  const doctorForm = page.locator(".doctor-editor form");
+  await doctorForm.getByLabel(/Full name/).fill("Dr. Amina Rahman");
+  await doctorForm.getByLabel(/^Specialization/).fill("Cardiology");
+  await doctorForm.getByLabel(/Hospital \/ clinic/).fill("Synthetic City Hospital");
+  await doctorForm.getByLabel(/^Phone/).fill("+880 1700-000001");
+  await doctorForm.getByLabel(/^Email address/).fill("amina@example.test");
+  await doctorForm.getByRole("button", { name: "Create doctor" }).click();
 
   await expect(page.getByRole("heading", { name: "Dr. Amina Rahman" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Associated patients/ })).toBeVisible();
@@ -353,7 +354,7 @@ test("invalid sign-in stays on the sign-in page and never persists session token
   await page.getByLabel("Administrator email").fill("admin@example.test");
   await page.getByLabel("Password").fill("incorrect-synthetic-password");
   await page.getByRole("button", { name: /Sign in securely/ }).click();
-  await expect(page.getByRole("alert")).toHaveText("Email or password is incorrect.");
+  await expect(page.locator("#login-error")).toHaveText("Email or password is incorrect.");
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
   const storedKeys = await page.evaluate(() => ({
     local: Object.keys(localStorage),
