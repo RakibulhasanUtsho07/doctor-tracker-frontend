@@ -3,8 +3,10 @@
 **Date:** 2026-10-27  
 **Repository:** RakibulhasanUtsho07/doctor-tracker-frontend  
 **Working branch:** feat/patient-delete-failure-e2e  
-**Status:** PLAN RECORDED — implementation/production acceptance not yet complete  
-**Evidence baseline:** tested code commit 1ca823240c88d4153678f154a0d91982a3bc99a9; documentation-inclusive head d86426cd8fab69c06b2f026d2546936a4ee0624d. All five workflows passed on both heads. See [CI #319](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40554383550), [real API/MongoDB #131](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40554383486), [synthetic E2E #183](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40554383484), [accessibility #110](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40554383492), and [dependency audit #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40554383485).
+**Status:** FUNCTIONAL WORKSTREAMS A1–A3 IMPLEMENTED AND AUTOMATION-VERIFIED; OVERALL RELEASE BLOCKED ON LIVE/MANUAL GATES  
+**Tested frontend code/test SHA:** `f79fa6708364eb04d8bb73405c64a2d61ff351ca`  
+**Pinned API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`  
+**Exact code-head evidence:** [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135613), [real API + MongoDB](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135446), [synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135915), [accessibility](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135438), and [dependency audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135471) all passed on that exact SHA. The documentation-only update still requires its own exact-head revalidation. Live staging/manual release acceptance is not implied by those CI runs.
 
 ## Goal
 
@@ -14,23 +16,22 @@ This is a plan, not a release approval. Automated CI is passing within its teste
 
 ## Workstream A — Close functional edge cases before staging
 
-### A1. Doctor choices beyond the first 100 records
-- Patient management currently fetches GET /doctors?page=1&limit=100 for its association selector. The UI docs explicitly note that doctors beyond the first 100 are not offered in that selector.
-- Implement a contract-aligned approach: a paginated/searchable doctor chooser, or a clearly bounded workflow using the existing doctor-profile Add patient action. Prefer a searchable/paginated chooser if reassignment must work for every doctor.
-- Add real API/MongoDB browser coverage with more than 100 synthetic doctors (or a deterministic fixture exercising the actual page boundary). Verify a doctor beyond the first page can be selected, reassignment saves, and the persisted doctorId survives reload.
-- Do not fabricate client-side doctors or silently treat a truncated list as complete.
+### A1. Doctor choices beyond the first 100 records — IMPLEMENTED / PASS WITHIN AUTOMATED SCOPE
+- Patient association selectors still load the first 100 doctors for a bounded initial render, but the patient page now provides a debounced server-side prefix-search field that calls the existing GET /doctors search contract. Matching doctors are merged into both the create/edit selector and the doctor filter selector; the UI does not pretend the first page is the full directory.
+- The exact-head real API/MongoDB journey creates 105 synthetic doctors, proves the selected target is outside page 1 but present on page 2, searches for that target through the UI, reassigns a patient to it, reloads, and confirms the persisted patient `doctorId` through the API.
+- Test fixture order is deterministic: the target is created before 104 newer doctors, so this boundary assertion does not depend on request scheduling.
 
-### A2. Optional patient condition semantics
-- The current API/UI explicitly says an existing condition cannot be cleared by PATCH; the UI requires a replacement instead of sending an ambiguous blank string.
-- Review the SRS/API contract and decide whether clearing an optional condition is required. If required, implement explicit server-side clearing semantics (including normalized-field cleanup) with HTTP/unit, MongoDB integration, validation and browser tests. If not required, retain the documented limitation in the UI and acceptance matrix. Do not silently change the API contract.
-- Include reassignment plus condition edit/clear behavior in the same lifecycle journey after the contract decision.
+### A2. Optional patient condition semantics — CONTRACT REVIEWED / DECISION RECORDED
+- API SRS and API contract define `condition` as optional bounded free text; they do not require clearing an existing condition via PATCH. The API patch schema requires a supplied condition string to contain at least one character; omission means no change.
+- Therefore no API contract or database behavior was changed. The UI continues to explain the limitation and rejects saving an empty condition when an existing condition is present. The real API browser journey now asserts that the validation appears, then enters a replacement condition and verifies that save works.
+- This is a contract-aligned decision, not a claim that the API supports condition clearing. If product requirements later require clearing, revise the SRS/OpenAPI/API implementation together before changing the UI behavior.
 
-### A3. Pagination/filter regression coverage
-- Keep the existing real-backend query-boundary suite for zero/excessive/duplicate page parameters, unsupported query keys, invalid calendar dates and reversed ranges.
-- Add deterministic synthetic-data assertions for page ordering, page-size changes, filter-reset-to-page-one behavior and an empty final page where applicable.
-- Confirm UI counts match API meta.pagination; treat API data as authoritative after reload.
+### A3. Pagination/filter regression coverage — IMPLEMENTED / PASS WITHIN AUTOMATED SCOPE
+- Retained invalid query checks for zero/excessive/duplicate page parameters, unsupported query keys, invalid calendar dates and reversed ranges.
+- Real API/MongoDB browser acceptance now verifies the empty-result metadata contract (`page=2`, `limit=10`, `total=0`, `totalPages=0`, zero rows), deterministic 11-patient ordering across page sizes 10 and 50, the oldest record on page 2 with limit 10, and filter application from page 2 resetting to page 1.
+- Reassignment is verified after reload against the API's persisted `doctorId`; the API remains authoritative for counts and pagination metadata.
 
-**Exit gate A:** the contract decision is documented; relevant automated and MongoDB-backed tests pass on one exact candidate SHA; no patient record is misrepresented as deleted, detached or reassigned.
+**Exit gate A: PASS for the specified functional scope** — the condition contract decision is documented and tested; doctor search beyond the first 100 and pagination/filter scenarios pass real-backend automated acceptance. This does not close any live-deployment or human-review gate.
 
 ## Workstream B — Lock the release candidate and configuration
 
@@ -95,21 +96,25 @@ Promotion rules:
 - Do not merge to main until all release requirements have valid evidence. No live URL, deployed SHA, reviewer evidence or approved performance target means the corresponding gate stays BLOCKED, NOT STARTED or PARTIAL.
 - If any exact-head workflow fails, fix the cause and rerun required workflows on the resulting exact candidate SHA before promotion.
 
-## Status board
+## Current status board
 
-| Work item | Initial status | Completion evidence |
+| Work item | Current status | Completion evidence / remaining blocker |
 |---|---|---|
-| Existing automated API/query/reassignment checks | PASS (documented scope) | Exact-head workflow runs linked above |
-| A1 — Doctor chooser beyond 100 records | NOT STARTED | Search/pagination UI test and persisted reassignment beyond first 100 |
-| A2 — Optional-condition contract decision | NOT STARTED | SRS/API decision plus code/tests or explicit documented non-goal |
-| A3 — Pagination/filter boundary expansion | PARTIAL | Deterministic browser assertions for ordering, limit changes, reset and empty page |
-| B — Candidate/configuration lock | PARTIAL | Full SHAs, secret/config inventory and reviewed stacked-PR order |
-| C — Live HTTPS preflight | BLOCKED | Public staging URLs, deployed SHAs and preflight run |
-| D — Deployed synthetic smoke | NOT STARTED / BLOCKED on C | Redacted end-to-end evidence: session/CSRF/CRUD/persistence/cleanup |
-| E1 — Manual accessibility and physical devices | NOT STARTED | Dated reviewer/device/screen-reader evidence |
-| E2 — Independent security sign-off | NOT STARTED | Review record and finding dispositions |
-| E3 — Approved performance target and measurements | BLOCKED on target approval | Target approval, repeatable measurements and query evidence |
-| F — Release traceability and promotion | NOT STARTED | Complete evidence matrix and parent-review sequence |
+| Existing API/query/reassignment checks | PASS within tested scope | Exact code-head evidence linked at top |
+| A1 — Doctor chooser beyond 100 records | PASS — automated scope | Real API/MongoDB browser journey seeds 105 doctors, finds target beyond page 1, reassigns and verifies persisted association after reload |
+| A2 — Optional-condition contract decision | PASS — decision and UI behavior | SRS/API contract does not require clearing through PATCH; empty value is rejected by the UI and tested; API contract unchanged |
+| A3 — Pagination/filter edge coverage | PASS — automated scope | Empty-page metadata, 10/50 row limits, ordered page 2, filter reset to page 1 and persisted reassignment tested |
+| B — Candidate/configuration lock | PARTIAL | Full frontend code/test SHA and pinned API SHA recorded; deployment environment/configuration inventory and stacked-parent review still require owners/evidence |
+| C — Live HTTPS preflight | BLOCKED | No approved public staging frontend/API URLs or deployed SHAs are recorded |
+| D — Deployed synthetic smoke | BLOCKED on C | CI-only browser journey passes, but it is not deployed-endpoint acceptance |
+| E1 — Manual accessibility and physical devices | PARTIAL / NOT STARTED | Automated suite passes; manual screen reader, keyboard sweep, touch and real-device evidence absent |
+| E2 — Independent security sign-off | PARTIAL / NOT STARTED | Locked frontend dependency audit passes with no high/critical advisories; independent app/config/security review is not recorded |
+| E3 — Approved performance target and measurements | BLOCKED on target approval | SRS gives no numeric latency/throughput target; target must be agreed before a performance PASS |
+| F — Traceability and promotion | PARTIAL / BLOCKED | Functional evidence documented; live/manual gates and parent PR review remain open |
+
+## Release decision
+
+**Functional workstreams A1–A3: PASS within the exact automated scope above. Overall release acceptance: BLOCKED.** No public deployment URL/deployed SHA, dated manual accessibility/device review, independent security sign-off or approved performance target is available in the repository evidence. Do not merge or promote this stacked draft PR to `dev` or `main` until those gates and parent reviews are completed.
 
 ## Required deliverables
 

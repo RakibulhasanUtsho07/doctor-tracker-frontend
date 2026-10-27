@@ -68,3 +68,40 @@ The top-of-stack real API acceptance spec now tests the user-visible patient pag
 - [Frontend dependency security audit #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983026) — passed.
 
 This closes automated pagination/reassignment coverage only. Manual screen-reader, responsive/physical-device acceptance, production HTTPS/cookie/session/CSRF, agreed performance target, independent security sign-off and deployed synthetic-data smoke remain open. Keep the stacked PRs draft and do not promote to `dev` or `main` until parent review and required release gates are complete.
+
+
+## Consolidated release-readiness functional pass — 2026-10-27
+
+**Exact tested frontend code/test SHA:** `f79fa6708364eb04d8bb73405c64a2d61ff351ca`  
+**Pinned API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`  
+**Branch:** `feat/patient-delete-failure-e2e`  
+**Scope:** functional workstreams A1–A3 of [the consolidated work package](15-consolidated-release-readiness-work-package.md). This is code/CI evidence, not live-deployment release approval.
+
+| Requirement / gap | Implementation and exact-head acceptance | Status |
+|---|---|---|
+| Doctor search/association outside the first 100 — DOC-02, DOC-03, PAT-01 | Patient page now offers server-side prefix search using the existing GET /doctors contract and makes matches available in create/edit and doctor-filter selectors. Real API/MongoDB Chromium test created 105 synthetic doctors, proves its target is on page 2 rather than page 1, then creates/reassigns a patient to that doctor and checks the persisted `doctorId` after reload. | PASS — automated scope |
+| Optional patient condition — SRS/API contract | Reviewed API SRS `docs/01-srs.md` and API contract `docs/06-api-contract.md`. `condition` is optional bounded free text, but clearing through PATCH is not specified/accepted by the current contract; supplied patch values must be non-empty. API behavior was not silently changed. Browser acceptance verifies that an empty edit is rejected with a field error, then a replacement value saves and persists. | PASS — contract decision and current UI behavior; API still does not support clearing |
+| Pagination/filter boundaries — PAT-01, PAT-02, reliability | Existing invalid query boundaries remain tested. The real API tests now verify empty-page metadata (`page=2`, `limit=10`, `total=0`, `totalPages=0`, zero rows), stable ordering with 11 synthetic patients, row sizes 10/50, oldest row page-2 navigation, filtering from page 2 back to page 1, and persisted reassignment. | PASS — automated scope |
+| Real-backend security and lifecycle regression | Pinned API lint/typecheck/build, 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 5/5 Chromium journeys passed. The journeys include invalid login, HttpOnly session cookie, credentialed CORS, missing-CSRF rejection, doctor/patient create/edit/detach/delete, reload persistence, dashboard totals, logout/revocation and the new doctor-boundary/pagination scenarios. | PASS — disposable CI environment only |
+
+### Exact code-head workflow evidence
+
+All five workflows passed against the same exact frontend source/test SHA `f79fa6708364eb04d8bb73405c64a2d61ff351ca`:
+
+- [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135613) — 13/13 API-client/preflight unit tests, lint and production build/TypeScript checks passed.
+- [Real API + MongoDB browser acceptance](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135446) — API lint/typecheck/build passed; 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 5/5 real-backend Chromium journeys passed.
+- [Synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135915) — 2/2 Chromium journeys passed.
+- [Accessibility browser acceptance](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135438) — 17 checks passed in the automated browser suite. This is not a manual screen-reader/physical-device sign-off.
+- [Frontend dependency security audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135471) — passed; no high/critical published package advisories reported for the frozen frontend lockfile.
+
+An intermediate attempt surfaced the React hooks lint rule against synchronous state updates inside a search effect. The reset was moved to the input change handler, and the final exact code/test SHA above passed all five workflows.
+
+### Still open — release-critical boundaries
+
+- Live HTTPS frontend/API URLs and deployed SHAs are still absent; the read-only preflight has **not** been run against staging.
+- Deployed synthetic-data smoke (production-origin cookies, login/session, CSRF, CRUD, reload persistence, logout/revocation and cleanup) remains BLOCKED on a real staging deployment. CI localhost is not a substitute.
+- Human screen-reader/keyboard review, tablet/mobile/320px and physical-device/touch checks remain NOT STARTED.
+- Dependency audit passes within scope, but independent application/configuration security sign-off remains NOT STARTED.
+- The SRS has no numeric performance target; performance acceptance remains BLOCKED until a target is approved and repeatable p50/p95/error measurements are recorded.
+- PR #18 remains draft/stacked. Parent PR review and every required deployment/manual gate must be closed before promotion to `dev` or `main`.
+
