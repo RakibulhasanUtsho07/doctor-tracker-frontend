@@ -1,0 +1,48 @@
+name: Frontend browser E2E
+
+on:
+  pull_request:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+  push:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+
+permissions:
+  contents: read
+
+jobs:
+  browser-e2e:
+    name: Synthetic API browser journeys (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install pinned isolated Playwright runner
+        run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1
+      - name: Install Chromium and system dependencies
+        run: ./.e2e-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run synthetic browser journeys
+        run: ./.e2e-tools/node_modules/.bin/playwright test --config=e2e/playwright.config.mjs
+        env:
+          CI: "true"
+      - name: Upload browser reports and synthetic screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctor-tracker-browser-e2e
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
