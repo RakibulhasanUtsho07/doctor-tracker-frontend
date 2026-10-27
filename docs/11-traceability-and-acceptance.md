@@ -9,8 +9,8 @@ Statuses: NOT STARTED, IN PROGRESS, PASS, FAIL, PARTIAL, BLOCKED. PASS requires 
 | DOC-01..03 UI | Doctor list/create/search/filter/pagination and associated patients | NOT STARTED |
 | PAT-01..02 UI | Patient list/edit/delete/search/filter/pagination | NOT STARTED |
 | DASH-01..02 UI | API-backed cards/charts and accessible summaries | NOT STARTED |
-| UX-01 / NFR-A11Y-01 | Responsive layouts, keyboard/focus, reduced motion and screenshots | PARTIAL — shell and responsive CSS implemented in draft [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9); automated CI and actual desktop/tablet/mobile, keyboard-only, reduced-motion and screenshot evidence are still pending |
-| Frontend quality | Lint/typecheck/component/E2E evidence | PARTIAL — PR #9 adds lint and production-build CI; first run is in progress. Dedicated component/E2E coverage is not yet implemented |
+| UX-01 / NFR-A11Y-01 | Responsive layouts, keyboard/focus, reduced motion and screenshots | PARTIAL — shell implemented in draft [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9); [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint/build on `dda345a84530ff224d30ace034af09ec369b717a`; desktop/tablet/mobile browser, keyboard-only, reduced-motion and screenshot evidence remains pending |
+| Frontend quality | Lint/typecheck/component/E2E evidence | PARTIAL — lint and production build/TypeScript checks passed in [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) on `dda345a84530ff224d30ace034af09ec369b717a`; dedicated component/E2E coverage is not yet implemented |
 | README requirements | Setup, architecture, two technical decisions, desktop/mobile screenshots | PARTIAL — baseline docs exist; screenshots and UI decision evidence remain |
 | Deployment | Live frontend URL and integrated smoke test | NOT STARTED |
 ## Evidence record template
