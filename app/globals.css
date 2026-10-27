@@ -263,7 +263,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .placeholder-notice-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: #edf5e8; color: #4e7e5f; }
 .placeholder-notice > span:last-child { display: flex; flex-direction: column; gap: 5px; }
 .placeholder-notice strong { color: #40564a; font-size: 11px; font-weight: 850; }
-.placeholder-notice small { color: #819087; font-size: 10px; line-height: 1.65; }
+.placeholder-notice small { color: #526459; font-size: 10px; line-height: 1.65; }
 .secondary-button { border-color: #dbe6dc; background: #fff; color: #3b6754; }
 .secondary-button svg { transform: rotate(180deg); }
 .secondary-button:hover { background: #f1f7f0; border-color: #c6dbc8; }
@@ -663,7 +663,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .doctor-editor-heading h3, .doctor-detail-heading h3 { margin: 0; color: #233a31; font-size: 19px; font-weight: 780; letter-spacing: -.55px; }
 .doctor-editor-heading h3:focus, .doctor-detail-heading h3:focus { outline: none; }
 .doctor-editor-heading h3:focus-visible { border-radius: 4px; outline: 3px solid #83b89c; outline-offset: 4px; }
-.doctor-editor-heading p:not(.section-kicker), .doctor-detail-heading p:not(.section-kicker) { margin: 6px 0 0; color: #819087; font-size: 10px; line-height: 1.7; }
+.doctor-editor-heading p:not(.section-kicker), .doctor-detail-heading p:not(.section-kicker) { margin: 6px 0 0; color: #526459; font-size: 10px; line-height: 1.7; }
 .doctor-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .doctor-field { gap: 7px; }
 .doctor-field > span { color: #465e4e; font-size: 10px; font-weight: 850; }
@@ -683,10 +683,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .doctor-close-detail { width: 35px; height: 35px; border-color: #e1e9e0; background: #fff; color: #6b7c6f; font-size: 22px; }
 .doctor-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 20px; margin: 17px 0 0; }
 .doctor-detail-grid > div { min-width: 0; }
-.doctor-detail-grid dt { margin-bottom: 5px; color: #8b998e; font-size: 9px; font-weight: 800; }
+.doctor-detail-grid dt { margin-bottom: 5px; color: #526459; font-size: 9px; font-weight: 800; }
 .doctor-detail-grid dd { margin: 0; color: #3f5948; font-size: 11px; font-weight: 650; line-height: 1.65; overflow-wrap: anywhere; }
 .doctor-detail-grid .doctor-detail-id { grid-column: 1 / -1; }
-.doctor-detail-note { margin: 16px 0 0; padding: 10px 12px; border-radius: 8px; background: #f7faf5; color: #819087; font-size: 9px; line-height: 1.7; }
+.doctor-detail-note { margin: 16px 0 0; padding: 10px 12px; border-radius: 8px; background: #f7faf5; color: #526459; font-size: 9px; line-height: 1.7; }
 .doctor-results-card { margin-top: 16px; padding: 0; overflow: hidden; }
 .doctor-results-heading { align-items: center; padding: 19px 19px 14px; }
 .doctor-results-heading .section-kicker { margin-bottom: 5px; }
@@ -707,7 +707,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .doctor-name-link { display: block; max-width: 260px; padding: 0; border: 0; background: none; color: #3e7758; font: inherit; font-size: 11px; font-weight: 850; text-align: left; cursor: pointer; }
 .doctor-name-link:hover, .doctor-view-link:hover { color: #1f5b43; text-decoration: underline; text-underline-offset: 3px; }
 .doctor-name-link:focus-visible, .doctor-view-link:focus-visible { outline: 3px solid #80b999; outline-offset: 3px; border-radius: 3px; }
-.doctor-email { display: block; max-width: 240px; margin-top: 4px; color: #98a399; font-size: 9px; font-weight: 500; overflow-wrap: anywhere; }
+.doctor-email { display: block; max-width: 240px; margin-top: 4px; color: #526459; font-size: 9px; font-weight: 500; overflow-wrap: anywhere; }
 .doctor-view-link { padding: 6px 7px; border: 0; border-radius: 6px; background: transparent; color: #4e8163; font: inherit; font-size: 10px; font-weight: 850; cursor: pointer; }
 .doctor-loading { margin: 0; padding: 22px; color: #7d8f81; font-size: 10px; text-align: center; }
 .doctor-empty-state { display: flex; min-height: 200px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 20px; text-align: center; }
@@ -828,7 +828,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-editor { margin: 0 0 16px; border-color: #d9e7d9; background: linear-gradient(145deg, #fff, #fbfdf9); }
 .patient-editor-heading { align-items: center; margin-bottom: 17px; }
 .patient-editor-heading h3, .patient-detail-heading h3 { margin: 0; color: #233a31; font-size: 19px; font-weight: 780; letter-spacing: -.55px; }
-.patient-editor-heading p:not(.section-kicker), .patient-detail-heading p:not(.section-kicker) { margin: 6px 0 0; color: #819087; font-size: 10px; line-height: 1.7; }
+.patient-editor-heading p:not(.section-kicker), .patient-detail-heading p:not(.section-kicker) { margin: 6px 0 0; color: #526459; font-size: 10px; line-height: 1.7; }
 .patient-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .patient-field { gap: 7px; }
 .patient-field > span { color: #465e4e; font-size: 10px; font-weight: 850; }
@@ -850,7 +850,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-close-detail { width: 35px; height: 35px; border-color: #e1e9e0; background: #fff; color: #6b7c6f; font-size: 22px; }
 .patient-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 20px; margin: 17px 0 0; }
 .patient-detail-grid > div { min-width: 0; }
-.patient-detail-grid dt { margin-bottom: 5px; color: #8b998e; font-size: 9px; font-weight: 800; }
+.patient-detail-grid dt { margin-bottom: 5px; color: #526459; font-size: 9px; font-weight: 800; }
 .patient-detail-grid dd { margin: 0; color: #3f5948; font-size: 11px; font-weight: 650; line-height: 1.65; overflow-wrap: anywhere; }
 .patient-detail-bottom { justify-content: flex-end; margin-top: 17px; padding-top: 14px; border-top: 1px solid #ebf0e9; }
 .danger-button {
@@ -891,7 +891,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-name-link { display: block; max-width: 250px; padding: 0; border: 0; background: none; color: #3e7758; font: inherit; font-size: 11px; font-weight: 850; text-align: left; cursor: pointer; }
 .patient-name-link:hover, .patient-view-link:hover, .patient-detach-link:hover { color: #1f5b43; text-decoration: underline; text-underline-offset: 3px; }
 .patient-name-link:focus-visible, .patient-view-link:focus-visible, .patient-detach-link:focus-visible, .patient-delete-link:focus-visible { outline: 3px solid #80b999; outline-offset: 3px; border-radius: 3px; }
-.patient-row-id { display: block; max-width: 225px; margin-top: 4px; color: #98a399; font-size: 8px; font-weight: 500; overflow-wrap: anywhere; }
+.patient-row-id { display: block; max-width: 225px; margin-top: 4px; color: #526459; font-size: 8px; font-weight: 500; overflow-wrap: anywhere; }
 .patient-row-actions { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .patient-view-link, .patient-detach-link, .patient-delete-link { padding: 5px 2px; border: 0; background: transparent; font: inherit; font-size: 9px; font-weight: 850; cursor: pointer; }
 .patient-view-link { color: #4e8163; }
@@ -914,7 +914,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(18 34 26 / 48%); }
 .patient-confirm-dialog { width: min(100%, 440px); padding: 25px; border: 1px solid #e2e9df; border-radius: 18px; background: #fff; box-shadow: 0 28px 80px rgb(23 48 34 / 23%); }
 .patient-confirm-dialog h3 { margin: 0; color: #233a31; font-size: 20px; font-weight: 800; letter-spacing: -.6px; }
-.patient-confirm-dialog > p:not(.section-kicker):not(.patient-error) { margin: 11px 0 0; color: #74857a; font-size: 11px; line-height: 1.8; }
+.patient-confirm-dialog > p:not(.section-kicker):not(.patient-error) { margin: 11px 0 0; color: #526459; font-size: 11px; line-height: 1.8; }
 .patient-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 21px; padding-top: 15px; border-top: 1px solid #edf1eb; }
 .patient-dialog-actions button { min-height: 39px; }
 .patient-safety-note { overflow-wrap: anywhere; }
