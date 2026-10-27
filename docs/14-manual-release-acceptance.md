@@ -116,3 +116,17 @@ Do not mark the entire release PASS while any required gate is `NOT STARTED`, `B
 Once public deployments are provisioned, use the manually dispatched [Deployed environment preflight workflow](../.github/workflows/deployment-preflight.yml) with the exact frontend HTTPS URL and API base URL ending in `/api/v1`. It checks the frontend HTML response, API liveness/readiness and credentialed CORS preflight for the supplied exact frontend origin. It sends only GET and OPTIONS requests and contains no credentials or record mutations.
 
 Record the workflow URL, exact source/deployed SHAs and supplied public hosts in the release evidence. A successful preflight is only network/configuration evidence: it does not validate browser cookie restrictions, sign-in/logout, session revocation, CSRF rejection, CRUD persistence, screen-reader/physical-device behavior, production security or performance. The manual and deployed end-to-end gates in this runbook must still be executed independently. Until actual frontend/API URLs are available, mark this preflight `BLOCKED`, not PASS.
+
+
+### Preflight automation test evidence
+
+On exact candidate commit `b17bad713cccf231a6cb182a5ef46d8f9b472b20`, all five PR-triggered automated workflows passed:
+- [Frontend CI #309](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647234) — 13/13 unit tests (8 API-client + 5 preflight), lint and production build passed.
+- [Synthetic browser E2E #173](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647608) — 2/2 journeys passed; [report artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647608/artifacts/12751189274).
+- [Accessibility browser acceptance #100](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647762) — 17 passed, 1 expected desktop-only skip; [reports/screenshots](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647762/artifacts/12751254193).
+- [Real API + MongoDB #121](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647462) — 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys passed; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647462/artifacts/12751239224).
+- [Frontend dependency security audit #14](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647453) — passed with no high/critical published package advisories; [raw JSON report](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647453/artifacts/12752400971).
+
+All five exact-head job logs were reviewed; the old PNPM_HOME migration warning is absent. This PASS is limited to the preflight code/unit tests and normal regression suite. No live public frontend/API URLs or deployed SHAs are available, so the real endpoint probe and overall deployment smoke remain BLOCKED/NOT STARTED.
+
+Do not use the unit-test evidence above as a live preflight result; run the workflow against both real deployed URLs and record its run/deployed SHAs. Without those URLs, keep the live gate BLOCKED.
