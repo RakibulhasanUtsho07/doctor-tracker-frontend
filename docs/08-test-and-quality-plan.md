@@ -52,3 +52,7 @@ Supporting checks passed on the same code/test commit: [Frontend CI #273](https:
 
 ## Manual release acceptance and evidence (Step 16)
 Follow [docs/14-manual-release-acceptance.md](14-manual-release-acceptance.md) after automated CI for the exact candidate passes. It specifies manual keyboard/screen-reader, responsive/touch, deployed HTTPS/cookie/session/CSRF, dependency/security, measured performance and deployed synthetic-data smoke procedures. Record exact frontend/API/deployed SHAs, environment, browser/device/screen-reader, results and redacted evidence. The SRS does not define numeric performance targets; obtain an approved target before marking performance PASS. The runbook itself is not evidence that any gate has passed.
+
+
+## Frontend dependency security audit
+The separate [Frontend dependency security audit workflow](../.github/workflows/security-audit.yml) installs only the frozen pnpm lockfile graph with lifecycle scripts disabled and runs `pnpm audit --audit-level=high --json`. The job fails when the registry audit reports high or critical findings, and uploads the raw report even on failure. This checks published package advisories for the resolved frontend dependency graph; it is not a substitute for code/secret review, backend audit, configuration review or production penetration testing. Treat the gate as `IN PROGRESS` until a run passes on the exact candidate SHA and the report has been reviewed.

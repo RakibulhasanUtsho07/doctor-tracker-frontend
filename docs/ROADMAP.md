@@ -25,3 +25,8 @@ A step is complete only when acceptance criteria pass with evidence tied to the 
 - Runbook: [Manual Release Acceptance](14-manual-release-acceptance.md).
 - It defines reproducible desktop/mobile keyboard and screen-reader checks, responsive viewport checks, deployed HTTPS/cookie/session checks, security and measured-performance evidence, and a synthetic-data end-to-end smoke flow.
 - Documentation is ready; manual/device, deployed HTTPS, security/performance sign-off and live smoke have **not** been performed by this change. Keep the release PARTIAL and PRs draft until evidence is recorded.
+
+
+## Dependency security gate
+- Added `.github/workflows/security-audit.yml` to audit the exact frontend pnpm lockfile graph on PRs/pushes. It fails for high/critical published advisories and retains the raw JSON report even on failure.
+- Until the audit passes on the exact candidate and the report is reviewed, dependency-advisory status remains IN PROGRESS. This does not close the broader security/performance or production release gates.
