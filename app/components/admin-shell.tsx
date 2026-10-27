@@ -454,6 +454,11 @@ export default function AdminShell() {
     setMobileNavOpen(false);
   }, []);
   const consumePatientNavigationRequest = useCallback(() => setPatientNavigationRequest(null), []);
+  const handleRecordsChanged = useCallback(() => {
+    setDashboardError("");
+    setDashboardLoading(true);
+    setRefreshCount((count) => count + 1);
+  }, []);
   const handleSessionExpired = useCallback(() => {
     setSession(null);
     setDashboardData(null);
@@ -719,8 +724,8 @@ export default function AdminShell() {
                 onRefresh={refreshDashboard}
               />
             : section === "doctors"
-              ? <DoctorManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} onAddPatient={handleAddPatientFromDoctor} onViewPatients={handleViewDoctorPatients} />
-              : <PatientManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} initialRequest={patientNavigationRequest} onInitialRequestConsumed={consumePatientNavigationRequest} />}
+              ? <DoctorManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} onDataChanged={handleRecordsChanged} onAddPatient={handleAddPatientFromDoctor} onViewPatients={handleViewDoctorPatients} />
+              : <PatientManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} onDataChanged={handleRecordsChanged} initialRequest={patientNavigationRequest} onInitialRequestConsumed={consumePatientNavigationRequest} />}
           <footer className="app-footer"><span><span className="footer-mark" aria-hidden="true">+</span> Doctor Tracker <span className="footer-separator">·</span> Admin workspace</span><span>Built for clarity, designed for care.</span></footer>
         </main>
       </div>
