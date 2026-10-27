@@ -85,6 +85,7 @@ export default function PatientManagement({
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const confirmationCancelRef = useRef<HTMLButtonElement>(null);
+  const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
   const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
@@ -171,6 +172,15 @@ export default function PatientManagement({
     window.addEventListener("keydown", handleDialogKeys);
     return () => window.removeEventListener("keydown", handleDialogKeys);
   }, [confirmation, actionPending]);
+
+  useEffect(() => {
+    if (confirmation) return;
+    const trigger = confirmationTriggerRef.current;
+    if (!trigger) return;
+    confirmationTriggerRef.current = null;
+    if (trigger.isConnected) trigger.focus();
+    else document.getElementById("patient-list-heading")?.focus();
+  }, [confirmation]);
 
   useEffect(() => {
     if (initialRequest) onInitialRequestConsumed();
@@ -327,6 +337,12 @@ export default function PatientManagement({
     }
   }
 
+  function requestConfirmation(kind: "detach" | "delete", patient: Patient, trigger: HTMLButtonElement) {
+    confirmationTriggerRef.current = trigger;
+    setActionError("");
+    setConfirmation({ kind, patient });
+  }
+
   async function performConfirmedAction() {
     if (!confirmation || actionPending) return;
     const current = confirmation;
@@ -372,7 +388,7 @@ export default function PatientManagement({
       <div className="patient-toolbar">
         <div>
           <p className="section-kicker">PATIENT RECORDS</p>
-          <h2 id="patient-list-heading">Patient directory</h2>
+          <h2 id="patient-list-heading" tabIndex={-1}>Patient directory</h2>
           <p>Manage the minimum patient record fields and preserve the distinction between detaching and deleting.</p>
         </div>
         <button type="button" className="primary-button patient-add-button" onClick={startCreate}>+ Add patient</button>
@@ -458,8 +474,8 @@ export default function PatientManagement({
                 <div><dt>Last updated (UTC)</dt><dd>{utcDate(selectedPatient.updatedAt)}</dd></div>
               </dl>
               <div className="patient-detail-actions patient-detail-bottom">
-                {selectedPatient.doctorId && <button type="button" className="secondary-button" onClick={() => setConfirmation({ kind: "detach", patient: selectedPatient })}>Detach from doctor</button>}
-                <button type="button" className="danger-button" onClick={() => setConfirmation({ kind: "delete", patient: selectedPatient })}>Delete patient record</button>
+                {selectedPatient.doctorId && <button type="button" className="secondary-button" onClick={(event) => requestConfirmation("detach", selectedPatient, event.currentTarget)}>Detach from doctor</button>}
+                <button type="button" className="danger-button" onClick={(event) => requestConfirmation("delete", selectedPatient, event.currentTarget)}>Delete patient record</button>
               </div>
             </>
           )}
@@ -485,7 +501,7 @@ export default function PatientManagement({
                   <td>{doctorLabel(patient.doctorId)}</td>
                   <td>{patient.condition ?? "—"}</td>
                   <td>{utcDate(patient.createdAt)}</td>
-                  <td><div className="patient-row-actions"><button type="button" className="patient-view-link" onClick={() => void openPatient(patient.id)}>View</button>{patient.doctorId && <button type="button" className="patient-detach-link" onClick={() => setConfirmation({ kind: "detach", patient })}>Detach</button>}<button type="button" className="patient-delete-link" onClick={() => setConfirmation({ kind: "delete", patient })}>Delete</button></div></td>
+                  <td><div className="patient-row-actions"><button type="button" className="patient-view-link" onClick={() => void openPatient(patient.id)}>View</button>{patient.doctorId && <button type="button" className="patient-detach-link" onClick={(event) => requestConfirmation("detach", patient, event.currentTarget)}>Detach</button>}<button type="button" className="patient-delete-link" onClick={(event) => requestConfirmation("delete", patient, event.currentTarget)}>Delete</button></div></td>
                 </tr>
               ))}
               {!loading && !listError && patients.length === 0 && <tr><td colSpan={5}><div className="patient-empty-state"><span className="patient-empty-symbol" aria-hidden="true">＋</span><strong>No patients found</strong><p>Create a patient record or adjust the current search and filters.</p><button type="button" className="secondary-button" onClick={resetFilters}>Clear filters</button></div></td></tr>}
