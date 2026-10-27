@@ -86,6 +86,7 @@ export default function PatientManagement({
   const [notice, setNotice] = useState("");
   const confirmationCancelRef = useRef<HTMLButtonElement>(null);
   const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const confirmationFallbackFocusRef = useRef(false);
 
   const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
   const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
@@ -175,6 +176,12 @@ export default function PatientManagement({
 
   useEffect(() => {
     if (confirmation) return;
+    if (confirmationFallbackFocusRef.current) {
+      confirmationFallbackFocusRef.current = false;
+      confirmationTriggerRef.current = null;
+      document.getElementById("patient-list-heading")?.focus();
+      return;
+    }
     const trigger = confirmationTriggerRef.current;
     if (!trigger) return;
     confirmationTriggerRef.current = null;
@@ -338,6 +345,7 @@ export default function PatientManagement({
   }
 
   function requestConfirmation(kind: "detach" | "delete", patient: Patient, trigger: HTMLButtonElement) {
+    confirmationFallbackFocusRef.current = false;
     confirmationTriggerRef.current = trigger;
     setActionError("");
     setConfirmation({ kind, patient });
@@ -360,6 +368,8 @@ export default function PatientManagement({
           { method: "DELETE", csrfToken }
         );
       }
+      confirmationFallbackFocusRef.current = true;
+      confirmationTriggerRef.current = null;
       setConfirmation(null);
       setSelectedPatient(null);
       setEditorMode(null);
