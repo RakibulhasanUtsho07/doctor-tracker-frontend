@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
 
 type Section = "dashboard" | "doctors" | "patients";
 type IconName = "dashboard" | "doctors" | "patients" | "menu" | "close" | "shield" | "arrow-up-right" | "sparkles" | "activity" | "calendar" | "database" | "chevron-right" | "layers" | "clock";
@@ -17,6 +18,16 @@ const sectionCopy: Record<Section, { title: string; eyebrow: string; description
   doctors: { title: "Doctors", eyebrow: "CARE TEAM", description: "The doctor directory will live here when the API-connected screens are added." },
   patients: { title: "Patients", eyebrow: "PATIENT RECORDS", description: "A focused workspace for patient records and doctor relationships is coming next." }
 };
+
+type AdminUser = { id: string; email: string; role: string };
+type AuthSession = { user: AdminUser; csrfToken: string; expiresAt: string };
+type DashboardDay = { date: string; doctorsCreated: number; patientsCreated: number };
+type DashboardSummary = {
+  totals: { doctors: number; patients: number };
+  patientsPerDoctor: Array<{ doctorId: string; doctorName: string; patientCount: number }>;
+  dateStatistics: { from: string; to: string; days: DashboardDay[] };
+};
+type AuthStatus = "checking" | "signed-out" | "signed-in" | "unavailable";
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   let drawing: ReactNode = null;
