@@ -47,6 +47,20 @@ async function installSyntheticApi(page, { rejectLogin = false } = {}) {
     const body = method === "POST" || method === "PATCH" ? (request.postDataJSON() ?? {}) : {};
     state.requests.push({ method, path, headers, body });
 
+    const corsHeaders = {
+      "access-control-allow-origin": "http://127.0.0.1:3000",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "access-control-allow-headers": "Content-Type, X-CSRF-Token",
+      "access-control-max-age": "600",
+      "vary": "Origin"
+    };
+
+    if (method === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: corsHeaders });
+      return;
+    }
+
     const send = async (status, data, meta = {}) => {
       if (status === 204) {
         await route.fulfill({ status: 204 });
@@ -58,7 +72,7 @@ async function installSyntheticApi(page, { rejectLogin = false } = {}) {
       await route.fulfill({
         status,
         contentType: "application/json",
-        headers: { "cache-control": "no-store" },
+        headers: { ...corsHeaders, "cache-control": "no-store" },
         body: JSON.stringify(payload)
       });
     };
@@ -158,7 +172,7 @@ async function installSyntheticApi(page, { rejectLogin = false } = {}) {
     if (path === "/doctors" && method === "POST") {
       if (headers["x-csrf-token"] !== CSRF) return send(403, "CSRF token is invalid.");
       if (state.doctors.some((doctor) => doctor.email.toLocaleLowerCase() === String(body.email).toLocaleLowerCase())) {
-        return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ error: { code: "DOCTOR_EMAIL_EXISTS", message: "A doctor with this email already exists." } }) });
+        return route.fulfill({ status: 409, contentType: "application/json", headers: corsHeaders, body: JSON.stringify({ error: { code: "DOCTOR_EMAIL_EXISTS", message: "A doctor with this email already exists." } }) });
       }
       const doctor = doctorRecord({ ...body, id: DOCTOR_ID, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       state.doctors.push(doctor);
