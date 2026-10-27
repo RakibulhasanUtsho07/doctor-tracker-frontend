@@ -21,7 +21,7 @@ Last verified: 2026-10-27
 ## Remaining release gates
 - Manual assistive-technology and screen-reader walkthroughs, exhaustive keyboard-only forms/dialogs and physical desktop/tablet/mobile touch review.
 - Production HTTPS/cookie policy and deployed smoke test, plus performance/security review.
-- Stacked PRs #9–#17 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
+- Stacked PRs #9–#18 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
@@ -38,3 +38,10 @@ Run and record the remaining manual accessibility/responsive checks, then comple
 - [Accessibility #53](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906) passed 14 tests with 1 expected desktop-only skip; [axe/screenshots/Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906/artifacts/12743151344).
 - [Real API + MongoDB #74](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822) passed 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822/artifacts/12740709905).
 - The new synthetic test verifies Escape/Cancel focus restoration, retry after a 503 action failure, the alert message, patient preservation with an Unassigned association, and directory-heading focus after success. These are scoped automated checks only. Manual assistive-technology/device, production HTTPS/cookie, security/performance and deployed-smoke gates remain open; the release remains PARTIAL.
+
+## Patient-delete failure and retry acceptance — 2026-10-27
+- Stacked draft [PR #18](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/18) verifies the permanent-delete failure/retry path using synthetic test data. Exact tested application/test commit: `35221c8cbd5659d85e7dd6ab2b5c6e72547ed5ea`.
+- [Frontend CI #273](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941881) passed; [synthetic browser E2E #137](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941805) passed 2/2 journeys.
+- [Accessibility #64](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941652) passed 17 tests with 1 expected desktop-only skip; [reports/screenshots/Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524941652/artifacts/12744490643).
+- [Real API + MongoDB #85](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524948333) passed 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40524948333/artifacts/12742793169).
+- The synthetic test checks the error alert and retained row after failure, retry by keyboard, successful deletion/removal and safe directory-heading focus. The release remains PARTIAL pending manual screen-reader/device, production HTTPS/cookie, security/performance and deployed-smoke gates.
