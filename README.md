@@ -1,6 +1,6 @@
 # Doctor Tracker Frontend
 
-Responsive administration UI for Doctor Tracker using Next.js App Router and React. The first application shell is implemented in draft PR #9; live feature screens and API-connected data are still in progress.
+Responsive administration UI for Doctor Tracker using Next.js App Router and React. The responsive application shell and sign-in/dashboard foundations are in draft PRs #9 and #10; the API-backed doctor directory is in progress in draft PR #11.
 
 ## Current status
 - Frontend engineering documentation is merged to `dev` via [frontend PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
@@ -9,7 +9,7 @@ Responsive administration UI for Doctor Tracker using Next.js App Router and Rea
 - Backend API Step 2 administrator authentication/session foundation is merged and verified: [API PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/11), [CI run #28](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40479777698) (15/15 HTTP/auth tests, 1/1 MongoDB integration test, lint, typecheck and build passed).
 - Responsive shell, dashboard/doctors/patients navigation, focus styles and reduced-motion CSS are implemented in [draft PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9). [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint and production build on code commit `dda345a84530ff224d30ace034af09ec369b717a`.
 - Step 7 sign-in/session and live dashboard UI are in stacked [draft PR #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10). [CI #42](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40501396332) passed 5/5 API-client unit tests, lint and production build on code commit `3826645bd8a7f709033b584e3c795f949d706010`. Login uses the API-issued HttpOnly cookie, CSRF stays in memory, and dashboard cards/charts are sourced from `/dashboard/summary`; real API/browser E2E remains pending.
-- Sign-in/session/dashboard implementation is in progress in PR #10; real API/browser checks and core journey E2E tests remain open. Doctor/patient CRUD screens and deployment remain NOT STARTED.
+- Doctor management (Issue #4) is implemented in stacked draft [PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/11): list/detail/create/update, server metadata pagination, prefix search, specialization/hospital filters and inclusive UTC date filters. Automated CI and real API/browser acceptance are pending; delete and doctor-patient association are not exposed by the current API contract. Patient UI and deployment remain NOT STARTED.
 - Manual desktop/tablet/mobile, keyboard-only and reduced-motion checks plus synthetic-only screenshot evidence remain required before Issue #2 can close. PR #9 is intentionally still a draft; green CI alone does not prove the browser/accessibility acceptance criteria.
 
 ## Local setup
@@ -22,7 +22,7 @@ pnpm install --frozen-lockfile
 Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` to the API base path (local default: `http://localhost:4000/api/v1`), then run `pnpm dev`. This variable is browser-visible and must contain only the base URL, never a secret. The API must allow the exact frontend origin and credentialed CORS requests. Browser cookie behaviour still needs verification in the target deployment.
 
 ## Commands
-- `pnpm test` — API client unit tests (credentialed requests, CSRF header, error envelopes and 204 logout).
+- `pnpm test` — API-client unit tests for credentialed requests, CSRF headers, error envelopes, 204 logout and pagination metadata.
 - `pnpm lint` — Next.js/React source lint.
 - `pnpm build` — production build and TypeScript checks.
 
