@@ -101,6 +101,7 @@ export default function DoctorManagement({
   const [filterError, setFilterError] = useState("");
 
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const selectedDoctorId = selectedDoctor?.id;
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const detailController = useRef<AbortController | null>(null);
@@ -164,16 +165,10 @@ export default function DoctorManagement({
   useEffect(() => () => detailController.current?.abort(), []);
 
   useEffect(() => {
-    if (!selectedDoctor) {
-      setAssociatedPatients([]);
-      setAssociatedPatientsTotal(0);
-      setAssociatedPatientsError("");
-      return;
-    }
+    if (!selectedDoctorId) return;
     const controller = new AbortController();
     let active = true;
-    setAssociatedPatientsLoading(true);
-    apiRequestWithMeta<{ patients: PatientSummary[] }>("/doctors/" + encodeURIComponent(selectedDoctor.id) + "/patients?page=1&limit=10", { signal: controller.signal })
+    apiRequestWithMeta<{ patients: PatientSummary[] }>("/doctors/" + encodeURIComponent(selectedDoctorId) + "/patients?page=1&limit=10", { signal: controller.signal })
       .then(({ data, meta }) => {
         if (!active) return;
         setAssociatedPatients(data.patients);
@@ -187,7 +182,7 @@ export default function DoctorManagement({
       })
       .finally(() => { if (active) setAssociatedPatientsLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [selectedDoctor?.id, associationReload, onSessionExpired]);
+  }, [selectedDoctorId, associationReload, onSessionExpired]);
 
   useEffect(() => {
     if (editorMode) editorHeadingRef.current?.focus();
@@ -198,6 +193,10 @@ export default function DoctorManagement({
     const controller = new AbortController();
     detailController.current = controller;
     setSelectedDoctor(null);
+    setAssociatedPatients([]);
+    setAssociatedPatientsTotal(0);
+    setAssociatedPatientsLoading(true);
+    setAssociatedPatientsError("");
     setDetailError("");
     setDetailLoading(true);
     setNotice("");
