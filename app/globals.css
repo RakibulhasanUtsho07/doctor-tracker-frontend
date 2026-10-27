@@ -824,6 +824,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-filter-actions { display: flex; align-items: center; gap: 7px; }
 .patient-filter-actions .primary-button, .patient-filter-actions .secondary-button { min-height: 39px; padding: 0 11px; font-size: 9px; white-space: nowrap; }
 .patient-filter-note { margin: 12px 0 0; color: #53665a; font-size: 9px; line-height: 1.65; }
+.patient-doctor-lookup { display: grid; gap: 8px; }
+.patient-doctor-lookup > .patient-field { max-width: 620px; }
+.patient-doctor-lookup-status { margin: 0; color: #53665a; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+.patient-doctor-lookup-status[role="alert"] { color: #a1443c; }
 .patient-filter-error { margin: 11px 0 0; }
 .patient-editor { margin: 0 0 16px; border-color: #d9e7d9; background: linear-gradient(145deg, #fff, #fbfdf9); }
 .patient-editor-heading { align-items: center; margin-bottom: 17px; }
