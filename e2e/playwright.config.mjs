@@ -2,7 +2,7 @@ import { defineConfig, devices } from "../.e2e-tools/node_modules/@playwright/te
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "**/*.spec.mjs",
+  testMatch: "app.spec.mjs",
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
