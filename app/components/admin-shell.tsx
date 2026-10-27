@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
 import DoctorManagement from "./doctor-management";
+import PatientManagement from "./patient-management";
 
 type Section = "dashboard" | "doctors" | "patients";
 type IconName = "dashboard" | "doctors" | "patients" | "menu" | "close" | "shield" | "arrow-up-right" | "sparkles" | "activity" | "calendar" | "database" | "chevron-right" | "layers" | "clock" | "sign-out";
@@ -29,6 +30,7 @@ type DashboardSummary = {
   dateStatistics: { from: string; to: string; days: DashboardDay[] };
 };
 type AuthStatus = "checking" | "signed-out" | "signed-in" | "unavailable";
+type PatientNavigationRequest = { doctor: { id: string; name: string; specialization: string; hospital?: string }; intent: "create" | "filter" } | null;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   let drawing: ReactNode = null;
@@ -449,11 +451,23 @@ export default function AdminShell() {
   const [rangeError, setRangeError] = useState("");
   const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
+  const [patientNavigationRequest, setPatientNavigationRequest] = useState<PatientNavigationRequest>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousSectionRef = useRef<Section>("dashboard");
   const restoreMenuFocusRef = useRef(false);
   const copy = sectionCopy[section];
+  const handleAddPatientFromDoctor = useCallback((doctor: { id: string; name: string; specialization: string; hospital?: string }) => {
+    setPatientNavigationRequest({ doctor, intent: "create" });
+    setSection("patients");
+    setMobileNavOpen(false);
+  }, []);
+  const handleViewDoctorPatients = useCallback((doctor: { id: string; name: string; specialization: string; hospital?: string }) => {
+    setPatientNavigationRequest({ doctor, intent: "filter" });
+    setSection("patients");
+    setMobileNavOpen(false);
+  }, []);
+  const consumePatientNavigationRequest = useCallback(() => setPatientNavigationRequest(null), []);
   const handleSessionExpired = useCallback(() => {
     setSession(null);
     setDashboardData(null);
@@ -719,8 +733,8 @@ export default function AdminShell() {
                 onRefresh={refreshDashboard}
               />
             : section === "doctors"
-              ? <DoctorManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} />
-              : <ModulePlaceholder section={section} onNavigate={navigate} />}
+              ? <DoctorManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} onAddPatient={handleAddPatientFromDoctor} onViewPatients={handleViewDoctorPatients} />
+              : <PatientManagement csrfToken={session.csrfToken} onSessionExpired={handleSessionExpired} initialRequest={patientNavigationRequest} onInitialRequestConsumed={consumePatientNavigationRequest} />}
           <footer className="app-footer"><span><span className="footer-mark" aria-hidden="true">+</span> Doctor Tracker <span className="footer-separator">·</span> Admin workspace</span><span>Built for clarity, designed for care.</span></footer>
         </main>
       </div>
