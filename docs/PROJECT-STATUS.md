@@ -50,3 +50,9 @@ Run and record the remaining manual accessibility/responsive checks, then comple
 ## Manual release readiness — 2026-10-27
 - A reproducible checklist is available in [docs/14-manual-release-acceptance.md](14-manual-release-acceptance.md). It defines exact fields to capture, browser/assistive-technology steps, responsive viewports, HTTPS/session checks, security/performance evidence and deployed smoke using synthetic records only.
 - This is process documentation only. No human screen-reader/device session, production HTTPS/cookie verification, security/performance sign-off or deployed smoke was executed by adding the runbook. Those gates remain open; overall release remains PARTIAL.
+
+
+## Frontend dependency audit — 2026-10-27
+- Added `.github/workflows/security-audit.yml`: frozen pnpm lockfile installation without lifecycle scripts, then `pnpm audit --audit-level=high --json`; report uploaded even when the check fails.
+- [Security audit #2](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40537906377) passed on exact commit `3767f9be37f23fe1ba0cb0f4aff6c3e78547c8e8` and reported no high/critical dependency audit findings; [raw JSON artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40537906377/artifacts/12749446556).
+- Scope: published package advisories for the frozen frontend lockfile only. This does not mean zero moderate/low findings, does not audit the backend lockfile, and does not replace source/secret/config review or production security testing. Overall release security remains PARTIAL.

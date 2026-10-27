@@ -29,4 +29,4 @@ A step is complete only when acceptance criteria pass with evidence tied to the 
 
 ## Dependency security gate
 - Added `.github/workflows/security-audit.yml` to audit the exact frontend pnpm lockfile graph on PRs/pushes. It fails for high/critical published advisories and retains the raw JSON report even on failure.
-- Until the audit passes on the exact candidate and the report is reviewed, dependency-advisory status remains IN PROGRESS. This does not close the broader security/performance or production release gates.
+- [Security audit #2](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40537906377) passed on exact dependency/workflow commit `3767f9be37f23fe1ba0cb0f4aff6c3e78547c8e8` and reported no high/critical findings; [report artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40537906377/artifacts/12749446556). This closes only the automated high/critical package-advisory check for that lockfile SHA. Broader code/config/security review, backend security and production security gates remain open.
