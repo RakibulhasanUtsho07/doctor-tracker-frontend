@@ -1,10 +1,11 @@
 # Roadmap
-Detailed sequence is maintained in [Delivery Plan and Definition of Done](12-delivery-plan-and-definition-of-done.md).
-Current plan: documentation review → responsive shell/design tokens/accessibility → sign-in/dashboard integration after backend contracts are stable → doctor management → patient management → E2E/security/accessibility/performance → screenshots/deployment.
-Task-level issues:
-1. [Responsive shell and motion](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/2)
-2. [Sign-in and dashboard](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/3)
-3. [Doctor screens](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/4)
-4. [Patient management](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/5)
-5. [E2E, screenshots and release](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/6)
-No UI is accepted until interaction, responsive/accessibility checks and evidence are complete.
+1. [x] Documentation baseline — merged to dev via [frontend PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
+2. [x] Backend API foundation — [API PRs #7–#9](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pulls) merged to dev; [CI run #13](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40477435393) passed.
+3. [ ] Backend secure authentication/authorization — [API issue #3](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/issues/3).
+4. [ ] Doctor API, patient API and dashboard aggregates — [API issues #4–#6](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/issues).
+5. [ ] Responsive frontend shell and accessible motion — [frontend issue #2](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/2).
+6. [ ] Sign-in/dashboard integration — [frontend issue #3](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/3).
+7. [ ] Doctor management screens — [frontend issue #4](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/4).
+8. [ ] Patient management screens — [frontend issue #5](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/5).
+9. [ ] E2E/security/accessibility/performance, screenshots and deployment — [frontend issue #6](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/6).
+A step is complete only when acceptance criteria and evidence are linked to the exact tested commit.
