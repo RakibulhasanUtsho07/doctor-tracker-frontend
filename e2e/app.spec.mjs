@@ -285,7 +285,7 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await expect(page.getByRole("heading", { name: "Synthetic Patient One" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
-  await page.getByRole("button", { name: "Dr. Amina Rahman" }).click();
+  await page.locator(".doctor-table").getByRole("button", { name: "Dr. Amina Rahman" }).click();
   await expect(page.getByText("Synthetic Patient One")).toBeVisible();
   await page.getByRole("button", { name: "View all" }).click();
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
@@ -338,6 +338,10 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("patient-management-mobile.png"), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Dashboard/ }).click();
+  await expect(page.getByRole("heading", { name: "Your practice, in focus" })).toBeVisible();
+  await expect(page.locator(".metric-card").filter({ hasText: "Doctor records" }).locator(".metric-value > span")).toHaveText("1");
+  await expect(page.locator(".metric-card").filter({ hasText: "Patient records" }).locator(".metric-value > span")).toHaveText("1");
   await page.getByRole("button", { name: "Sign out of the administrator session" }).click();
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
   expect(state.session).toBe(false);
