@@ -110,3 +110,9 @@ Create one record per gate with:
 | Review | Tester/reviewer, date/time, owner for each issue, mitigation and retest SHA |
 
 Do not mark the entire release PASS while any required gate is `NOT STARTED`, `BLOCKED`, `FAIL` or `PARTIAL`. Parent/stacked PR review and exact-head CI are also required before branch promotion.
+
+## Automated endpoint preflight (supporting evidence only)
+
+Once public deployments are provisioned, use the manually dispatched [Deployed environment preflight workflow](../.github/workflows/deployment-preflight.yml) with the exact frontend HTTPS URL and API base URL ending in `/api/v1`. It checks the frontend HTML response, API liveness/readiness and credentialed CORS preflight for the supplied exact frontend origin. It sends only GET and OPTIONS requests and contains no credentials or record mutations.
+
+Record the workflow URL, exact source/deployed SHAs and supplied public hosts in the release evidence. A successful preflight is only network/configuration evidence: it does not validate browser cookie restrictions, sign-in/logout, session revocation, CSRF rejection, CRUD persistence, screen-reader/physical-device behavior, production security or performance. The manual and deployed end-to-end gates in this runbook must still be executed independently. Until actual frontend/API URLs are available, mark this preflight `BLOCKED`, not PASS.
