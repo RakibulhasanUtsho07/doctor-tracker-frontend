@@ -90,6 +90,7 @@ test("API base URL is normalized and can be explicitly absent", () => {
 
 
 test("metadata-aware API requests preserve pagination metadata without changing data-only callers", async () => {
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000/api/v1";
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({
     data: { doctors: [{ id: "doctor-1", name: "Synthetic Doctor" }] },
