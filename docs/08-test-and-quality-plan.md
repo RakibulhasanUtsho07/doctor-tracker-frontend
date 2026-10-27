@@ -73,3 +73,9 @@ On exact workflow commit `d109b8e56bf79d83e111fdee3885d0cee348dadc`, all five PR
 - [Frontend dependency security audit #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664) — passed with no high/critical published package advisories; [raw JSON report](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664/artifacts/12750417155).
 
 All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warning no longer appears. Parallel workflow jobs can still emit non-fatal cache-reservation warnings when they contend for the same cache key; they did not fail a job and are separate from the resolved home-layout warning. This change does not close manual screen-reader/device, deployed HTTPS/session, broader security, performance-target or deployed-smoke gates; keep the stacked PRs draft and do not promote to `dev`/`main`.
+
+## Deployed endpoint preflight automation
+
+The manual `Deployed environment preflight` workflow and `scripts/deployment-preflight.mjs` are intended to probe an already provisioned public deployment without changing data. Unit tests cover strict public HTTPS URL validation, the expected frontend HTML/API health/readiness responses, CORS exact-origin and credentials headers, POST method and required request headers, plus negative origin/readiness cases. The workflow itself accepts URLs only as inputs and sends GET/OPTIONS; it has no credentials and performs no mutations.
+
+These mocked unit tests can be validated in frontend CI without a deployment. Actual live URL results must be recorded separately; absent public HTTPS URLs mean the live check is BLOCKED. This preflight does not replace cookie/session/CSRF browser testing or the deployed CRUD smoke gate.
