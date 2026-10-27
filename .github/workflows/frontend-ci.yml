@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [rakibul-hasan, dev, main, 'feat/**']
   push:
-    branches: [rakibul-hasan, dev, main]
+    branches: [rakibul-hasan, dev, main, 'feat/**']
 
 permissions:
   contents: read
