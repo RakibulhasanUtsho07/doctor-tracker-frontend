@@ -431,10 +431,10 @@ function ModulePlaceholder({ section, onNavigate }: { section: Exclude<Section, 
 export default function AdminShell() {
   const [section, setSection] = useState<Section>("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  const [authStatus, setAuthStatus] = useState<AuthStatus>(() => getApiBaseUrl() ? "checking" : "unavailable");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionCheckKey, setSessionCheckKey] = useState(0);
-  const [authError, setAuthError] = useState("");
+  const [authError, setAuthError] = useState(() => getApiBaseUrl() ? "" : "Set NEXT_PUBLIC_API_BASE_URL in the frontend environment and restart the app.");
   const [authNotice, setAuthNotice] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginPending, setLoginPending] = useState(false);
@@ -455,12 +455,6 @@ export default function AdminShell() {
   const copy = sectionCopy[section];
 
   useEffect(() => {
-    if (!getApiBaseUrl()) {
-      setAuthError("Set NEXT_PUBLIC_API_BASE_URL in the frontend environment and restart the app.");
-      setAuthStatus("unavailable");
-      return;
-    }
-
     const controller = new AbortController();
     let active = true;
     apiRequest<AuthSession>("/auth/me", { signal: controller.signal })
@@ -468,6 +462,8 @@ export default function AdminShell() {
         if (!active) return;
         setSession(result);
         setAuthError("");
+        setDashboardLoading(true);
+        setDashboardError("");
         setAuthStatus("signed-in");
       })
       .catch((error: unknown) => {
@@ -497,9 +493,6 @@ export default function AdminShell() {
     const query = appliedRange
       ? "?from=" + encodeURIComponent(appliedRange.from) + "&to=" + encodeURIComponent(appliedRange.to)
       : "";
-    setDashboardLoading(true);
-    setDashboardError("");
-
     apiRequest<DashboardSummary>("/dashboard/summary" + query, { signal: controller.signal })
       .then((result) => {
         if (!active) return;
@@ -568,6 +561,8 @@ export default function AdminShell() {
         body: { email, password }
       });
       setSession(result);
+      setDashboardLoading(true);
+      setDashboardError("");
       setAuthStatus("signed-in");
       setAuthNotice("");
       setAuthError("");
@@ -644,10 +639,14 @@ export default function AdminShell() {
       setRangeError("Future dates are not supported.");
       return;
     }
+    setDashboardError("");
+    setDashboardLoading(true);
     setAppliedRange({ from: fromDate, to: toDate });
   }
 
   function refreshDashboard() {
+    setDashboardError("");
+    setDashboardLoading(true);
     setRefreshCount((count) => count + 1);
   }
 
