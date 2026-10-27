@@ -22,6 +22,6 @@ A step is complete only when acceptance criteria pass with evidence tied to the 
 
 
 ## Manual release acceptance — runbook prepared, execution not yet accepted
-- Runbook: [Manual Release Acceptance](docs/14-manual-release-acceptance.md).
+- Runbook: [Manual Release Acceptance](14-manual-release-acceptance.md).
 - It defines reproducible desktop/mobile keyboard and screen-reader checks, responsive viewport checks, deployed HTTPS/cookie/session checks, security and measured-performance evidence, and a synthetic-data end-to-end smoke flow.
 - Documentation is ready; manual/device, deployed HTTPS, security/performance sign-off and live smoke have **not** been performed by this change. Keep the release PARTIAL and PRs draft until evidence is recorded.
