@@ -53,16 +53,17 @@ export default function PatientManagement({
   const [listReload, setListReload] = useState(0);
 
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
-  const [extraDoctor, setExtraDoctor] = useState<DoctorOption | null>(null);
+  const [extraDoctor, setExtraDoctor] = useState<DoctorOption | null>(() => initialRequest?.doctor ?? null);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [doctorReload, setDoctorReload] = useState(0);
   const [doctorsError, setDoctorsError] = useState("");
 
   const [searchInput, setSearchInput] = useState("");
-  const [doctorFilterInput, setDoctorFilterInput] = useState("");
+  const [doctorFilterInput, setDoctorFilterInput] = useState(() => initialRequest?.intent === "filter" ? initialRequest.doctor.id : "");
   const [conditionFilterInput, setConditionFilterInput] = useState("");
   const [fromInput, setFromInput] = useState("");
   const [toInput, setToInput] = useState("");
-  const [filters, setFilters] = useState<AppliedFilters>({});
+  const [filters, setFilters] = useState<AppliedFilters>(() => initialRequest?.intent === "filter" ? { doctorId: initialRequest.doctor.id } : {});
   const [filterError, setFilterError] = useState("");
 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -70,8 +71,8 @@ export default function PatientManagement({
   const [detailError, setDetailError] = useState("");
   const detailController = useRef<AbortController | null>(null);
 
-  const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
-  const [draft, setDraft] = useState<PatientDraft>(blankDraft);
+  const [editorMode, setEditorMode] = useState<EditorMode | null>(() => initialRequest?.intent === "create" ? "create" : null);
+  const [draft, setDraft] = useState<PatientDraft>(() => initialRequest?.intent === "create" ? { ...blankDraft, doctorId: initialRequest.doctor.id } : { ...blankDraft });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<PatientField, string>>>({});
   const [formError, setFormError] = useState("");
   const [savePending, setSavePending] = useState(false);
@@ -88,7 +89,6 @@ export default function PatientManagement({
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    setDoctorsLoading(true);
     apiRequestWithMeta<{ doctors: DoctorOption[] }>("/doctors?page=1&limit=100", { signal: controller.signal })
       .then(({ data }) => {
         if (!active) return;
@@ -105,7 +105,7 @@ export default function PatientManagement({
       })
       .finally(() => { if (active) setDoctorsLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [onSessionExpired]);
+  }, [onSessionExpired, doctorReload]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -143,30 +143,7 @@ export default function PatientManagement({
   useEffect(() => { if (editorMode) editorHeadingRef.current?.focus(); }, [editorMode]);
 
   useEffect(() => {
-    if (!initialRequest) return;
-    setNotice("");
-    setFilterError("");
-    setExtraDoctor(initialRequest.doctor);
-    if (initialRequest.intent === "create") {
-      setSelectedPatient(null);
-      setDetailError("");
-      setEditorMode("create");
-      setDraft({ ...blankDraft, doctorId: initialRequest.doctor.id });
-      setFieldErrors({});
-      setFormError("");
-    } else {
-      setEditorMode(null);
-      setSelectedPatient(null);
-      setDoctorFilterInput(initialRequest.doctor.id);
-      setSearchInput("");
-      setConditionFilterInput("");
-      setFromInput("");
-      setToInput("");
-      setLoading(true);
-      setPage(1);
-      setFilters({ doctorId: initialRequest.doctor.id });
-    }
-    onInitialRequestConsumed();
+    if (initialRequest) onInitialRequestConsumed();
   }, [initialRequest, onInitialRequestConsumed]);
 
   async function openPatient(patientId: string) {
@@ -370,7 +347,7 @@ export default function PatientManagement({
       </div>
 
       {notice && <p className="patient-notice" role="status" aria-live="polite">{notice}</p>}
-      {doctorsError && <div className="patient-warning" role="status"><strong>Doctor choices unavailable</strong><span>{doctorsError} Listing patients still works; add or reassign needs an existing doctor identifier.</span><button type="button" className="secondary-button" onClick={() => setListReload((value) => value + 1)}>Retry lists</button></div>}
+      {doctorsError && <div className="patient-warning" role="status"><strong>Doctor choices unavailable</strong><span>{doctorsError} Listing patients still works; add or reassign needs an existing doctor identifier.</span><button type="button" className="secondary-button" onClick={() => { setDoctorsLoading(true); setDoctorReload((value) => value + 1); }}>Retry doctors</button></div>}
 
       {editorMode && (
         <section className="patient-editor" aria-labelledby="patient-editor-heading">
