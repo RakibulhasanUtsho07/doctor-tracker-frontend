@@ -82,6 +82,7 @@ export default function PatientManagement({
   const [actionPending, setActionPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
+  const confirmationCancelRef = useRef<HTMLButtonElement>(null);
 
   const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
   const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
@@ -141,6 +142,33 @@ export default function PatientManagement({
 
   useEffect(() => () => detailController.current?.abort(), []);
   useEffect(() => { if (editorMode) editorHeadingRef.current?.focus(); }, [editorMode]);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    confirmationCancelRef.current?.focus();
+    const handleDialogKeys = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !actionPending) {
+        setConfirmation(null);
+        setActionError("");
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = document.querySelector<HTMLElement>(".patient-confirm-dialog");
+      const focusable = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleDialogKeys);
+    return () => window.removeEventListener("keydown", handleDialogKeys);
+  }, [confirmation, actionPending]);
 
   useEffect(() => {
     if (initialRequest) onInitialRequestConsumed();
@@ -368,11 +396,11 @@ export default function PatientManagement({
             </label>
             <label className="patient-field">
               <span>Doctor association{editorMode === "create" ? <i aria-hidden="true"> *</i> : null}</span>
-              <select name="doctorId" value={draft.doctorId} required={editorMode === "create"} onChange={(event) => updateDraft("doctorId", event.target.value)} disabled={savePending || doctorsLoading}>
+              <select name="doctorId" value={draft.doctorId} required={editorMode === "create"} aria-invalid={Boolean(fieldErrors.doctorId)} aria-describedby={fieldErrors.doctorId ? "patient-field-error-doctorId" : undefined} onChange={(event) => updateDraft("doctorId", event.target.value)} disabled={savePending || doctorsLoading}>
                 <option value="">{doctorsLoading ? "Loading doctors…" : editorMode === "create" ? "Choose a doctor" : "Keep current association"}</option>
                 {doctorChoices.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name} — {doctor.specialization ?? "Doctor"}</option>)}
               </select>
-              {fieldErrors.doctorId && <small className="patient-field-error">{fieldErrors.doctorId}</small>}
+              {fieldErrors.doctorId && <small id="patient-field-error-doctorId" className="patient-field-error">{fieldErrors.doctorId}</small>}
               {editorMode === "edit" && <small className="patient-field-hint">Choose a different doctor to reassign. Use the Detach action to preserve the patient record without a doctor.</small>}
             </label>
             <label className="patient-field">
@@ -480,7 +508,7 @@ export default function PatientManagement({
               : "This removes " + confirmation.patient.name + " from the doctor's list. The patient record and condition are preserved and remain searchable."}</p>
             {actionError && <p className="patient-error" role="alert">{actionError}</p>}
             <div className="patient-dialog-actions">
-              <button type="button" className="secondary-button" onClick={() => { setConfirmation(null); setActionError(""); }} disabled={actionPending}>Cancel</button>
+              <button ref={confirmationCancelRef} type="button" className="secondary-button" onClick={() => { setConfirmation(null); setActionError(""); }} disabled={actionPending}>Cancel</button>
               <button type="button" className={confirmation.kind === "delete" ? "danger-button" : "primary-button"} onClick={() => void performConfirmedAction()} disabled={actionPending}>{actionPending ? "Working…" : confirmation.kind === "delete" ? "Delete permanently" : "Detach and preserve"}</button>
             </div>
           </section>
