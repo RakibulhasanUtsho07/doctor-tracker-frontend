@@ -36,11 +36,13 @@ function describeError(error: unknown, fallback: string): string {
 export default function PatientManagement({
   csrfToken,
   onSessionExpired,
+  onDataChanged,
   initialRequest,
   onInitialRequestConsumed
 }: {
   csrfToken: string;
   onSessionExpired: () => void;
+  onDataChanged: () => void;
   initialRequest: PrefillRequest;
   onInitialRequestConsumed: () => void;
 }) {
@@ -311,6 +313,7 @@ export default function PatientManagement({
       setLoading(true);
       setPage(1);
       setListReload((value) => value + 1);
+      onDataChanged();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) { onSessionExpired(); return; }
       const message = describeError(error, "The patient record could not be saved.");
@@ -349,6 +352,7 @@ export default function PatientManagement({
         : "Patient detached from the doctor. The patient record was preserved.");
       setLoading(true);
       setListReload((value) => value + 1);
+      onDataChanged();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) { onSessionExpired(); return; }
       setActionError(describeError(error, "The requested action could not be completed."));
