@@ -53,6 +53,7 @@ export default function PatientManagement({
   const [listReload, setListReload] = useState(0);
 
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [extraDoctor, setExtraDoctor] = useState<DoctorOption | null>(null);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [doctorsError, setDoctorsError] = useState("");
 
@@ -81,7 +82,8 @@ export default function PatientManagement({
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const doctorById = useMemo(() => new Map(doctors.map((doctor) => [doctor.id, doctor])), [doctors]);
+  const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
+  const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -144,6 +146,7 @@ export default function PatientManagement({
     if (!initialRequest) return;
     setNotice("");
     setFilterError("");
+    setExtraDoctor(initialRequest.doctor);
     if (initialRequest.intent === "create") {
       setSelectedPatient(null);
       setDetailError("");
@@ -390,8 +393,7 @@ export default function PatientManagement({
               <span>Doctor association{editorMode === "create" ? <i aria-hidden="true"> *</i> : null}</span>
               <select name="doctorId" value={draft.doctorId} required={editorMode === "create"} onChange={(event) => updateDraft("doctorId", event.target.value)} disabled={savePending || doctorsLoading}>
                 <option value="">{doctorsLoading ? "Loading doctors…" : editorMode === "create" ? "Choose a doctor" : "Keep current association"}</option>
-                {initialRequest?.intent === "create" && initialRequest.doctor.id === draft.doctorId && !doctors.some((doctor) => doctor.id === draft.doctorId) && <option value={initialRequest.doctor.id}>{initialRequest.doctor.name}</option>}
-                {doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name} — {doctor.specialization ?? "Doctor"}</option>)}
+                {doctorChoices.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name} — {doctor.specialization ?? "Doctor"}</option>)}
               </select>
               {fieldErrors.doctorId && <small className="patient-field-error">{fieldErrors.doctorId}</small>}
               {editorMode === "edit" && <small className="patient-field-hint">Choose a different doctor to reassign. Use the Detach action to preserve the patient record without a doctor.</small>}
@@ -414,7 +416,7 @@ export default function PatientManagement({
       <section className="patient-filter-card" aria-label="Search and filter patients">
         <form className="patient-filter-form" onSubmit={applyFilters}>
           <label className="patient-filter-search"><span>Search patients</span><input type="search" value={searchInput} maxLength={100} onChange={(event) => setSearchInput(event.target.value)} placeholder="Patient name or condition" /></label>
-          <label><span>Doctor</span><select value={doctorFilterInput} onChange={(event) => setDoctorFilterInput(event.target.value)}><option value="">All doctors</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label>
+          <label><span>Doctor</span><select value={doctorFilterInput} onChange={(event) => setDoctorFilterInput(event.target.value)}><option value="">All doctors</option>{doctorChoices.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label>
           <label><span>Condition (exact)</span><input value={conditionFilterInput} maxLength={100} onChange={(event) => setConditionFilterInput(event.target.value)} placeholder="Exact condition" /></label>
           <label><span>Created from (UTC)</span><input type="date" value={fromInput} onChange={(event) => setFromInput(event.target.value)} /></label>
           <label><span>Created to (UTC)</span><input type="date" value={toInput} onChange={(event) => setToInput(event.target.value)} /></label>
