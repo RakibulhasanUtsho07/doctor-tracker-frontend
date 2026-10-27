@@ -541,7 +541,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .password-label-row > span { color: #99a39a; font-size: 8px; }
 .password-field { position: relative; }
 .password-field input { padding-right: 64px; }
-.password-toggle { position: absolute; top: 5px; right: 6px; min-width: 48px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #4d8062; font-size: 10px; font-weight: 850; cursor: pointer; }
+.password-toggle { position: absolute; top: 5px; right: 6px; min-width: 48px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #47765a; font-size: 10px; font-weight: 850; cursor: pointer; }
 .password-toggle:hover { background: #eef6eb; }
 .auth-submit { display: inline-flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; gap: 9px; margin-top: 12px; padding: 0 15px; border: 1px solid #1c5c49; border-radius: 11px; background: #1d5c4b; color: #fff; font-size: 11px; font-weight: 850; cursor: pointer; box-shadow: 0 7px 14px rgb(22 84 66 / 13%); transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
 .auth-submit:hover:not(:disabled) { background: #154c3e; box-shadow: 0 9px 20px rgb(22 84 66 / 17%); transform: translateY(-1px); }
