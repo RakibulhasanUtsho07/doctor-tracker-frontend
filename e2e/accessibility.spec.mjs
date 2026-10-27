@@ -52,7 +52,7 @@ async function installSyntheticApi(page, options = {}) {
     const url = new URL(request.url());
     const path = url.pathname.replace("/api/v1", "");
     const method = request.method().toUpperCase();
-    const body = method === "POST" || method === "PATCH" ? request.postDataJSON() : {};
+    const body = request.postData() ? request.postDataJSON() : {};
 
     if (method === "OPTIONS") {
       await route.fulfill({ status: 204, headers: corsHeaders });
@@ -119,7 +119,7 @@ async function installSyntheticApi(page, options = {}) {
       state.doctors.push(doctor);
       return send(201, { doctor });
     }
-    const doctorDetail = path.match(/^\\/doctors\\/([a-f\\d]{24})$/i);
+    const doctorDetail = path.match(/^\/doctors\/([a-f\d]{24})$/i);
     if (doctorDetail && method === "GET") {
       const doctor = state.doctors.find((entry) => entry.id === doctorDetail[1]);
       return doctor ? send(200, { doctor }) : send(404, "Doctor not found.");
@@ -130,7 +130,7 @@ async function installSyntheticApi(page, options = {}) {
       Object.assign(doctor, body, { updatedAt: new Date().toISOString() });
       return send(200, { doctor });
     }
-    const associatedPatients = path.match(/^\\/doctors\\/([a-f\\d]{24})\\/patients$/i);
+    const associatedPatients = path.match(/^\/doctors\/([a-f\d]{24})\/patients$/i);
     if (associatedPatients && method === "GET") {
       const rows = state.patients.filter((patient) => patient.doctorId === associatedPatients[1]);
       return send(200, { patients: rows.slice(0, 10) }, {
@@ -160,7 +160,7 @@ async function installSyntheticApi(page, options = {}) {
       state.patients.push(patient);
       return send(201, { patient });
     }
-    const patientDetail = path.match(/^\\/patients\\/([a-f\\d]{24})$/i);
+    const patientDetail = path.match(/^\/patients\/([a-f\d]{24})$/i);
     if (patientDetail && method === "GET") {
       const patient = state.patients.find((entry) => entry.id === patientDetail[1]);
       return patient ? send(200, { patient }) : send(404, "Patient not found.");
