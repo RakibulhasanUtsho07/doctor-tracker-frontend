@@ -129,7 +129,7 @@ function Sidebar({ section, onNavigate, isOpen, onClose, user }: { section: Sect
   );
 }
 
-function LiveMetricCard({ icon, title, value, detail, accent }: { icon: IconName; title: string; value: number; detail: string; accent: "green" | "lavender" | "amber" }) {
+function LiveMetricCard({ icon, title, value, detail, accent }: { icon: IconName; title: string; value: number | null; detail: string; accent: "green" | "lavender" | "amber" }) {
   return (
     <article className="metric-card">
       <div className="metric-top">
@@ -137,7 +137,7 @@ function LiveMetricCard({ icon, title, value, detail, accent }: { icon: IconName
         <span className="metric-state">LIVE API</span>
       </div>
       <h3>{title}</h3>
-      <div className="metric-value"><span>{value.toLocaleString()}</span><small>records</small></div>
+      <div className="metric-value"><span>{value === null ? "—" : value.toLocaleString()}</span><small>{value === null ? "awaiting data" : "records"}</small></div>
       <p>{detail}</p>
     </article>
   );
@@ -289,9 +289,9 @@ function DashboardView({
       <section className="metrics-section" aria-labelledby="metrics-heading" aria-busy={loading}>
         <div className="section-heading"><div><p className="section-kicker">AT A GLANCE</p><h2 id="metrics-heading">Your practice, in focus</h2></div><span className="connection-note"><span /> {loading ? "Updating from API" : "Database-backed metrics"}</span></div>
         <div className="metrics-grid">
-          <LiveMetricCard icon="doctors" title="Doctor records" value={data?.totals.doctors ?? 0} detail="All current doctor records, independent of date filters." accent="green" />
-          <LiveMetricCard icon="patients" title="Patient records" value={data?.totals.patients ?? 0} detail="All current patient records, including detached patients." accent="lavender" />
-          <LiveMetricCard icon="activity" title="Daily activity" value={days.reduce((total, day) => total + day.doctorsCreated + day.patientsCreated, 0)} detail="Doctor and patient records created within the selected dates." accent="amber" />
+          <LiveMetricCard icon="doctors" title="Doctor records" value={data ? data.totals.doctors : null} detail="All current doctor records, independent of date filters." accent="green" />
+          <LiveMetricCard icon="patients" title="Patient records" value={data ? data.totals.patients : null} detail="All current patient records, including detached patients." accent="lavender" />
+          <LiveMetricCard icon="activity" title="Daily activity" value={data ? days.reduce((total, day) => total + day.doctorsCreated + day.patientsCreated, 0) : null} detail="Doctor and patient records created within the selected dates." accent="amber" />
         </div>
         {loading && <p className="inline-status" role="status">Loading dashboard metrics from the secured API…</p>}
         {error && <div className="dashboard-error" role="alert"><Icon name="activity" size={18} /><span><strong>Dashboard could not be loaded</strong><small>{error}</small></span><button type="button" className="secondary-button" onClick={onRefresh}>Try again</button></div>}
@@ -395,7 +395,7 @@ function SignInView({ onSubmit, pending, error, notice }: {
   );
 }
 
-function AuthStatusView({ error, onRetry }: { error: string; onRetry: () => void }) {
+function AuthStatusView({ error, onRetry, checking = false }: { error: string; onRetry: () => void; checking?: boolean }) {
   const isMissingConfig = !getApiBaseUrl();
   return (
     <main className="auth-page">
@@ -403,11 +403,11 @@ function AuthStatusView({ error, onRetry }: { error: string; onRetry: () => void
       <div className="auth-backdrop auth-backdrop--two" aria-hidden="true" />
       <section className="auth-status-card" aria-labelledby="auth-status-heading">
         <span className="auth-symbol"><Icon name={isMissingConfig ? "database" : "activity"} size={25} /></span>
-        <p className="section-kicker">{isMissingConfig ? "CONFIGURATION REQUIRED" : "CONNECTION CHECK"}</p>
-        <h1 id="auth-status-heading">{isMissingConfig ? "Connect your API first." : "We couldn't verify your session."}</h1>
+        <p className="section-kicker">{checking ? "SESSION CHECK" : isMissingConfig ? "CONFIGURATION REQUIRED" : "CONNECTION CHECK"}</p>
+        <h1 id="auth-status-heading">{checking ? "Checking your session." : isMissingConfig ? "Connect your API first." : "Session check failed."}</h1>
         <p>{error}</p>
         {isMissingConfig && <pre className="env-snippet">NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api/v1</pre>}
-        <button type="button" className="auth-submit" onClick={onRetry}><span>Try again</span><Icon name="arrow-up-right" size={17} /></button>
+        <button type="button" className="auth-submit" onClick={onRetry} disabled={checking}>{checking ? "Checking…" : "Try again"} {!checking && <Icon name="arrow-up-right" size={17} />}</button>
         <p className="auth-status-foot">No credentials are stored in this browser preview.</p>
       </section>
     </main>
