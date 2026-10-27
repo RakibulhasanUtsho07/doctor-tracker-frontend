@@ -159,7 +159,7 @@ test("sign-in can be completed by keyboard without using a pointer", async ({ pa
   await expect(skipLink).toBeVisible();
 
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Doctor Tracker" })).toBeFocused();
+  await expect(page.getByRole("link", { name: /doctortracker/i })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Administrator email")).toBeFocused();
   await page.keyboard.type("accessibility-admin@example.test");
@@ -197,13 +197,15 @@ test("mobile navigation is keyboard operable and restores focus after Escape", a
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page);
 
-  const menuButton = page.getByRole("button", { name: "Open navigation" });
+  const menuButton = page.getByRole("banner").getByRole("button", { name: "Open navigation" });
   await menuButton.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Close navigation" })).toBeVisible();
+  const closeMenuButton = page.getByRole("banner").getByRole("button", { name: "Close navigation" });
+  await expect(closeMenuButton).toBeVisible();
   await expect(page.locator("#primary-sidebar .nav-link").first()).toBeFocused();
 
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByRole("button", { name: "Open navigation" })).toBeFocused();
+  const restoredMenuButton = page.getByRole("banner").getByRole("button", { name: "Open navigation" });
+  await expect(restoredMenuButton).toHaveAttribute("aria-expanded", "false");
+  await expect(restoredMenuButton).toBeFocused();
 });
