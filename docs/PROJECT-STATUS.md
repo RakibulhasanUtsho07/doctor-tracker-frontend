@@ -21,7 +21,7 @@ Last verified: 2026-10-27
 ## Remaining release gates
 - Manual assistive-technology and screen-reader walkthroughs, exhaustive keyboard-only forms/dialogs and physical desktop/tablet/mobile touch review.
 - Production HTTPS/cookie policy and deployed smoke test, plus performance/security review.
-- Stacked PRs #9–#15 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
+- Stacked PRs #9–#16 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
