@@ -59,9 +59,7 @@ The separate [Frontend dependency security audit workflow](../.github/workflows/
 
 
 ## GitHub Actions runtime maintenance
-Use the Node 24-compatible official action versions currently pinned in the workflow files: checkout v7.0.1, setup-node v7.1.0, upload-artifact v7.0.2, cache v6.1.0 and pnpm/action-setup v6.1.0. Their compatibility change passed all existing workflows on exact commit `245ae10c15eab2021bf99e101e0f8cf42d58cf48`. The Node 20 deprecation warning disappeared from CI/audit logs. A separate non-fatal pnpm v10/v11 home-layout warning remains documented for later investigation. Runtime migration does not close the security, manual accessibility, performance or production deployment gates.
-
-
+Use the Node 24-compatible official action versions currently pinned in the workflow files: checkout v7.0.1, setup-node v7.1.0, upload-artifact v7.0.2, cache v6.1.0 and pnpm/action-setup v6.1.0. Their compatibility change passed all existing workflows on exact commit `245ae10c15eab2021bf99e101e0f8cf42d58cf48`. The Node 20 deprecation warning disappeared from CI/audit logs. At this earlier commit, the pnpm v10/v11 home-layout warning remained; its later fix and exact-head validation are recorded in the follow-up section below. Runtime migration does not close the security, manual accessibility, performance or production deployment gates.
 
 ## pnpm v11 home-layout warning follow-up — 2026-10-27
 
