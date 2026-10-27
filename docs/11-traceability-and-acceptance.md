@@ -55,3 +55,16 @@ On exact workflow commit `d109b8e56bf79d83e111fdee3885d0cee348dadc`, all five PR
 - [Frontend dependency security audit #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664) — passed with no high/critical published package advisories; [raw JSON report](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40540876664/artifacts/12750417155).
 
 All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warning no longer appears. Parallel workflow jobs can still emit non-fatal cache-reservation warnings when they contend for the same cache key; they did not fail a job and are separate from the resolved home-layout warning. This change does not close manual screen-reader/device, deployed HTTPS/session, broader security, performance-target or deployed-smoke gates; keep the stacked PRs draft and do not promote to `dev`/`main`.
+
+
+## Patient UI reassignment and pagination — 2026-10-27
+
+The top-of-stack real API acceptance spec now tests the user-visible patient pagination and reassignment flow against the pinned API security baseline `efd1fd0f016d98da1fe91bdea52bc48f6295217f`. On tested frontend source commit `1ca823240c88d4153678f154a0d91982a3bc99a9`:
+
+- [Frontend CI #317](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983154) — passed lint and production build/TypeScript checks.
+- [Real API + MongoDB browser acceptance #129](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983019) — passed 4/4 Chromium journeys, 26/26 API HTTP/unit tests and 4/4 MongoDB integration tests. The new journey creates 11 isolated synthetic patient records, verifies 10-row pagination and navigation to page 2, reassigns a patient to a different doctor through the UI, reloads, and confirms the doctor association is persisted by querying the real API.
+- [Synthetic browser E2E #181](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983075) — passed.
+- [Accessibility browser acceptance #108](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983031) — passed within automated scope.
+- [Frontend dependency security audit #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40553983026) — passed.
+
+This closes automated pagination/reassignment coverage only. Manual screen-reader, responsive/physical-device acceptance, production HTTPS/cookie/session/CSRF, agreed performance target, independent security sign-off and deployed synthetic-data smoke remain open. Keep the stacked PRs draft and do not promote to `dev` or `main` until parent review and required release gates are complete.
