@@ -1,15 +1,29 @@
 # Test and Quality Plan
-Static checks: lint, typecheck, production build, dependency audit.
-Unit/component tests: validation, filter states, forms, empty/error states, accessible chart labelling, reduced motion.
-Integration: API auth middleware, doctor/patient CRUD, filters/pagination, relationship constraints, aggregate responses and errors.
-E2E: sign in → dashboard → create/search doctor → add patient → edit/filter/delete patient → verify dashboard numbers.
-Security: missing/expired session, cross-record access, role bypass, XSS rendering, CORS/CSRF where applicable, mass assignment, and sensitive-data leakage.
-Performance: documented synthetic dataset, latency measurements and server query plan.
-Release smoke: deployed HTTPS, auth/API connectivity and CRUD with synthetic records.
-Use disposable test data, never production. Record exact commit SHA, commands, CI URL, pass/fail counts, environment and gaps. If CI is absent report NOT CONFIGURED, not PASS. A plan is not a result; requirement status changes only with evidence.
+
+## Planned test layers
+- Static checks: lint, typecheck, production build and dependency audit.
+- Unit/component tests: validation, filter states, forms, empty/error states, accessible chart labelling and reduced motion.
+- Integration: API auth middleware, doctor/patient CRUD, filters/pagination, relationship constraints, aggregate responses and errors.
+- E2E: sign in → dashboard → create/search doctor → add patient → edit/filter/delete patient → verify dashboard numbers.
+- Security: missing/expired session, cross-record access, role bypass, XSS rendering, CORS/CSRF where applicable, mass assignment and sensitive-data leakage.
+- Performance: documented synthetic dataset, latency measurements and query plan.
+- Release smoke: deployed HTTPS, auth/API connectivity and CRUD with synthetic records.
+
+Use disposable test data, never production. Record exact commit SHA, commands, CI URL, pass/fail counts, environment and gaps. If CI is absent, report NOT CONFIGURED, not PASS. A plan is not a result; requirement status changes only with evidence.
 
 ## Browser E2E harness (Step 10)
-A pinned Playwright runner starts a production Next.js server and exercises Chromium journeys using a route-intercepted synthetic API. Coverage includes invalid sign-in, sign-in/dashboard, doctor create, doctor-associated patient list, patient create/edit/filter, detach-versus-delete semantics, CSRF headers, sign-out and empty browser storage. Desktop and mobile screenshots are generated as CI artifacts using synthetic records only.
+A pinned Playwright runner starts the production Next.js server and exercises Chromium journeys against a route-intercepted synthetic API. Coverage includes invalid sign-in, sign-in/dashboard, doctor create, doctor-associated patient listing, patient create/edit/filter, detach-versus-delete semantics, CSRF headers, sign-out and empty browser storage.
 
-Status: [Frontend CI #198](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488429) passed API-client tests, source lint and production build/TypeScript checks; [synthetic browser E2E #62](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488127) passed 2/2 Chromium journeys; and [real API browser acceptance #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268) passed on exact tested commit `599cd3a68074704e1b65a18fa8f1e5e55182df24`. The real API job passed backend lint/typecheck/build, 24/24 HTTP/unit tests and 4/4 MongoDB integration tests, then 2/2 Chromium browser journeys with no API interception. It verifies CSRF rejection, actual CORS preflight headers, HttpOnly session cookie, doctor/patient CRUD and association detach-vs-delete, persistence after reload, dashboard totals, and logout revocation. [Real API report/screenshots](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268/artifacts/12736454230); [synthetic artifacts](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488127/artifacts/12736981198). CI uses ephemeral MongoDB and a pinned API revision. Production HTTPS/third-party-cookie behaviour, manual keyboard/touch/reduced-motion/accessibility, performance and deployed smoke remain open in Issue #6.
-\n\n## Real API browser acceptance (Step 11)\nThe real-backend suite starts a disposable MongoDB service and the pinned Doctor Tracker API (`fd9f133b42914a51d3a4d0460e178a66888a0327`), creates a CI-only administrator, and launches the frontend production server. [Run #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268) passed on tested frontend commit `599cd3a68074704e1b65a18fa8f1e5e55182df24`: 24/24 API HTTP/unit tests, 4/4 MongoDB integration tests, and 2/2 Chromium real-backend journeys. The artifact contains screenshots, Playwright report/trace and API log. The latest head also pins the synthetic suite to `app.spec.mjs` so mock and real suites cannot accidentally consume each other's cases. This does not certify production hosting/cookie policy or manual accessibility/release gates.\n
+Latest tested head `8d317e9b3ff4f082ca65e2726e75cbc11d7af684`: [synthetic browser run #91](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515284380) passed 2/2 journeys; [screenshots/report](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515284380/artifacts/12739401635). Mock-backed acceptance is only for synthetic records.
+
+## Real API browser acceptance (Step 11)
+The workflow starts the pinned Doctor Tracker API (`fd9f133b42914a51d3a4d0460e178a66888a0327`) against disposable MongoDB, bootstraps a CI-only administrator and launches the production frontend. [Run #39](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515283611) passed on `8d317e9b3ff4f082ca65e2726e75cbc11d7af684`: backend lint/typecheck/build, 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys. Coverage includes CORS preflight, credentialed requests, HttpOnly cookie, CSRF rejection, doctor/patient create/edit, detach vs delete, persistence after reload, dashboard totals and logout/session revocation. [Reports/screenshots/log](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515283611/artifacts/12738861788).
+
+## Automated accessibility acceptance (Step 12)
+Draft [PR #15](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/15) adds a separate pinned Playwright/axe workflow and keeps test API mocking isolated from the real-backend workflow. On tested head `8d317e9b3ff4f082ca65e2726e75cbc11d7af684`, [accessibility run #18](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515283891) passed 7 tests with 1 expected desktop-only skip.
+
+- axe-core checks WCAG 2.1 A/AA on sign-in, dashboard, doctors and patients views at desktop and mobile viewports; serious/critical findings fail CI.
+- Keyboard-only sign-in, `prefers-reduced-motion` behavior and mobile navigation open/Escape/focus restoration are tested.
+- The run caught and drove fixes for foreground/background contrast, accessible-name consistency and generic-span ARIA semantics. The passing run has [axe JSON, screenshots and Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40515283891/artifacts/12739597090).
+
+Automation is not a complete WCAG certification. Manual screen-reader/assistive-technology review, exhaustive keyboard review across all forms/dialogs, physical device/touch checks, deployed HTTPS/cookie behavior, performance/security review and deployed smoke remain open in [release-readiness issue #6](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/6).
