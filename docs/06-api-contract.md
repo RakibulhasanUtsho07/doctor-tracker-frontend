@@ -1,0 +1,4 @@
+# REST API Contract
+Base path proposed: /api/v1. Planned routes: GET /health; POST /auth/login; POST /auth/logout; GET /auth/me; GET /dashboard/summary; doctor list/create/detail/update; doctor-associated patient list; patient list/create/detail/update/delete.
+Keep api/openapi.yaml and implementation synchronized. Validate page/limit, search, dates, conditions, doctor filters and sort allowlists. Reject unknown mutation fields. Use stable success envelopes and error envelopes containing safe code/message and requestId. Never expose stack traces or DB internals.
+Status semantics: 200 read/update; 201 create; 204 no-content delete/logout; 400 malformed; 401 unauthenticated; 403 unauthorized; 404 missing/hidden; 409 conflict; 422 semantic error if used consistently; 429 throttled; 500 generic internal error. All protected endpoints need server-side auth and role checks. The contract is not implementation evidence.
