@@ -40,3 +40,7 @@ Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` to the API base path (local defau
 
 Any `NEXT_PUBLIC_*` variable is browser-visible and must not contain a secret. Use synthetic data in screenshots. Follow CONTRIBUTING.md and SECURITY.md.
 \n\n## Real API browser acceptance\nRun [#10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268) passed on exact tested commit `599cd3a68074704e1b65a18fa8f1e5e55182df24`. CI launches the API against disposable MongoDB and runs the built frontend in Chromium without API route mocking. The [uploaded artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268/artifacts/12736454230) includes screenshots, Playwright report and server log. Test credentials/records are synthetic and CI-only. Production HTTPS/third-party cookies, manual keyboard/touch/reduced-motion/accessibility, performance and deployment smoke remain required.\n
+
+## Deployment preflight
+
+A manual [Deployed environment preflight workflow](.github/workflows/deployment-preflight.yml) is available to probe an already deployed public HTTPS frontend/API pair. It verifies the frontend HTML response, API health/readiness and exact-origin credentialed CORS using GET/OPTIONS only. It does not log in, mutate data or deploy the app. Both actual deployed URLs are currently unrecorded, so live deployment acceptance remains BLOCKED/NOT STARTED; this probe is only an early check and cannot replace the complete release runbook.
