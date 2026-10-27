@@ -369,7 +369,7 @@ function SignInView({ onSubmit, pending, error, notice }: {
       <div className="auth-backdrop auth-backdrop--one" aria-hidden="true" />
       <div className="auth-backdrop auth-backdrop--two" aria-hidden="true" />
       <section className="auth-shell" aria-labelledby="sign-in-heading">
-        <a className="auth-brand" href="#sign-in-heading" aria-label="Doctor Tracker">
+        <a className="auth-brand" href="#sign-in-heading">
           <span className="brand-mark" aria-hidden="true"><span /></span>
           <span className="brand-copy"><strong>doctor<span>tracker</span></strong><small>CARE OPERATIONS</small></span>
         </a>
