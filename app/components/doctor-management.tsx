@@ -76,11 +76,13 @@ function fieldForServerMessage(message: string): DoctorField | null {
 export default function DoctorManagement({
   csrfToken,
   onSessionExpired,
+  onDataChanged,
   onAddPatient,
   onViewPatients
 }: {
   csrfToken: string;
   onSessionExpired: () => void;
+  onDataChanged: () => void;
   onAddPatient: (doctor: { id: string; name: string; specialization: string; hospital: string }) => void;
   onViewPatients: (doctor: { id: string; name: string; specialization: string; hospital: string }) => void;
 }) {
@@ -319,6 +321,7 @@ export default function DoctorManagement({
         setFilters({});
       }
       setReloadCount((value) => value + 1);
+      onDataChanged();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) {
         onSessionExpired();
