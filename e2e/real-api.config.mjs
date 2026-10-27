@@ -25,7 +25,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     env: {
       NEXT_PUBLIC_API_BASE_URL: "http://127.0.0.1:4000/api/v1",
-      NODE_ENV: "production"
+      NODE_ENV: "production",
+      PORT: "3000"
     }
   }
 });
