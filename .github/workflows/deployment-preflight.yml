@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deployed-preflight-\${{ github.ref }}
+  group: deployed-preflight-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -33,6 +33,6 @@ jobs:
           node-version: 22
       - name: Probe deployed endpoints without mutations
         env:
-          FRONTEND_URL: \${{ inputs.frontend_url }}
-          API_BASE_URL: \${{ inputs.api_base_url }}
+          FRONTEND_URL: ${{ inputs.frontend_url }}
+          API_BASE_URL: ${{ inputs.api_base_url }}
         run: node scripts/deployment-preflight.mjs
