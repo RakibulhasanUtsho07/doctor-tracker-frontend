@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           repository: RakibulhasanUtsho07/doctor-tracker-api
-          ref: fd9f133b42914a51d3a4d0460e178a66888a0327
+          ref: efd1fd0f016d98da1fe91bdea52bc48f6295217f
           path: backend
           persist-credentials: false
 
