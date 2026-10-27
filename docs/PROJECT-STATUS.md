@@ -8,14 +8,14 @@ Last verified: 2026-10-27
 
 ## Frontend status
 - Responsive application shell, visual tokens, dashboard/doctors/patients navigation, visible focus and reduced-motion CSS: implemented in draft [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9). [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint and production build on code commit `dda345a84530ff224d30ace034af09ec369b717a`.
-- Step 7 auth/session and database-backed dashboard UI: in stacked draft [PR #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10); current CI is pending. Session uses the HttpOnly API cookie; CSRF is held in React memory, not browser storage.
+- Step 7 auth/session and database-backed dashboard UI: in stacked draft [PR #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10). [CI #42](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40501396332) passed 5/5 API-client unit tests, lint and production build on code commit `3826645bd8a7f709033b584e3c795f949d706010`. Session uses the HttpOnly API cookie; CSRF is held in React memory, not browser storage.
 - Mobile menu focus handling and Escape-to-close, visible keyboard focus and skip link: implemented; manual keyboard/browser validation remains pending.
 - Sign-in form, session restore/expiry, CSRF-protected sign-out and API-backed dashboard metrics/charts: IN PROGRESS in PR #10; real-browser/API end-to-end acceptance remains open.
 - Doctor and patient CRUD screens/API integration: NOT STARTED.
 - Desktop/tablet/mobile screenshots, manual accessibility review, E2E and frontend deployment: NOT STARTED.
 
 ## Current progress
-Frontend documentation baseline: merged to dev. Backend API Steps 1–5: PASS in the API repository with linked CI evidence. Frontend shell Step 6: IN PROGRESS in PR #9; lint/build CI passed on tested code commit, but manual responsive/keyboard/reduced-motion review and screenshot evidence are not accepted. Step 7 is IN PROGRESS in PR #10; automated tests/build and real API/browser flow are still pending.
+Frontend documentation baseline: merged to dev. Backend API Steps 1–5: PASS in the API repository with linked CI evidence. Frontend shell Step 6: IN PROGRESS in PR #9; lint/build CI passed, but manual responsive/keyboard/reduced-motion review and screenshot evidence are not accepted. Step 7 is IN PROGRESS in PR #10; API-client tests/lint/build passed in CI #42, while real API sign-in/logout/session-expiry and browser E2E acceptance remain pending.
 
 ## Next
 Finish the open acceptance gates for [Step 6 — responsive shell](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/2), including manual device/keyboard/reduced-motion checks and screenshots. Then validate Step 7 in [issue #3](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/3) with a real API, including login, expired session, logout, date filters and live metrics. The next UI module after that is [doctor management, issue #4](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/4).
