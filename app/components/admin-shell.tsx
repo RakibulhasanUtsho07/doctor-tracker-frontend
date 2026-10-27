@@ -86,7 +86,7 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function AppBrand({ onActivate }: { onActivate: () => void }) {
   return (
-    <a className="brand" href="#main-content" onClick={onActivate} aria-label="Doctor Tracker home">
+    <a className="brand" href="#main-content" onClick={onActivate}>
       <span className="brand-mark" aria-hidden="true"><span /></span>
       <span className="brand-copy"><strong>doctor<span>tracker</span></strong><small>CARE OPERATIONS</small></span>
     </a>
@@ -125,7 +125,7 @@ function Sidebar({ section, onNavigate, isOpen, onClose, user }: { section: Sect
         <div className="sidebar-profile">
           <span className="profile-avatar" aria-hidden="true">{user.email.slice(0, 2).toUpperCase()}</span>
           <span className="profile-copy"><strong>{user.email}</strong><small>{user.role === "ADMIN" ? "Administrator" : user.role}</small></span>
-          <span className="profile-status profile-status--active" title="Authenticated session" aria-label="Authenticated session" />
+          <span className="profile-status profile-status--active" role="img" aria-label="Authenticated session" title="Authenticated session" />
         </div>
       </aside>
     </>
