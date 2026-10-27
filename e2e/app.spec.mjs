@@ -280,7 +280,7 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
   await expect(page.getByLabel(/Doctor association/)).toHaveValue(DOCTOR_ID);
   await page.getByLabel(/Patient name/).fill("Synthetic Patient One");
-  await page.getByLabel(/Condition/).fill("Routine follow-up");
+  await page.locator(".patient-editor form").getByLabel(/^Condition/).fill("Routine follow-up");
   await page.getByRole("button", { name: "Create patient" }).click();
   await expect(page.getByRole("heading", { name: "Synthetic Patient One" })).toBeVisible();
 
@@ -293,7 +293,7 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await page.getByRole("button", { name: "Reset" }).click();
   await page.getByRole("button", { name: "Synthetic Patient One" }).click();
   await page.getByRole("button", { name: "Edit details" }).click();
-  await page.getByLabel(/Condition/).fill("Routine follow-up updated");
+  await page.locator(".patient-editor form").getByLabel(/^Condition/).fill("Routine follow-up updated");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("heading", { name: "Synthetic Patient One" })).toBeVisible();
   expect(state.patients.find((patient) => patient.name === "Synthetic Patient One")?.condition).toBe("Routine follow-up updated");
@@ -320,7 +320,7 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await page.getByRole("button", { name: /Add patient/ }).click();
   await page.getByLabel(/Patient name/).fill("Synthetic Patient Two");
   await page.getByLabel(/Doctor association/).selectOption(DOCTOR_ID);
-  await page.getByLabel(/Condition/).fill("Synthetic example only");
+  await page.locator(".patient-editor form").getByLabel(/^Condition/).fill("Synthetic example only");
   await page.getByRole("button", { name: "Create patient" }).click();
   await expect(page.getByRole("heading", { name: "Synthetic Patient Two" })).toBeVisible();
   await page.getByRole("button", { name: "Delete patient record" }).click();
