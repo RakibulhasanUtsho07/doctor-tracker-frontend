@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 type Section = "dashboard" | "doctors" | "patients";
@@ -106,8 +106,8 @@ function Sidebar({ section, onNavigate, isOpen, onClose }: { section: Section; o
           <div><strong>Privacy comes first</strong><p>Patient information stays out of this preview. Secure API integration comes next.</p></div>
         </div>
         <div className="sidebar-profile">
-          <span className="profile-avatar" aria-hidden="true">AD</span>
-          <span className="profile-copy"><strong>Administrator</strong><small>Workspace owner</small></span>
+          <span className="profile-avatar" aria-hidden="true">UI</span>
+          <span className="profile-copy"><strong>Preview user</strong><small>Not signed in</small></span>
           <span className="profile-status" title="Preview only" aria-label="Preview only" />
         </div>
       </aside>
@@ -201,9 +201,46 @@ function ModulePlaceholder({ section, onNavigate }: { section: Exclude<Section, 
 export default function AdminShell() {
   const [section, setSection] = useState<Section>("dashboard");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const pageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousSectionRef = useRef<Section>("dashboard");
+  const restoreMenuFocusRef = useRef(false);
   const copy = sectionCopy[section];
 
+  useEffect(() => {
+    if (previousSectionRef.current !== section) {
+      previousSectionRef.current = section;
+      pageHeadingRef.current?.focus();
+    }
+  }, [section]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) {
+      if (restoreMenuFocusRef.current) {
+        menuButtonRef.current?.focus();
+        restoreMenuFocusRef.current = false;
+      }
+      return;
+    }
+
+    document.querySelector<HTMLButtonElement>("#primary-sidebar .nav-link")?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        restoreMenuFocusRef.current = true;
+        setMobileNavOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileNavOpen]);
+
+  function closeNavigation() {
+    restoreMenuFocusRef.current = true;
+    setMobileNavOpen(false);
+  }
+
   function navigate(next: Section) {
+    restoreMenuFocusRef.current = false;
     setSection(next);
     setMobileNavOpen(false);
   }
@@ -211,18 +248,18 @@ export default function AdminShell() {
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Sidebar section={section} onNavigate={navigate} isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <Sidebar section={section} onNavigate={navigate} isOpen={mobileNavOpen} onClose={closeNavigation} />
       <div className="main-shell">
         <header className="topbar">
           <div className="topbar-leading">
-            <button type="button" className="icon-button mobile-menu-button" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileNavOpen} aria-controls="primary-sidebar" onClick={() => setMobileNavOpen((open) => !open)}><Icon name={mobileNavOpen ? "close" : "menu"} size={20} /></button>
+            <button ref={menuButtonRef} type="button" className="icon-button mobile-menu-button" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileNavOpen} aria-controls="primary-sidebar" onClick={() => mobileNavOpen ? closeNavigation() : setMobileNavOpen(true)}><Icon name={mobileNavOpen ? "close" : "menu"} size={20} /></button>
             <nav className="breadcrumbs" aria-label="Breadcrumb"><span>Workspace</span><Icon name="chevron-right" size={14} /><strong aria-current="page">{copy.title}</strong></nav>
           </div>
-          <div className="topbar-trailing"><span className="preview-pill"><span /> UI PREVIEW</span><span className="topbar-divider" aria-hidden="true" /><span className="topbar-avatar" aria-hidden="true">AD</span><span className="topbar-user"><strong>Administrator</strong><small>Preview workspace</small></span></div>
+          <div className="topbar-trailing"><span className="preview-pill"><span /> UI PREVIEW</span><span className="topbar-divider" aria-hidden="true" /><span className="topbar-avatar" aria-hidden="true">UI</span><span className="topbar-user"><strong>Preview user</strong><small>Preview workspace</small></span></div>
         </header>
         <main id="main-content" className="main-content" tabIndex={-1}>
           <div className="page-intro">
-            <div><p className="section-kicker"><span className="intro-kicker-dot" /> {copy.eyebrow}</p><h1>{section === "dashboard" ? "Good systems make better care." : copy.title}</h1><p className="page-subtitle">{copy.description}</p></div>
+            <div><p className="section-kicker"><span className="intro-kicker-dot" /> {copy.eyebrow}</p><h1 ref={pageHeadingRef} tabIndex={-1}>{section === "dashboard" ? "Good systems make better care." : copy.title}</h1><p className="page-subtitle">{copy.description}</p></div>
             <div className="page-intro-side"><span className="intro-date-icon"><Icon name="clock" size={16} /></span><span><strong>Foundation phase</strong><small>Live data not connected</small></span></div>
           </div>
           {section === "dashboard" ? <DashboardView onNavigate={navigate} /> : <ModulePlaceholder section={section} onNavigate={navigate} />}
