@@ -57,7 +57,6 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   const preservedName = `Real API Patient Preserve ${suffix}`;
   const deletedName = `Real API Patient Delete ${suffix}`;
   const mutationRequests = [];
-  const preflightResponses = [];
 
   page.on("request", (req) => {
     if (!req.url().startsWith(API + "/")) return;
@@ -65,11 +64,6 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
       mutationRequests.push({ method: req.method(), url: req.url(), headers: req.headers() });
     }
   });
-  page.on("response", async (res) => {
-    if (!res.url().startsWith(API + "/") || res.request().method() !== "OPTIONS") return;
-    preflightResponses.push({ url: res.url(), status: res.status(), headers: await res.allHeaders() });
-  });
-
   await page.setViewportSize({ width: 1440, height: 1000 });
   await signIn(page);
 
@@ -97,12 +91,28 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
     return { status: response.status, code: body?.error?.code };
   }, { api: API, suffix });
   expect(noCsrf).toEqual({ status: 403, code: "CSRF_VALIDATION_FAILED" });
-  await expect.poll(() => preflightResponses.some((response) => response.url.endsWith("/doctors"))).toBe(true);
-  const corsPreflight = preflightResponses.find((response) => response.url.endsWith("/doctors"));
-  expect(corsPreflight.status).toBe(204);
-  expect(corsPreflight.headers["access-control-allow-origin"]).toBe("http://127.0.0.1:3000");
-  expect(corsPreflight.headers["access-control-allow-credentials"]).toBe("true");
-  expect(corsPreflight.headers["access-control-allow-headers"]).toMatch(/X-CSRF-Token/i);
+  // Probe the API's actual CORS preflight contract explicitly. The browser's
+  // successful cross-origin login and mutation requests below provide the
+  // browser-level credential/cookie check; Chromium does not consistently
+  // surface internal preflight requests as page response events.
+  const corsProbe = await request.newContext();
+  try {
+    const corsPreflight = await corsProbe.fetch(API + "/doctors", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:3000",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type,x-csrf-token"
+      }
+    });
+    expect(corsPreflight.status()).toBe(204);
+    const corsHeaders = corsPreflight.headers();
+    expect(corsHeaders["access-control-allow-origin"]).toBe("http://127.0.0.1:3000");
+    expect(corsHeaders["access-control-allow-credentials"]).toBe("true");
+    expect(corsHeaders["access-control-allow-headers"]).toMatch(/X-CSRF-Token/i);
+  } finally {
+    await corsProbe.dispose();
+  }
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
   await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
