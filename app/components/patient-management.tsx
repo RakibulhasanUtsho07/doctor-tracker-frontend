@@ -53,7 +53,7 @@ export default function PatientManagement({
   const [listReload, setListReload] = useState(0);
 
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
-  const [extraDoctor, setExtraDoctor] = useState<DoctorOption | null>(() => initialRequest?.doctor ?? null);
+  const [extraDoctor] = useState<DoctorOption | null>(() => initialRequest?.doctor ?? null);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [doctorReload, setDoctorReload] = useState(0);
   const [doctorsError, setDoctorsError] = useState("");
@@ -403,7 +403,7 @@ export default function PatientManagement({
           </div>
         </form>
         {filterError && <p className="patient-field-error patient-filter-error" role="alert">{filterError}</p>}
-        <p className="patient-filter-note">Search uses a case-insensitive literal prefix. Date bounds include complete UTC calendar days. The doctor selector is limited to the API's first 100 doctor records; use “Add patient” from a doctor profile for another doctor.</p>
+        <p className="patient-filter-note">Search uses a case-insensitive literal prefix. Date bounds include complete UTC calendar days. The doctor selector is limited to the API&apos;s first 100 doctor records; use “Add patient” from a doctor profile for another doctor.</p>
       </section>
 
       {(detailLoading || detailError || selectedPatient) && (
@@ -468,7 +468,7 @@ export default function PatientManagement({
         </div>
       </section>
 
-      <p className="patient-safety-note">Deleting a patient permanently removes the patient record. Detaching removes only the doctor association and preserves the patient. Both actions require confirmation and the API's CSRF protection.</p>
+      <p className="patient-safety-note">Deleting a patient permanently removes the patient record. Detaching removes only the doctor association and preserves the patient. Both actions require confirmation and the API&apos;s CSRF protection.</p>
 
       {confirmation && (
         <div className="patient-dialog-backdrop">
