@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000/api/v1";
-const { ApiClientError, apiRequest, getApiBaseUrl } = await import("../app/lib/api-client.ts");
+const { ApiClientError, apiRequest, apiRequestWithMeta, getApiBaseUrl } = await import("../app/lib/api-client.ts");
 
 test("API requests include credentials and unwrap the documented response envelope", async () => {
   const originalFetch = globalThis.fetch;
@@ -86,4 +86,22 @@ test("API base URL is normalized and can be explicitly absent", () => {
   assert.equal(getApiBaseUrl(), "http://localhost:4000/api/v1");
   delete process.env.NEXT_PUBLIC_API_BASE_URL;
   assert.equal(getApiBaseUrl(), null);
+});
+
+
+test("metadata-aware API requests preserve pagination metadata without changing data-only callers", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    data: { doctors: [{ id: "doctor-1", name: "Synthetic Doctor" }] },
+    meta: { requestId: "req-123", pagination: { page: 2, limit: 10, total: 23, totalPages: 3 } }
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  try {
+    const result = await apiRequestWithMeta("/doctors?page=2&limit=10");
+    assert.equal(result.data.doctors.length, 1);
+    assert.equal(result.meta.requestId, "req-123");
+    assert.deepEqual(result.meta.pagination, { page: 2, limit: 10, total: 23, totalPages: 3 });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
