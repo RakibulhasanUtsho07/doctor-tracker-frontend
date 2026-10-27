@@ -178,7 +178,7 @@ async function navigateToSection(page, label, mobile) {
     .getByRole("button", { name: new RegExp(label) }).click();
 }
 
-async function signIn(page) {
+async function signIn(page, { doctorCount = 0 } = {}) {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
   await page.getByLabel("Administrator email").fill("accessibility-admin@example.test");
@@ -186,7 +186,7 @@ async function signIn(page) {
   await page.getByLabel("Password").press("Enter");
   await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Doctor records", exact: true })
-    .locator("xpath=..").locator(".metric-value > span")).toHaveText("0");
+    .locator("xpath=..").locator(".metric-value > span")).toHaveText(String(doctorCount));
 }
 
 async function scanScreen(page, testInfo, name) {
@@ -306,7 +306,7 @@ test("mobile navigation is keyboard operable and restores focus after Escape", a
 
 test("doctor create/edit forms support keyboard navigation and announce duplicate-email errors", async ({ page }, testInfo) => {
   await installSyntheticApi(page, { seedDoctor: true });
-  await signIn(page);
+  await signIn(page, { doctorCount: 1 });
   await navigateToSection(page, "Doctors", testInfo.project.name === "chromium-mobile");
   const doctorRow = page.locator(".doctor-table").getByRole("button", { name: DOCTOR_RECORD.name, exact: true });
   await expect(doctorRow).toBeVisible();
@@ -343,7 +343,7 @@ test("doctor create/edit forms support keyboard navigation and announce duplicat
 
 test("patient create/edit form validation errors are linked to their fields", async ({ page }, testInfo) => {
   await installSyntheticApi(page, { seedDoctor: true, seedPatient: true });
-  await signIn(page);
+  await signIn(page, { doctorCount: 1 });
   await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
   await page.getByRole("button", { name: /Add patient/ }).click();
 
@@ -378,7 +378,7 @@ test("patient create/edit form validation errors are linked to their fields", as
 
 test("delete confirmation dialog has a keyboard focus loop and restores focus on dismissal", async ({ page }, testInfo) => {
   await installSyntheticApi(page, { seedPatient: true });
-  await signIn(page);
+  await signIn(page, { doctorCount: 1 });
   await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
 
   const deleteTrigger = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name })
