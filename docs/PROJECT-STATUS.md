@@ -25,3 +25,9 @@ Last verified: 2026-10-27
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
+
+## Form/dialog accessibility extension — 2026-10-27
+- Draft [PR #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/16), exact tested code head `4c3c73db59c8d425195c518fd5518fa0f2d58bce): [Frontend CI #247](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520035122), [synthetic browser E2E #111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034820), [accessibility #38](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034573) all passed; [real API/MongoDB #59](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034007) passed.
+- Accessibility run: 13 passed, 1 expected desktop-only skip; [axe JSON, screenshots and Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034573/artifacts/12741611304). Coverage now includes create/edit forms, duplicate-email/API validation error association, keyboard navigation, confirmation Tab/Shift+Tab loop, Escape/Cancel focus return and contrast on newly exposed states.
+- Real API run: 24/24 HTTP/unit, 4/4 MongoDB integration and 2/2 real-backend Chromium journeys passed on the same tested head.
+- Manual screen-reader/assistive technology, device/touch, production HTTPS/cookie behavior, performance/security and deployed smoke remain open; the release remains PARTIAL and all dependent PRs stay draft.
