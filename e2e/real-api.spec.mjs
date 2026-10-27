@@ -49,6 +49,58 @@ test("real API rejects invalid credentials without persisting a browser session"
   }
 });
 
+test("real API enforces patient list query and pagination boundaries", async ({ page }) => {
+  await signIn(page);
+
+  const results = await page.evaluate(async (api) => {
+    const invalidQueries = {
+      zeroPage: "page=0",
+      zeroLimit: "limit=0",
+      excessiveLimit: "limit=101",
+      duplicateLimit: "limit=1&limit=2",
+      offsetTooLarge: "page=100000&limit=2",
+      unknownParameter: "unexpected=1",
+      invalidCalendarDate: "from=2026-02-30",
+      reversedDateRange: "from=2026-03-02&to=2026-03-01",
+      whitespaceSearch: "search=%20"
+    };
+
+    const invalidResults = {};
+    for (const [name, query] of Object.entries(invalidQueries)) {
+      const response = await fetch(api + "/patients?" + query, { credentials: "include" });
+      const body = await response.json();
+      invalidResults[name] = { status: response.status, code: body?.error?.code };
+    }
+
+    const validResponse = await fetch(api + "/patients?page=1&limit=1", {
+      credentials: "include"
+    });
+    const validBody = await validResponse.json();
+    return {
+      invalidResults,
+      valid: {
+        status: validResponse.status,
+        page: validBody?.meta?.pagination?.page,
+        limit: validBody?.meta?.pagination?.limit,
+        total: validBody?.meta?.pagination?.total,
+        totalPages: validBody?.meta?.pagination?.totalPages,
+        rowCount: validBody?.data?.patients?.length
+      }
+    };
+  }, API);
+
+  for (const [name, result] of Object.entries(results.invalidResults)) {
+    expect(result, name).toEqual({ status: 400, code: "VALIDATION_ERROR" });
+  }
+
+  expect(results.valid.status).toBe(200);
+  expect(results.valid.page).toBe(1);
+  expect(results.valid.limit).toBe(1);
+  expect(results.valid.total).toBeGreaterThanOrEqual(0);
+  expect(results.valid.totalPages).toBe(Math.ceil(results.valid.total / results.valid.limit));
+  expect(results.valid.rowCount).toBeLessThanOrEqual(1);
+});
+
 test("real API browser journey verifies cookie CORS, CSRF, persisted patient lifecycle, dashboard and session revocation", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
   const suffix = randomUUID().slice(0, 8);
