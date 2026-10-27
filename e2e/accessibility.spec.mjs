@@ -310,7 +310,8 @@ test("doctor create/edit forms support keyboard navigation and announce duplicat
   await navigateToSection(page, "Doctors", testInfo.project.name === "chromium-mobile");
   const doctorRow = page.locator(".doctor-table").getByRole("button", { name: DOCTOR_RECORD.name, exact: true });
   await expect(doctorRow).toBeVisible();
-  await doctorRow.click();
+  await doctorRow.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: DOCTOR_RECORD.name, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit details" }).click();
 
