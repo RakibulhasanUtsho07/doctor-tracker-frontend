@@ -49,97 +49,6 @@ test("real API rejects invalid credentials without persisting a browser session"
   }
 });
 
-test("real API session revocation clears the stale patient workspace on the next protected request", async ({ page }) => {
-  const suffix = randomUUID().slice(0, 8);
-  const patientName = "Session Revocation Patient " + suffix;
-  await signIn(page);
-
-  const fixture = await page.evaluate(async ({ api, suffix, patientName }) => {
-    const meResponse = await fetch(api + "/auth/me", { credentials: "include" });
-    const meBody = await meResponse.json();
-    const csrfToken = meBody?.data?.csrfToken;
-    if (!meResponse.ok || typeof csrfToken !== "string" || csrfToken.length < 40) {
-      throw new Error("Could not obtain the active test session's CSRF token.");
-    }
-
-    const doctorResponse = await fetch(api + "/doctors", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-      body: JSON.stringify({
-        name: "Dr. Session Revocation " + suffix,
-        specialization: "Family Medicine",
-        hospital: "Session Revocation Test Clinic",
-        phone: "+880 1700 300000",
-        email: "session-revocation-" + suffix + "@example.test"
-      })
-    });
-    const doctorBody = await doctorResponse.json();
-    if (doctorResponse.status !== 201 || !doctorBody?.data?.doctor?.id) {
-      throw new Error("Could not create a synthetic doctor for session-revocation acceptance.");
-    }
-
-    const patientResponse = await fetch(api + "/patients", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-      body: JSON.stringify({
-        doctorId: doctorBody.data.doctor.id,
-        name: patientName,
-        condition: "Synthetic session revocation acceptance"
-      })
-    });
-    const patientBody = await patientResponse.json();
-    if (patientResponse.status !== 201 || !patientBody?.data?.patient?.id) {
-      throw new Error("Could not create the synthetic patient for session-revocation acceptance.");
-    }
-
-    return { doctorId: doctorBody.data.doctor.id, patientId: patientBody.data.patient.id };
-  }, { api: API, suffix, patientName });
-
-  expect(fixture.doctorId).toMatch(/^[a-f0-9]{24}$/i);
-  expect(fixture.patientId).toMatch(/^[a-f0-9]{24}$/i);
-
-  await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: /Patients/ }).click();
-  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
-  await page.getByLabel("Search patients").fill(patientName);
-  await page.getByRole("button", { name: "Apply filters" }).click();
-  const patientRow = page.getByRole("row").filter({ hasText: patientName });
-  await expect(patientRow).toBeVisible();
-
-  // Revoke the server-side session out-of-band, without telling the React shell yet.
-  const revocation = await page.evaluate(async (api) => {
-    const meResponse = await fetch(api + "/auth/me", { credentials: "include" });
-    const meBody = await meResponse.json();
-    const csrfToken = meBody?.data?.csrfToken;
-    if (!meResponse.ok || typeof csrfToken !== "string") {
-      throw new Error("Could not read CSRF token to revoke the synthetic test session.");
-    }
-    const logoutResponse = await fetch(api + "/auth/logout", {
-      method: "POST",
-      credentials: "include",
-      headers: { "X-CSRF-Token": csrfToken }
-    });
-    return { currentSessionStatus: meResponse.status, logoutStatus: logoutResponse.status };
-  }, API);
-  expect(revocation).toEqual({ currentSessionStatus: 200, logoutStatus: 204 });
-
-  // The UI still believes it is signed in until this protected request returns 401.
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible({ timeout: 8_000 });
-  await expect(page.getByRole("status")).toContainText("Your administrator session expired. Sign in again to continue.");
-  await expect(page.getByRole("heading", { name: "Patient directory" })).toHaveCount(0);
-  await expect(page.getByText(patientName, { exact: true })).toHaveCount(0);
-  await expect(page.getByText("API CONNECTED", { exact: true })).toHaveCount(0);
-
-  const browserStorage = await page.evaluate(() => ({
-    local: Object.keys(localStorage),
-    session: Object.keys(sessionStorage)
-  }));
-  expect(browserStorage).toEqual({ local: [], session: [] });
-});
-
 test("real API enforces patient list query and pagination boundaries", async ({ page }) => {
   await signIn(page);
 
@@ -677,4 +586,95 @@ test("real UI finds a doctor beyond the first 100 and persists patient reassignm
   expect(persisted.total).toBe(1);
   expect(persisted.patient?.name).toBe(patientName);
   expect(persisted.patient?.doctorId).toBe(boundary.target.id);
+});
+
+test("real API session revocation clears the stale patient workspace on the next protected request", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const patientName = "Session Revocation Patient " + suffix;
+  await signIn(page);
+
+  const fixture = await page.evaluate(async ({ api, suffix, patientName }) => {
+    const meResponse = await fetch(api + "/auth/me", { credentials: "include" });
+    const meBody = await meResponse.json();
+    const csrfToken = meBody?.data?.csrfToken;
+    if (!meResponse.ok || typeof csrfToken !== "string" || csrfToken.length < 40) {
+      throw new Error("Could not obtain the active test session's CSRF token.");
+    }
+
+    const doctorResponse = await fetch(api + "/doctors", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({
+        name: "Dr. Session Revocation " + suffix,
+        specialization: "Family Medicine",
+        hospital: "Session Revocation Test Clinic",
+        phone: "+880 1700 300000",
+        email: "session-revocation-" + suffix + "@example.test"
+      })
+    });
+    const doctorBody = await doctorResponse.json();
+    if (doctorResponse.status !== 201 || !doctorBody?.data?.doctor?.id) {
+      throw new Error("Could not create a synthetic doctor for session-revocation acceptance.");
+    }
+
+    const patientResponse = await fetch(api + "/patients", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({
+        doctorId: doctorBody.data.doctor.id,
+        name: patientName,
+        condition: "Synthetic session revocation acceptance"
+      })
+    });
+    const patientBody = await patientResponse.json();
+    if (patientResponse.status !== 201 || !patientBody?.data?.patient?.id) {
+      throw new Error("Could not create the synthetic patient for session-revocation acceptance.");
+    }
+
+    return { doctorId: doctorBody.data.doctor.id, patientId: patientBody.data.patient.id };
+  }, { api: API, suffix, patientName });
+
+  expect(fixture.doctorId).toMatch(/^[a-f0-9]{24}$/i);
+  expect(fixture.patientId).toMatch(/^[a-f0-9]{24}$/i);
+
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Patients/ }).click();
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await page.getByLabel("Search patients").fill(patientName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const patientRow = page.getByRole("row").filter({ hasText: patientName });
+  await expect(patientRow).toBeVisible();
+
+  // Revoke the server-side session out-of-band, without telling the React shell yet.
+  const revocation = await page.evaluate(async (api) => {
+    const meResponse = await fetch(api + "/auth/me", { credentials: "include" });
+    const meBody = await meResponse.json();
+    const csrfToken = meBody?.data?.csrfToken;
+    if (!meResponse.ok || typeof csrfToken !== "string") {
+      throw new Error("Could not read CSRF token to revoke the synthetic test session.");
+    }
+    const logoutResponse = await fetch(api + "/auth/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-CSRF-Token": csrfToken }
+    });
+    return { currentSessionStatus: meResponse.status, logoutStatus: logoutResponse.status };
+  }, API);
+  expect(revocation).toEqual({ currentSessionStatus: 200, logoutStatus: 204 });
+
+  // The UI still believes it is signed in until this protected request returns 401.
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByRole("status")).toContainText("Your administrator session expired. Sign in again to continue.");
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toHaveCount(0);
+  await expect(page.getByText(patientName, { exact: true })).toHaveCount(0);
+  await expect(page.getByText("API CONNECTED", { exact: true })).toHaveCount(0);
+
+  const browserStorage = await page.evaluate(() => ({
+    local: Object.keys(localStorage),
+    session: Object.keys(sessionStorage)
+  }));
+  expect(browserStorage).toEqual({ local: [], session: [] });
 });
