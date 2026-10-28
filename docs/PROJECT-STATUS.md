@@ -18,6 +18,10 @@ The last fully verified candidate before this status snapshot is PR #24 document
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483847) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483931) |
 
+## Protected staging workflow — follow-up security hardening
+
+The mutating staging-smoke job is restricted by YAML to dispatches from `dev` or `main` and is attached to GitHub Actions environment `disposable-staging`. Static regression tests assert both controls. Repository configuration must still add required reviewers, restrict allowed deployment branches to trusted protected branches, and keep staging credentials at environment scope; those settings cannot be proven from the source diff alone. Until settings are verified, the live mutating staging gate stays BLOCKED.
+
 ## Guarded staging smoke host allowlist — follow-up security work
 
 The mutating staging workflow previously accepted any public host containing a staging-like label, which did not prove that the target was owned by this deployment. The current candidate adds exact matching against trusted repository variables `STAGING_FRONTEND_HOST` and `STAGING_API_HOST`. Missing variables or host mismatches fail closed before the workflow checks staging credentials or makes network requests. The expected values must be exact lowercase DNS hostnames only. Regression tests cover missing/malformed variables and staging-looking attacker-controlled domains. This follow-up is subject to exact-head CI; it does not authorize a staging run or close live acceptance.
