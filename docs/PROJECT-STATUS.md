@@ -44,7 +44,7 @@ The real API + MongoDB Chromium suite passes 9/9 browser tests on source/test ca
 The feature branches have implementation and automated test evidence, but the integration graph is not yet ready to merge:
 
 - Frontend `dev` is **9 commits ahead of `main`**; `main` is behind and has not received the current feature stack.
-- `rakibul-hasan` is **20 commits ahead of `dev` and 3 commits behind it** (diverged). PR #9 therefore needs a reviewed reconciliation with current `dev` before its eventual merge.
+- `rakibul-hasan` now includes the current `dev` tip as its second parent through ancestry-only merge commit [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463); its source tree remained byte-identical to the prior head. Branch comparison is now **21 commits ahead of and 0 behind `dev`**. Current-head [Frontend CI push #409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [PR #9 CI #410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) both passed.
 - PRs #9–#20 are all still **open and draft**. GitHub reports them structurally mergeable; that is not equivalent to approved review, passing current-head checks or manual release acceptance.
 
 | PR | Base branch | Head branch | State |
@@ -64,7 +64,7 @@ The feature branches have implementation and automated test evidence, but the in
 
 Safe next sequence:
 
-1. Reconcile the latest `dev` commits into `rakibul-hasan` with a reviewed, non-force update; resolve and review any changed code, then rerun the root candidate's CI and browser checks.
+1. Completed: reconcile `dev` ancestry into `rakibul-hasan` with non-force commit [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463); confirmed no content-tree changes and passed root CI [#409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) / [#410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741).
 2. Keep PR #9 and the stacked children in draft until the required manual keyboard/screen-reader, actual 200% zoom and physical-device checks have dated evidence.
 3. After PR #9 is accepted and integrated into `dev`, promote the child PRs in dependency order, checking each diff against its new base and rerunning CI on the resulting branch SHA.
 4. Promote the validated `dev` state to `main` only after the frontend and API release gates are met; verify post-merge CI against both resulting SHAs.
@@ -87,7 +87,7 @@ Do not invent staging URLs, credentials, screenshots, performance SLAs or manual
 
 ## Next execution order
 
-1. Keep this status and the SRS traceability matrix synchronized to the exact current tested candidate; both duplicate-doctor-email edit conflict and mixed-case duplicate-email create conflict are covered in the disposable real-API browser suite.
+1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; source/test SHA `9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c` passes five workflows and 9/9 real API browser tests.
 2. Review the stacked frontend PR dependency chain and the remaining domain edge cases not exhaustively covered; use the latest exact-head workflow results, not older run numbers.
 3. Complete human accessibility/device checks and an independent security review.
 4. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that staging environment.

@@ -34,7 +34,7 @@ All five workflows passed on exact frontend source/test candidate SHA 9945f0a2d9
 - [Real API + MongoDB browser acceptance #218](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456987) — actual Express API, disposable MongoDB integration suite and Chromium acceptance.
 
 The real API suite passed **9/9 browser tests** on this candidate. Coverage includes Doctor field editing, CSRF-protected `PATCH /doctors/:id`, hospital/phone persistence after reload, duplicate-email edit/create recovery, and a new pointer-free keyboard journey against the real API. A create attempt using the same email with different letter case returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record; the API is queried to prove the existing row stays and the rejected row is absent. The browser then corrects the email using the keyboard, retries successfully and verifies the newly persisted row through direct API reads. Server-side validation also moves focus to the invalid email input.
-- [Frontend dependency security audit #96](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456871) — passed the configured high/critical advisory threshold.
+- [Frontend dependency security audit #111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456871) — passed the configured high/critical advisory threshold.
 
 Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI on that branch passed [run #40549035764](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40549035764). API main is 39 commits behind API dev and has not been promoted in this snapshot.
 
@@ -43,7 +43,7 @@ Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI o
 | Gate | Status | Closure evidence |
 |---|---|---|
 | Exact-head automated checks | PASS — candidate SHA above | All five workflow results above |
-| Feature PR dependency review | BLOCKED / NOT MERGED | PRs #9–#20 remain draft; `rakibul-hasan` is 20 commits ahead of and 3 behind `dev`; reconcile branch base and close manual gates before promotion. See branch audit in PROJECT-STATUS.md |
+| Feature PR dependency review | BLOCKED / NOT MERGED | PRs #9–#20 remain draft. `rakibul-hasan` ancestry now includes `dev` through [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463) without source-tree changes; root CI [#409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [#410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) passed. Manual acceptance and parent review still block feature merges/promotion. See PROJECT-STATUS.md |
 | Human keyboard and screen-reader audit | NOT STARTED | Dated findings, environment and reviewer details; no secrets/patient data |
 | Actual 200% zoom and physical desktop/tablet/mobile touch review | NOT STARTED | Real browser/device evidence, not emulation alone |
 | Live HTTPS/CORS/session/CSRF smoke | BLOCKED | Authorized staging frontend/API URLs, exact deployed SHAs and a disposable administrator |
