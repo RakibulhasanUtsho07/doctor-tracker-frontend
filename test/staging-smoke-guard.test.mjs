@@ -122,7 +122,16 @@ test("mutating staging workflow uses a protected environment and only trusted de
     "utf8"
   );
 
-  assert.ok(workflow.includes("if: github.ref == 'refs/heads/dev'"));
+  assert.ok(
+    workflow.includes("if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'"),
+    "mutating staging acceptance must be manual-only and restricted to dev"
+  );
+  assert.ok(
+    workflow.includes("if: github.event_name == 'push' || github.ref != 'refs/heads/dev'"),
+    "pushes and wrong-ref manual dispatches must use the non-mutating validation job"
+  );
+  assert.ok(workflow.includes("node --test test/staging-smoke-guard.test.mjs"));
+  assert.ok(workflow.includes("this run made no staging requests and accessed no staging secrets."));
   assert.ok(workflow.includes("environment:"));
   assert.ok(workflow.includes("name: disposable-staging"));
   assert.ok(
