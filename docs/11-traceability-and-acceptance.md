@@ -44,6 +44,10 @@ Draft PR #21 replaces the previous inline-script exception with a fresh per-resp
 
 Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI on that branch passed [run #40549035764](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40549035764). API main is 39 commits behind API dev and has not been promoted in this snapshot.
 
+## Protected staging workflow environment — PR #19 / PR #24
+
+The mutating staging smoke job is source-restricted to `dev` or `main` and uses the `disposable-staging` environment. A static regression checks those declarations. This is not enough by itself: configure required reviewers, deployment-branch restrictions and environment-scoped staging secrets in repository settings. Until those external settings are inspected and confirmed, the live staging smoke remains BLOCKED.
+
 ## Guarded staging smoke target ownership — PR #19 / follow-up review
 
 The mutating staging workflow must not treat a `staging`/ `preview` hostname label as proof of target ownership. The current follow-up requires exact host matching against out-of-band repository variables `STAGING_FRONTEND_HOST` and `STAGING_API_HOST`; missing or mismatched values reject before network access. Regression cases cover absent/malformed allowlists and attacker-controlled staging-looking hosts. Because this change adds commits to the stacked top branch, exact-head CI must pass before its automated status can be marked PASS. Actual staging execution remains BLOCKED pending authorized host values, staging-only secrets, an existing synthetic doctor fixture and manual approval.
