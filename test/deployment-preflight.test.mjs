@@ -31,6 +31,30 @@ test("deployment URL validator rejects trailing-dot hostnames", () => {
   }
 });
 
+test("deployment URL validator rejects malformed public DNS labels", () => {
+  const cases = [
+    "https://frontend..candidate-host.com",
+    "https://-frontend.candidate-host.com",
+    "https://frontend-.candidate-host.com",
+    "https://front_end.candidate-host.com",
+    "https://" + "a".repeat(64) + ".candidate-host.com",
+    "https://" + [
+      "a".repeat(63),
+      "b".repeat(63),
+      "c".repeat(63),
+      "d".repeat(63)
+    ].join(".")
+  ];
+
+  for (const value of cases) {
+    assert.throws(
+      () => parsePublicHttpsUrl(value, "Frontend URL"),
+      /must use a public DNS hostname/,
+      value
+    );
+  }
+});
+
 test("API base URL must identify the versioned API prefix", () => {
   assert.equal(
     parsePublicHttpsUrl("https://api.candidate-host.com/api/v1/", "API base URL", { requireApiBase: true }).pathname,
