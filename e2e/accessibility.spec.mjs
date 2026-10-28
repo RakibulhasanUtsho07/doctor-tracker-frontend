@@ -53,6 +53,9 @@ async function installSyntheticApi(page, options = {}) {
     const path = url.pathname.replace("/api/v1", "");
     const method = request.method().toUpperCase();
     const body = request.postData() ? request.postDataJSON() : {};
+    if (method === "DELETE" && options.actionDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, options.actionDelayMs));
+    }
 
     if (method === "OPTIONS") {
       await route.fulfill({ status: 204, headers: corsHeaders });
@@ -375,6 +378,45 @@ test("patient create/edit form validation errors are linked to their fields", as
   await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(editForm.locator('input[name="name"]')).toBeFocused();
+});
+
+test("confirmation dialog contains escaped focus and stays modal while an action is pending", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedPatient: true, actionDelayMs: 1200 });
+  await signIn(page, { doctorCount: 1 });
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+
+  const patientRow = page.getByRole("row").filter({ hasText: PATIENT_RECORD.name });
+  const deleteTrigger = patientRow.getByRole("button", { name: "Delete", exact: true });
+  await deleteTrigger.click();
+
+  const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  const confirm = dialog.getByRole("button", { name: "Delete permanently" });
+  const backgroundAction = page.getByRole("button", { name: /Add patient/ });
+  await expect(cancel).toBeFocused();
+
+  // aria-modal alone does not prevent script-driven focus from moving outside.
+  await backgroundAction.focus();
+  await page.keyboard.press("Tab");
+  await expect(cancel).toBeFocused();
+  await backgroundAction.focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(confirm).toBeFocused();
+
+  // The action disables both dialog buttons temporarily. Focus must remain in
+  // the modal, and Tab must not move into the background while no controls work.
+  await confirm.click();
+  await expect(confirm).toBeDisabled();
+  await expect(dialog).toContainText("Working…");
+  await backgroundAction.focus();
+  await page.keyboard.press("Tab");
+  await expect(dialog).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog).toBeFocused();
+
+  await expect(dialog).toBeHidden({ timeout: 5_000 });
+  await expect(page.getByText("Patient record permanently deleted.", { exact: true })).toBeVisible();
+  await expect(patientRow).toHaveCount(0);
 });
 
 test("delete confirmation dialog has a keyboard focus loop and restores focus on dismissal", async ({ page }, testInfo) => {
