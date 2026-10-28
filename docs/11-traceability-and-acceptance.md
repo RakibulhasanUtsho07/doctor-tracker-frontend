@@ -144,3 +144,15 @@ This closes the responsive **automated** coverage gap for these viewport widths 
 The following required workflows passed across the implementation and test-ordering commits: [Frontend CI #40625551643](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551643), [synthetic E2E #40625551681](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551681), [accessibility #40625551648](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551648), [dependency audit #40625551666](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551666), [updated frontend CI #40625887608](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887608), [updated synthetic E2E #40625887630](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887630) and [real API/MongoDB #40625887617](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887617). Latest real API run passed 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 6/6 Chromium journeys.
 
 **Release boundary:** automated session handling is PASS within this scope. Production cookie behavior, real deployed session-expiry/revocation, manual screen-reader/device review and independent security sign-off remain open release gates; do not mark the complete release PASS until separately evidenced.
+
+## Staging smoke workflow security gate — 2026-10-28
+
+| Requirement / work item | Evidence required | Status |
+|---|---|---|
+| Staging target approval and credential order | Exact frontend/API host allowlist match; user-controlled URL is not displayed as a deployment link before approval; staging-only secrets are environment-scoped; guard runs before secrets and read-only preflight before mutations | IN PROGRESS — workflow and regression tests updated in draft [PR #19](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/19); exact-head CI must finish before PASS |
+| CI workflow supply-chain integrity | All third-party actions use full immutable commit SHAs; regression tests reject tag-based action references | IN PROGRESS — both workflow files pinned and test coverage added; exact-head CI pending |
+| Protected staging environment | Required reviewers; allowed deployment branches restricted to protected `dev`; exact approved hostname variables and environment-only admin secrets | BLOCKED — repository environment settings require independent verification |
+| Deployed smoke and manual release acceptance | Actual deployed frontend/API SHAs; successful synthetic-data session/CSRF/CRUD/revocation smoke; physical-device, screen-reader, 200%-zoom, security and agreed-target performance evidence | BLOCKED / NOT STARTED — no live staging request or manual review claimed |
+
+These statuses are deliberately not marked PASS based only on source changes. Re-evaluate against the final SHA and saved CI evidence, then close external environment and manual release gates independently.
+
