@@ -85,6 +85,7 @@ export default function PatientManagement({
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const confirmationCancelRef = useRef<HTMLButtonElement>(null);
+  const confirmationDialogRef = useRef<HTMLElement | null>(null);
   const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const confirmationFallbackFocusRef = useRef(false);
 
@@ -149,7 +150,10 @@ export default function PatientManagement({
 
   useEffect(() => {
     if (!confirmation) return;
-    confirmationCancelRef.current?.focus();
+    const dialog = confirmationDialogRef.current;
+    if (actionPending) dialog?.focus();
+    else confirmationCancelRef.current?.focus();
+
     const handleDialogKeys = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !actionPending) {
         setConfirmation(null);
@@ -157,12 +161,24 @@ export default function PatientManagement({
         return;
       }
       if (event.key !== "Tab") return;
-      const dialog = document.querySelector<HTMLElement>(".patient-confirm-dialog");
-      const focusable = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
-      if (!focusable || focusable.length === 0) return;
+      const activeDialog = confirmationDialogRef.current;
+      if (!activeDialog) return;
+      const focusable = activeDialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) {
+        // During an in-flight action, both controls are disabled. Keep focus on
+        // the dialog itself rather than allowing Tab to enter the background.
+        event.preventDefault();
+        activeDialog.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!activeDialog.contains(document.activeElement)) {
+        // aria-modal describes modality to assistive technology; it does not
+        // physically prevent script-driven focus from escaping the dialog.
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -530,7 +546,7 @@ export default function PatientManagement({
 
       {confirmation && (
         <div className="patient-dialog-backdrop">
-          <section className="patient-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-confirm-heading" aria-describedby="patient-confirm-description">
+          <section ref={confirmationDialogRef} tabIndex={-1} className="patient-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-confirm-heading" aria-describedby="patient-confirm-description">
             <p className="section-kicker">{confirmation.kind === "delete" ? "PERMANENT ACTION" : "RELATIONSHIP CHANGE"}</p>
             <h3 id="patient-confirm-heading">{confirmation.kind === "delete" ? "Delete this patient record?" : "Detach this patient from the doctor?"}</h3>
             <p id="patient-confirm-description">{confirmation.kind === "delete"
