@@ -2,6 +2,18 @@ import { test, expect } from "../.e2e-tools/node_modules/@playwright/test/index.
 
 const MOBILE_BREAKPOINT = 760;
 
+async function assertNoHorizontalOverflow(page, context) {
+  const layout = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    bodyWidth: document.body.scrollWidth
+  }));
+  expect(
+    layout.documentWidth <= layout.viewportWidth && layout.bodyWidth <= layout.viewportWidth,
+    "Unexpected horizontal overflow on " + context + ": " + JSON.stringify(layout)
+  ).toBe(true);
+}
+
 async function openPrimaryNavigation(page) {
   if (page.viewportSize().width <= MOBILE_BREAKPOINT) {
     await page.getByRole("banner").getByRole("button", { name: "Open navigation" }).click();
@@ -53,6 +65,7 @@ test("primary navigation updates the announced page heading and never fabricates
   await expect(doctorsHeading).toBeFocused();
   await expect(page.locator(".placeholder-notice")).toContainText("No records are displayed");
   await expect(page.locator(".placeholder-notice")).toContainText("not connected to the API");
+  await assertNoHorizontalOverflow(page, "doctor placeholder");
 
   await page.getByRole("button", { name: /Return to dashboard/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Good systems make better care." })).toBeFocused();
@@ -62,6 +75,7 @@ test("primary navigation updates the announced page heading and never fabricates
   await expect(patientsHeading).toBeVisible();
   await expect(patientsHeading).toBeFocused();
   await expect(page.locator(".placeholder-notice")).toContainText("No records are displayed");
+  await assertNoHorizontalOverflow(page, "patient placeholder");
 });
 
 test("skip link moves keyboard users to the main content", async ({ page }) => {
@@ -102,7 +116,7 @@ test("reduced-motion preference disables smooth scrolling and minimizes transiti
   expect(motion.metricDurations.every((duration) => duration <= 0.1), JSON.stringify(motion)).toBe(true);
 });
 
-test("mobile navigation opens by keyboard and restores focus when closed", async ({ page }, testInfo) => {
+test("mobile navigation opens by keyboard and restores focus when closed", async ({ page }) => {
   test.skip(page.viewportSize().width > MOBILE_BREAKPOINT, "Mobile-only navigation behavior.");
   await page.goto("/");
 
