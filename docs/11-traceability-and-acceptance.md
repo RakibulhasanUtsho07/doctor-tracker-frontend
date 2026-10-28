@@ -44,6 +44,10 @@ Draft PR #21 replaces the previous inline-script exception with a fresh per-resp
 
 Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI on that branch passed [run #40549035764](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40549035764). API main is 39 commits behind API dev and has not been promoted in this snapshot.
 
+## Guarded staging smoke target ownership — PR #19 / follow-up review
+
+The mutating staging workflow must not treat a `staging`/ `preview` hostname label as proof of target ownership. The current follow-up requires exact host matching against out-of-band repository variables `STAGING_FRONTEND_HOST` and `STAGING_API_HOST`; missing or mismatched values reject before network access. Regression cases cover absent/malformed allowlists and attacker-controlled staging-looking hosts. Because this change adds commits to the stacked top branch, exact-head CI must pass before its automated status can be marked PASS. Actual staging execution remains BLOCKED pending authorized host values, staging-only secrets, an existing synthetic doctor fixture and manual approval.
+
 ## Deployment preflight redirect, DNS, port, pin, response-size and timeout safety — PR #24
 
 The preflight fails closed for redirects on frontend GET, API health/readiness GET and CORS OPTIONS. Hostname validation rejects local/reserved/IP-literal, malformed and trailing-dot names, including IANA special-use DNS suffixes and their subdomains. Non-default HTTPS ports are rejected; explicit :443 normalizes to the default. Hostname validation takes precedence over port rejection so local/reserved targets receive the intended error.
