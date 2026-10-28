@@ -1,7 +1,7 @@
 # Traceability and Acceptance
 
 **Snapshot date:** 2026-10-28  
-**Current preflight-hardening candidate:** deployment-preflight hardening including standalone transport pin validation, default HTTPS-port enforcement, 2 MiB response cap and a default 10-second timeout for direct adapter calls; latest source/test head `e6ae741fbd78680075f25a7121198c406e7c67e4` on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on CSP route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) and nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21). All five required workflows passed on that exact source/test head; the next documentation-inclusive head requires its own exact-head CI. Automated evidence does not establish live deployment acceptance. Last verified parent baseline: `c5419ba0f34ad8ff2f1c7fe3fc86bb4ec82bcf00`.  
+**Current preflight-hardening candidate:** deployment-preflight hardening including standalone transport pin validation, default HTTPS-port enforcement, 2 MiB response cap and a default 10-second timeout for direct adapter calls; source/test head `e6ae741fbd78680075f25a7121198c406e7c67e4` passed all five workflows, and docs-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also passed all five. This subsequent traceability refresh requires exact-head CI. Current work remains on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) and [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21). Automated evidence does not establish live deployment acceptance. Last verified parent baseline: `c5419ba0f34ad8ff2f1c7fe3fc86bb4ec82bcf00`.  
 **Overall release status:** **PARTIAL / BLOCKED**.  
 Statuses used below: NOT STARTED, IN PROGRESS, PASS, FAIL, PARTIAL, BLOCKED. A PASS applies only to the explicit tested scope, environment and commit; it does not imply production release acceptance.
 
@@ -63,6 +63,15 @@ All five required workflows passed on source/test head `e6ae741fbd78680075f25a71
 - [Real API + MongoDB #40693915463](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693915463)
 - [Dependency audit #40693923674](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923674)
 
+The documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also passed all five workflows:
+- [Frontend CI #40694547447](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547447)
+- [Synthetic browser E2E #40694547480](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547480)
+- [Accessibility #40694547442](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547442)
+- [Real API + MongoDB #40694547456](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547456)
+- [Dependency audit #40694547465](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547465)
+
+This traceability refresh is a later documentation-only change and requires exact-head CI before it is called verified.
+
 These automated/isolated results do not establish live deployment acceptance. Authorized staging verification and independent review remain open.
 
 ## CSP matcher boundary regression — PR #23
@@ -82,7 +91,7 @@ These checks establish automated coverage only. PR #23 remains draft pending ind
 
 | Gate | Status | Closure evidence |
 |---|---|---|
-| Exact-head automated checks | PASS — source/test SHA `e6ae741fbd78680075f25a7121198c406e7c67e4`; docs-inclusive update pending its own run | All five source/test workflow results above; next docs-inclusive SHA will be verified separately |
+| Exact-head automated checks | PASS — source/test SHA `e6ae741fbd78680075f25a7121198c406e7c67e4` and docs-inclusive SHA `b98ad1f29be655f05c2bdf906f45b3d5c7975a21`; later traceability refresh pending its own run | Source/test and first docs-inclusive head each passed all five workflows, linked in the deployment-preflight section. This following documentation change requires a fresh exact-head check. |
 | Feature PR dependency review | BLOCKED / NOT MERGED | PRs #9–#24 remain draft; nonce-CSP PR #21 is stacked on #20, observational performance PR #22 is stacked on #21, CSP matcher-boundary PR #23 is stacked on #22, and redirect-safe preflight PR #24 is stacked on #23. `rakibul-hasan` ancestry now includes `dev` through [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463) without source-tree changes; root CI [#409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [#410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) passed. Manual acceptance and parent review still block feature merges/promotion. See PROJECT-STATUS.md |
 | Human keyboard and screen-reader audit | NOT STARTED | Dated findings, environment and reviewer details; no secrets/patient data |
 | Actual 200% zoom and physical desktop/tablet/mobile touch review | NOT STARTED | Real browser/device evidence, not emulation alone |
