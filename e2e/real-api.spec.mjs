@@ -920,3 +920,155 @@ test("real API duplicate doctor email creation preserves the existing record and
   expect(recovered.recovered.doctor?.email).toBe(recoveredEmail);
   expect(recovered.recovered.doctor?.hospital).toBe("Must Not Persist Clinic");
 });
+
+test("real API keyboard-only Doctor creation handles duplicate email conflict and corrected retry", async ({ page }) => {
+  test.setTimeout(90_000);
+  const suffix = randomUUID().slice(0, 8);
+  const existingName = `Dr. Keyboard Existing ${suffix}`;
+  const rejectedName = `Dr. Keyboard Rejected ${suffix}`;
+  const existingEmail = `keyboard-conflict-${suffix}@example.test`;
+  const recoveredEmail = `keyboard-recovered-${suffix}@example.test`;
+
+  await signIn(page);
+  const doctorsNavigation = page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ });
+  await doctorsNavigation.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function openAndFillDoctorFormByKeyboard(name, email, hospital) {
+    const addDoctor = page.getByRole("button", { name: /Add doctor/ });
+    await addDoctor.focus();
+    await page.keyboard.press("Enter");
+
+    const heading = page.getByRole("heading", { name: "Add a doctor" });
+    await expect(heading).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+
+    const form = page.locator(".doctor-editor form");
+    const values = [
+      [form.getByLabel(/Full name/), name],
+      [form.getByLabel(/^Specialization/), "Family Medicine"],
+      [form.getByLabel(/Hospital \/ clinic/), hospital],
+      [form.getByLabel(/^Phone/), "+880 1700 600001"],
+      [form.getByLabel(/^Email address/), email]
+    ];
+    for (const [field, value] of values) {
+      await page.keyboard.press("Tab");
+      await expect(field).toBeFocused();
+      await page.keyboard.type(value);
+    }
+
+    const submit = form.getByRole("button", { name: "Create doctor" });
+    await page.keyboard.press("Tab");
+    await expect(submit).toBeFocused();
+    return { form, submit };
+  }
+
+  const originalForm = await openAndFillDoctorFormByKeyboard(
+    existingName,
+    existingEmail,
+    "Keyboard Acceptance Clinic"
+  );
+  const createOriginal = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === existingName;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  expect((await createOriginal).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: existingName, exact: true })).toBeVisible();
+
+  const duplicateForm = await openAndFillDoctorFormByKeyboard(
+    rejectedName,
+    existingEmail.toUpperCase(),
+    "Must Not Persist Keyboard Clinic"
+  );
+  const duplicateRequest = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === rejectedName;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  const duplicateResponse = await duplicateRequest;
+  expect(duplicateResponse.status()).toBe(409);
+  expect((await duplicateResponse.json())?.error?.code).toBe("DOCTOR_EMAIL_EXISTS");
+
+  const emailField = duplicateForm.form.getByLabel(/^Email address/);
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(emailField).toHaveAttribute("aria-describedby", "doctor-field-error-email");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  await expect(duplicateForm.submit).toBeFocused();
+
+  const rejectedState = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), rejected: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+  expect(rejectedState.existing.status).toBe(200);
+  expect(rejectedState.existing.total).toBe(1);
+  expect(rejectedState.existing.doctor?.email).toBe(existingEmail);
+  expect(rejectedState.rejected.status).toBe(200);
+  expect(rejectedState.rejected.total).toBe(0);
+  expect(rejectedState.rejected.doctor).toBeNull();
+
+  // Keep the full recovery pointer-free: Shift+Tab returns to the invalid email
+  // field, typing clears the field error, and Tab returns to the submit button.
+  await page.keyboard.press("Shift+Tab");
+  await expect(emailField).toBeFocused();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email")).toHaveCount(0);
+  await page.keyboard.press("Tab");
+  await expect(duplicateForm.submit).toBeFocused();
+
+  const recoveryRequest = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      const body = JSON.parse(response.request().postData() ?? "{}");
+      return body.name === rejectedName && body.email === recoveredEmail;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  expect((await recoveryRequest).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: rejectedName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record created successfully.");
+
+  const recoveredState = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), recovered: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+  expect(recoveredState.existing.status).toBe(200);
+  expect(recoveredState.existing.total).toBe(1);
+  expect(recoveredState.existing.doctor?.email).toBe(existingEmail);
+  expect(recoveredState.recovered.status).toBe(200);
+  expect(recoveredState.recovered.total).toBe(1);
+  expect(recoveredState.recovered.doctor?.email).toBe(recoveredEmail);
+  expect(recoveredState.recovered.doctor?.hospital).toBe("Must Not Persist Keyboard Clinic");
+});
