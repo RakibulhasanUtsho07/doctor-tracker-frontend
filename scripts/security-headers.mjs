@@ -34,42 +34,49 @@ function productionApiOrigin(value) {
 }
 
 /**
- * Returns browser hardening headers for the frontend.
- * Production scripts are governed by same-origin sources and Next's SHA-256 SRI.
- * The local HTTP API exception is limited to the isolated production-mode CI harness.
+ * Returns baseline hardening headers and, when requested, a nonce-bound CSP.
+ * Request handlers must pass a fresh unpredictable nonce for every HTML response.
+ * A missing nonce fails closed instead of emitting a CSP that breaks framework hydration.
  */
 export function getSecurityHeaders({
   isProduction = process.env.NODE_ENV === "production",
-  apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL,
+  nonce,
+  includeCsp = true
 } = {}) {
   const localHttpHarness = isProduction && isLoopbackHttpApi(apiBaseUrl);
   const connectSources = isProduction
     ? ["'self'", productionApiOrigin(apiBaseUrl)].filter(Boolean)
     : ["'self'", "http:", "https:", "ws:", "wss:"];
-  const scriptSources = isProduction
-    ? "'self'"
-    : "'self' 'unsafe-inline' 'unsafe-eval'";
-  const styleSources = isProduction
-    ? "'self'"
-    : "'self' 'unsafe-inline'";
-  const csp = [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    "img-src 'self' data: blob:",
-    "font-src 'self' data:",
-    "style-src " + styleSources,
-    "script-src " + scriptSources,
-    "connect-src " + connectSources.join(" "),
-    ...(isProduction && !localHttpHarness ? ["upgrade-insecure-requests"] : [])
-  ].join("; ");
+  const headers = [...BASE_HEADERS];
 
-  const headers = [
-    ...BASE_HEADERS,
-    { key: "Content-Security-Policy", value: csp }
-  ];
+  if (includeCsp) {
+    if (typeof nonce !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(nonce)) {
+      throw new Error("A valid per-response CSP nonce is required.");
+    }
+    const scriptSources = [
+      "'self'",
+      "'nonce-" + nonce + "'",
+      "'strict-dynamic'",
+      ...(!isProduction ? ["'unsafe-eval'"] : [])
+    ];
+    const styleSources = ["'self'", "'nonce-" + nonce + "'"];
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "style-src " + styleSources.join(" "),
+      "script-src " + scriptSources.join(" "),
+      "connect-src " + connectSources.join(" "),
+      ...(isProduction && !localHttpHarness ? ["upgrade-insecure-requests"] : [])
+    ].join("; ");
+    headers.push({ key: "Content-Security-Policy", value: csp });
+  }
+
   if (isProduction && !localHttpHarness) {
     // Do not include subdomains until the deployment owner confirms every subdomain is HTTPS-only.
     headers.push({ key: "Strict-Transport-Security", value: "max-age=31536000" });
