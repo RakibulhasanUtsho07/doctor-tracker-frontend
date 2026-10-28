@@ -2,21 +2,21 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Latest verified preflight-hardening candidate at this snapshot:** source/test head `a34bd77643bfbfc2fdda341eda5d33d24de05b00`, included in documentation-inclusive head `59c07b5e3870c6546e31e834ce5c9f5ae049117d`; all five required workflows passed on that exact documentation-inclusive head. The current branch's Actions results are authoritative for any subsequent commit. Live staging, independent security review and manual accessibility/device acceptance remain separate release gates. Live staging and independent review remain separate release gates.
+**Latest verified preflight-hardening baseline before this status refresh:** `84450c298757a462adc856fdae60b926aa4c5df7` on draft PR #24. All five workflows passed on that exact head: [Frontend CI #40727138375](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138375), [synthetic E2E #40727138214](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138214), [accessibility #40727138792](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138792), [real API + MongoDB #40727138193](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138193), and [dependency audit #40727137801](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727137801). This refresh creates a new documentation commit, which must pass its own exact-head checks. These runs used synthetic/isolated CI; no live deployment was contacted. Manual accessibility/device acceptance, independent security review, and live staging remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-The last fully verified candidate before this status snapshot is PR #24 documentation-inclusive head `59c07b5e3870c6546e31e834ce5c9f5ae049117d`; all five required workflows passed. Performance comparison remains observational only, not an SLA gate:
+The last verified PR #24 baseline before this status refresh is documentation-inclusive head `84450c298757a462adc856fdae60b926aa4c5df7`; its five exact-head workflow URLs are recorded above and in the latest PR #24 evidence section below. Performance comparison remains observational only, not an SLA gate:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40697483960](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483960) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #40697484066](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697484066) |
-| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40697484156](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697484156) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483847) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483931) |
+| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40697483960](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138375) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #40697484066](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138214) |
+| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40697484156](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138792) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138193) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727137801) |
 
 ## Protected staging workflow — follow-up security hardening
 
@@ -89,7 +89,7 @@ The comparison was measured on [Frontend CI run #40648782677](https://github.com
 ### Frontend — doctor-tracker-frontend
 
 - Responsive shell, sign-in/session, dashboard, doctor management, patient management and automated acceptance are implemented across stacked feature branches and draft PRs.
-- Current open frontend PRs are [#9–#24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP, PR #22 adds observational comparison tooling, and PR #23 narrows CSP matcher exclusions. None is promoted to frontend dev/main.
+- Stacked implementation/security PRs [#9–#24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls) remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP, PR #22 adds observational comparison tooling, PR #23 narrows CSP matcher exclusions, and PR #24 adds redirect-safe pinned preflight. A separate infrastructure-only [PR #25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25) targets `main` to make the guarded manual staging workflow discoverable; it is also open/draft. No feature stack PR has been promoted to frontend `dev` or `main`.
 - Frontend dev is still the earlier documentation baseline; the frontend main README is still the default starter README. Neither branch currently represents the full feature candidate.
 - Do not close functional SRS items solely because an implementation exists in a draft PR. Require exact-head tests, review, required manual evidence and correct promotion.
 
@@ -99,7 +99,7 @@ The feature branches have implementation and automated test evidence, but the in
 
 - Frontend `dev` is **9 commits ahead of `main`**; `main` is behind and has not received the current feature stack.
 - `rakibul-hasan` now includes the current `dev` tip as its second parent through ancestry-only merge commit [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463); its source tree remained byte-identical to the prior head. Branch comparison is now **21 commits ahead of and 0 behind `dev`**. Current-head [Frontend CI push #409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [PR #9 CI #410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) both passed.
-- PRs #9–#24 are **open and draft**. PR #21 adds nonce CSP on top of PR #20, PR #22 adds observational performance comparison, and PR #23 tests matcher path boundaries. Their automated verification and review status are recorded per exact head; none has been merged or promoted. Structural mergeability is not equivalent to approved review or manual release acceptance.
+- Stacked implementation PRs #9–#24 are **open and draft**. PR #21 adds nonce CSP on top of PR #20, PR #22 adds observational performance comparison, PR #23 tests matcher path boundaries, and PR #24 adds redirect-safe preflight. Separate [PR #25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25) is open/draft against `main` for workflow bootstrap, not part of the stacked application chain. Their automated verification and review status must be tracked per exact head; none has been merged or promoted. Structural mergeability is not equivalent to approved review or manual release acceptance.
 
 | PR | Base branch | Head branch | State |
 |---|---|---|---|
