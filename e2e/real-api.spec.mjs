@@ -703,7 +703,7 @@ test("real API session revocation clears the stale patient workspace on the next
 });
 
 
-test("real API rejects duplicate doctor email edits and preserves both persisted records", async ({ page }) => {
+test("real API duplicate doctor email edit preserves records and allows a corrected retry", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
   const originalName = `Dr. Conflict Original ${suffix}`;
   const otherName = `Dr. Conflict Existing ${suffix}`;
@@ -779,9 +779,39 @@ test("real API rejects duplicate doctor email edits and preserves both persisted
   expect(persisted.other.doctor?.name).toBe(otherName);
   expect(persisted.other.doctor?.email).toBe(otherEmail);
   expect(persisted.other.doctor?.hospital).toBe("Conflict Test Clinic B");
+
+  // The user can correct the conflicting email and retry without losing the form.
+  const recoveredEmail = `conflict-recovered-${suffix}@example.test`;
+  await emailField.fill(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await form.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { name: originalName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record updated successfully.");
+
+  const recovered = await page.evaluate(async ({ api, originalName, otherName }) => {
+    async function getDoctor(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { original: await getDoctor(originalName), other: await getDoctor(otherName) };
+  }, { api: API, originalName, otherName });
+
+  expect(recovered.original.status).toBe(200);
+  expect(recovered.original.total).toBe(1);
+  expect(recovered.original.doctor?.email).toBe(recoveredEmail);
+  expect(recovered.original.doctor?.hospital).toBe("Conflict Test Clinic A");
+  expect(recovered.other.status).toBe(200);
+  expect(recovered.other.total).toBe(1);
+  expect(recovered.other.doctor?.email).toBe(otherEmail);
+  expect(recovered.other.doctor?.hospital).toBe("Conflict Test Clinic B");
 });
 
-test("real API rejects case-insensitive duplicate doctor email creation and preserves the existing record", async ({ page }) => {
+test("real API duplicate doctor email creation preserves the existing record and allows a corrected retry", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
   const existingName = `Dr. Create Conflict Existing ${suffix}`;
   const rejectedName = `Dr. Create Conflict Rejected ${suffix}`;
@@ -858,4 +888,35 @@ test("real API rejects case-insensitive duplicate doctor email creation and pres
   expect(persisted.rejected.status).toBe(200);
   expect(persisted.rejected.total).toBe(0);
   expect(persisted.rejected.doctor).toBeNull();
+
+  // Correcting the field clears the conflict feedback and allows a successful retry.
+  const recoveredEmail = `create-recovered-${suffix}@example.test`;
+  await emailField.fill(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  await expect(page.getByRole("heading", { name: rejectedName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record created successfully.");
+
+  const recovered = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), recovered: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+
+  expect(recovered.existing.status).toBe(200);
+  expect(recovered.existing.total).toBe(1);
+  expect(recovered.existing.doctor?.email).toBe(existingEmail);
+  expect(recovered.existing.doctor?.hospital).toBe("Create Conflict Clinic");
+  expect(recovered.recovered.status).toBe(200);
+  expect(recovered.recovered.total).toBe(1);
+  expect(recovered.recovered.doctor?.name).toBe(rejectedName);
+  expect(recovered.recovered.doctor?.email).toBe(recoveredEmail);
+  expect(recovered.recovered.doctor?.hospital).toBe("Must Not Persist Clinic");
 });
