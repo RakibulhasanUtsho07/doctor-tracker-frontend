@@ -4,7 +4,7 @@ import { request as httpsRequest } from "node:https";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
+const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example", ".example.com", ".example.net", ".example.org", ".onion", ".arpa", ".alt"];
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
 const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
