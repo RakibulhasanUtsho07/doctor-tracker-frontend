@@ -144,10 +144,34 @@ Do not invent staging URLs, credentials, screenshots, performance SLAs or manual
 1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; the real API + MongoDB browser suite passes 9/9 within its disposable CI scope.
 2. Completed in draft PR #21: per-response nonce CSP without production `unsafe-inline`; frontend CI, synthetic E2E, accessibility acceptance, real API acceptance and dependency audit all pass on docs-inclusive verification SHA `75f70bce3d4223dd5a71005270b92730d5ec7676`.
 3. Completed in draft PR #22: measure and compare the performance impact of request-time rendering against the prior cached/PPR candidate; agree a numeric target before any performance PASS.
-4. Current: narrow the CSP proxy matcher exclusions to exact path boundaries and add 404-route nonce-policy regression coverage in PR #23; keep it draft until all five exact-head workflows pass.
-5. Review the stacked frontend PR dependency chain and remaining domain edge cases using exact-head workflow results.
+4. Completed in draft PR #23: scope the CSP proxy matcher exclusions to exact path boundaries and add 404-route nonce-policy regression coverage; the documented exact-head checks passed, but independent review and live/manual release gates remain open.
+5. Current: obtain independent review of the dependency chain in order, starting at the earliest parent; do not mark PRs ready or merge/promote until review and the required manual/staging acceptance gates are recorded.
 6. Complete human accessibility/device checks and an independent security review.
 7. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that environment.
 8. Capture approved-target performance measurements and synthetic desktop/mobile screenshots; promote the validated feature stack to frontend `dev`, then validate and promote to `main` only after release gates pass. Separately reconcile API `dev` → API `main`; confirm post-merge CI on resulting SHAs.
 
 The project is not fully complete until the required SRS items have implementation and acceptance evidence and the release gates above are resolved.
+
+
+## PR #24 exact-head regression repair — 2026-10-28
+
+Source/test commit: [a66e01a](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/a66e01aa7313b800069da74c58158e735e8bfaf5).
+
+The prior pull-request merge-candidate Frontend CI run [#40706171008](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706171008) failed 2 of 49 unit tests. The failures were stale validation-order fixtures in `test/staging-smoke-guard.test.mjs`, not a production-code failure: one test expected the staging-marker check before exact trusted-host matching, and a second used a reserved `.example` host that the public-host guard correctly rejected before allowlist comparison. The tests now configure the matching unstaged host when asserting marker rejection, and use syntactically valid public-DNS-shaped attacker hostnames when asserting trusted allowlist mismatch. No production code was changed in this correction.
+
+All five required workflows passed on exact source/test head `a66e01aa7313b800069da74c58158e735e8bfaf5`:
+- [Frontend CI #40706431111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706431111) — PASS; 49/49 unit tests, 0 failures, lint/build completed.
+- [Synthetic browser E2E #40706431107](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706431107) — PASS.
+- [Accessibility browser acceptance #40706431042](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706431042) — PASS within its automated Chromium scope.
+- [Real API + MongoDB browser acceptance #40706431035](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706431035) — PASS within isolated CI scope.
+- [Frontend dependency security audit #40706431108](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40706431108) — PASS at the configured high/critical advisory threshold.
+
+A non-fatal `react-hooks/exhaustive-deps` lint warning about the `session` dependency remains in the existing application source; this test-only commit did not change that code. Track it separately rather than mixing unrelated application behavior into the preflight regression repair.
+
+### IPv6 policy review note
+
+IANA lists `2001:2::/48` as benchmarking with Globally Reachable set to False, and `2001:10::/28` as the deprecated former ORCHID allocation ([IANA IPv6 Special-Purpose Address Space](https://www.iana.org/assignments/iana-ipv6-special-registry)). Audit nuance: the current denylist already includes the enclosing `2001::/23`, which contains both subnets. The newly explicit entries and regression cases make the policy intent clearer, but they do not change the deny decision for those addresses relative to that existing supernet rule. The enclosing rule is deliberately conservative and also blocks more-specific allocations inside `2001::/23` that IANA individually marks globally reachable; an independent security reviewer should explicitly accept or revise that compatibility trade-off.
+
+### Release decision
+
+Automated source/test acceptance is PASS for commit `a66e01a` only. PR #24 is still draft and unmerged, and reviews remain absent on PRs #16–#24. This does not establish live staging/deployed-header acceptance, manual screen-reader/keyboard/200%-zoom/physical-device acceptance, independent security sign-off, or performance acceptance against an agreed target. Keep the whole stack unmerged and do not promote to `dev` or `main` until those gates are evidenced.
