@@ -466,3 +466,23 @@ test("deployment preflight fails when API readiness is unavailable", async () =>
   assert.equal(report.passed, false);
   assert.equal(report.checks.find((check) => check.name === "API readiness").passed, false);
 });
+
+
+test("deployment URL validator rejects IANA special-use DNS names and their subdomains", () => {
+  const cases = [
+    "https://api.example.com",
+    "https://status.example.net",
+    "https://frontend.example.org",
+    "https://service.onion",
+    "https://service.home.arpa",
+    "https://deployment.alt"
+  ];
+
+  for (const value of cases) {
+    assert.throws(
+      () => parsePublicHttpsUrl(value, "Frontend URL"),
+      /must use a public DNS hostname/,
+      value
+    );
+  }
+});
