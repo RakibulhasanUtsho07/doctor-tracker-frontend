@@ -14,11 +14,33 @@ function hasStagingHostLabel(hostname) {
     .some((label) => STAGING_HOST_LABELS.has(label));
 }
 
+function normalizeExpectedHostname(value, label) {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(label + " repository variable must be configured before running staging smoke.");
+  }
+
+  const hostname = value.trim().toLowerCase();
+  const labels = hostname.split(".");
+  const validLabel = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+  if (
+    hostname !== value.trim() ||
+    hostname.length > 253 ||
+    !hostname.includes(".") ||
+    labels.some((part) => part.length > 63 || !validLabel.test(part))
+  ) {
+    throw new Error(label + " must be a DNS hostname only (no scheme, port, path, or trailing dot).");
+  }
+
+  return hostname;
+}
+
 export function validateStagingSmokeTarget({
   frontendUrl,
   apiBaseUrl,
   doctorId,
-  confirmation
+  confirmation,
+  expectedFrontendHost,
+  expectedApiHost
 }) {
   if (confirmation !== STAGING_CONFIRMATION) {
     throw new Error(
@@ -29,6 +51,17 @@ export function validateStagingSmokeTarget({
 
   const frontend = parsePublicHttpsUrl(frontendUrl, "Frontend URL");
   const api = parsePublicHttpsUrl(apiBaseUrl, "API base URL", { requireApiBase: true });
+  const allowedFrontendHost = normalizeExpectedHostname(expectedFrontendHost, "STAGING_FRONTEND_HOST");
+  const allowedApiHost = normalizeExpectedHostname(expectedApiHost, "STAGING_API_HOST");
+
+  // A staging-looking label is not proof of ownership. Require both user-supplied
+  // targets to match hostnames configured out-of-band in trusted repository variables.
+  if (frontend.hostname.toLowerCase() !== allowedFrontendHost) {
+    throw new Error("Frontend hostname must exactly match the configured STAGING_FRONTEND_HOST.");
+  }
+  if (api.hostname.toLowerCase() !== allowedApiHost) {
+    throw new Error("API hostname must exactly match the configured STAGING_API_HOST.");
+  }
 
   if (!hasStagingHostLabel(frontend.hostname)) {
     throw new Error(
@@ -57,7 +90,9 @@ function main() {
       frontendUrl: process.env.FRONTEND_URL,
       apiBaseUrl: process.env.API_BASE_URL,
       doctorId: process.env.STAGING_DOCTOR_ID,
-      confirmation: process.env.CONFIRM_STAGING_TARGET
+      confirmation: process.env.CONFIRM_STAGING_TARGET,
+      expectedFrontendHost: process.env.STAGING_FRONTEND_HOST,
+      expectedApiHost: process.env.STAGING_API_HOST
     });
 
     process.stdout.write(
