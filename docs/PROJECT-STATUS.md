@@ -20,7 +20,7 @@ The last fully verified candidate before this status snapshot is PR #24 document
 
 ## Protected staging workflow — follow-up security hardening
 
-The mutating staging-smoke job is restricted by YAML to dispatches from `dev` or `main` and is attached to GitHub Actions environment `disposable-staging`. Static regression tests assert both controls. Repository configuration must still add required reviewers, restrict allowed deployment branches to trusted protected branches, and keep staging credentials at environment scope; those settings cannot be proven from the source diff alone. Until settings are verified, the live mutating staging gate stays BLOCKED.
+The mutating staging-smoke job is restricted by YAML to dispatches from `dev` only and is attached to GitHub Actions environment `disposable-staging`. Static regression tests assert both controls. Repository configuration must still add required reviewers, restrict allowed deployment branches to trusted protected branches, and keep staging credentials at environment scope; those settings cannot be proven from the source diff alone. Until settings are verified, the live mutating staging gate stays BLOCKED.
 
 ## Guarded staging smoke host allowlist — follow-up security work
 
