@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current route-boundary candidate:** source/test SHA `61d5f2358fdfb1e8a76240c69193b0258ef93062` on `feat/csp-route-boundary-hardening` (draft [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), stacked on [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The CSP matcher regression is implemented in source/test SHA `61d5f2358fdfb1e8a76240c69193b0258ef93062`; documentation-inclusive verification at head `e2c15857438195dd83bbae0b68a4acf002fbc797` passed all five workflows (evidence below). The fully verified parent baseline is `15bd4f2ebd035b20e23b0c4f480a33266ed8ce4d`.
+**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). PR #23's documentation-inclusive verification head was `e2c15857438195dd83bbae0b68a4acf002fbc797`; PR #24 exact-head checks are recorded below after they complete.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -17,6 +17,12 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 | Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40649163301](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163301) |
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
+
+## Deployment preflight redirect hardening — PR #24
+
+The read-only deployed-environment preflight now uses Fetch `redirect: "error"` for all frontend/API GET and CORS OPTIONS requests. A redirect rejection is reported as a failed check rather than silently following a same-origin or cross-origin target; independent read-only API/CORS checks continue so diagnostics remain useful. Regression tests verify every request uses error mode and that a redirected frontend request fails closed.
+
+This is synthetic unit-test evidence only. No staging endpoint was called, and the live deployment preflight remains BLOCKED until authorized HTTPS URLs and deployed SHAs are available.
 
 ## CSP matcher boundary regression — PR #23
 
@@ -51,7 +57,7 @@ The comparison was measured on [Frontend CI run #40648782677](https://github.com
 ### Frontend — doctor-tracker-frontend
 
 - Responsive shell, sign-in/session, dashboard, doctor management, patient management and automated acceptance are implemented across stacked feature branches and draft PRs.
-- Current open frontend PRs are [#9–#23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP, PR #22 adds observational comparison tooling, and PR #23 narrows CSP matcher exclusions. None is promoted to frontend dev/main.
+- Current open frontend PRs are [#9–#24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP, PR #22 adds observational comparison tooling, and PR #23 narrows CSP matcher exclusions. None is promoted to frontend dev/main.
 - Frontend dev is still the earlier documentation baseline; the frontend main README is still the default starter README. Neither branch currently represents the full feature candidate.
 - Do not close functional SRS items solely because an implementation exists in a draft PR. Require exact-head tests, review, required manual evidence and correct promotion.
 
@@ -61,7 +67,7 @@ The feature branches have implementation and automated test evidence, but the in
 
 - Frontend `dev` is **9 commits ahead of `main`**; `main` is behind and has not received the current feature stack.
 - `rakibul-hasan` now includes the current `dev` tip as its second parent through ancestry-only merge commit [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463); its source tree remained byte-identical to the prior head. Branch comparison is now **21 commits ahead of and 0 behind `dev`**. Current-head [Frontend CI push #409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [PR #9 CI #410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) both passed.
-- PRs #9–#23 are **open and draft**. PR #21 adds nonce CSP on top of PR #20, PR #22 adds observational performance comparison, and PR #23 tests matcher path boundaries. Their automated verification and review status are recorded per exact head; none has been merged or promoted. Structural mergeability is not equivalent to approved review or manual release acceptance.
+- PRs #9–#24 are **open and draft**. PR #21 adds nonce CSP on top of PR #20, PR #22 adds observational performance comparison, and PR #23 tests matcher path boundaries. Their automated verification and review status are recorded per exact head; none has been merged or promoted. Structural mergeability is not equivalent to approved review or manual release acceptance.
 
 | PR | Base branch | Head branch | State |
 |---|---|---|---|
@@ -80,6 +86,7 @@ The feature branches have implementation and automated test evidence, but the in
 | [#21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21) | `feat/320px-reflow-acceptance` | `feat/csp-sri-hardening` | OPEN / DRAFT |
 | [#22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) | `feat/csp-sri-hardening` | `feat/performance-baseline` | OPEN / DRAFT |
 | [#23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23) | `feat/performance-baseline` | `feat/csp-route-boundary-hardening` | OPEN / DRAFT |
+| [#24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24) | `feat/csp-route-boundary-hardening` | `feat/preflight-no-redirects` | OPEN / DRAFT |
 
 Safe next sequence:
 
