@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       frontend_url:
-        description: Public staging frontend HTTPS URL; hostname must include staging, stage, stg, preview, or test
+        description: Public staging frontend HTTPS URL; hostname must exactly match the trusted STAGING_FRONTEND_HOST repository variable
         required: true
         type: string
       api_base_url:
-        description: Public staging API HTTPS base URL ending in /api/v1; hostname must include a staging marker
+        description: Public staging API HTTPS base URL ending in /api/v1; hostname must exactly match the trusted STAGING_API_HOST repository variable
         required: true
         type: string
       doctor_id:
@@ -29,7 +29,12 @@ concurrency:
 
 jobs:
   staging-smoke:
+    # Do not expose staging credentials from feature/unreviewed refs.
+    if: github.ref == 'refs/heads/dev'
     name: Deployed HTTPS browser smoke (mutating staging data)
+    environment:
+      name: disposable-staging
+      url: ${{ inputs.frontend_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -47,6 +52,8 @@ jobs:
           API_BASE_URL: ${{ inputs.api_base_url }}
           STAGING_DOCTOR_ID: ${{ inputs.doctor_id }}
           CONFIRM_STAGING_TARGET: ${{ inputs.confirmation }}
+          STAGING_FRONTEND_HOST: ${{ vars.STAGING_FRONTEND_HOST }}
+          STAGING_API_HOST: ${{ vars.STAGING_API_HOST }}
         run: node scripts/staging-smoke-guard.mjs
 
       - name: Require staging-only test administrator secrets
