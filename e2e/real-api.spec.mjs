@@ -209,7 +209,7 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await doctorEditForm.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("heading", { name: doctorName })).toBeVisible();
   await expect(page.getByText(/Cardiology · Real API E2E Hospital Updated/)).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Doctor record updated successfully.");
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record updated successfully.");
 
   await page.getByRole("button", { name: /Add patient/ }).click();
   await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
