@@ -8,6 +8,7 @@ const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".inva
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
 const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+const DEFAULT_TRANSPORT_TIMEOUT_MS = 10_000;
 
 const NON_PUBLIC_IPV4 = new BlockList();
 for (const [subnet, prefix] of [
@@ -227,7 +228,7 @@ export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
           autoSelectFamily: true,
           rejectUnauthorized: true,
           servername: url.hostname,
-          signal: init.signal
+          signal: init.signal ?? AbortSignal.timeout(DEFAULT_TRANSPORT_TIMEOUT_MS)
         });
       } catch (error) {
         rejectOnce(error);
