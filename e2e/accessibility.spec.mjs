@@ -667,3 +667,77 @@ test("responsive workspace stays within 320/390/720/768/1440 CSS-pixel viewports
     await expect(dialog).toBeHidden();
   }
 });
+
+test("320 CSS-pixel reflow keeps primary screens, forms and destructive dialogs usable", async ({ page }) => {
+  await installSyntheticApi(page, { seedDoctor: true, seedPatient: true });
+  await page.setViewportSize({ width: 320, height: 800 });
+
+  async function expectNoHorizontalPageOverflow(label) {
+    const metrics = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.scrollWidth
+    }));
+    expect(
+      Math.max(metrics.documentWidth, metrics.bodyWidth),
+      label + " must not require horizontal page scrolling: " + JSON.stringify(metrics)
+    ).toBeLessThanOrEqual(metrics.viewportWidth);
+  }
+
+  async function expectControlInsideViewport(locator, label) {
+    await expect(locator, label + " must be visible").toBeVisible();
+    const bounds = await locator.boundingBox();
+    expect(bounds, label + " must have a layout box").not.toBeNull();
+    expect(bounds.x, label + " must not be clipped on the left").toBeGreaterThanOrEqual(0);
+    expect(
+      bounds.x + bounds.width,
+      label + " must fit within the 320 CSS-pixel viewport"
+    ).toBeLessThanOrEqual(321);
+  }
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  await expectNoHorizontalPageOverflow("Sign-in");
+  await expectControlInsideViewport(page.getByLabel("Administrator email"), "Sign-in email");
+  await expectControlInsideViewport(page.getByLabel("Password"), "Sign-in password");
+  await expectControlInsideViewport(page.getByRole("button", { name: /Sign in securely/ }), "Sign-in action");
+
+  await signIn(page, { doctorCount: 1 });
+  await expectNoHorizontalPageOverflow("Dashboard");
+
+  await navigateToSection(page, "Doctors", true);
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+  await expectNoHorizontalPageOverflow("Doctor directory");
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeFocused();
+  await expectNoHorizontalPageOverflow("Doctor create form");
+  await expectControlInsideViewport(page.locator(".doctor-form input[name=name]"), "Doctor name field");
+  await expectControlInsideViewport(page.locator(".doctor-form input[name=email]"), "Doctor email field");
+  await expectControlInsideViewport(page.locator(".doctor-form").getByRole("button", { name: "Create doctor" }), "Doctor create action");
+  await page.locator(".doctor-form").getByRole("button", { name: "Cancel" }).click();
+
+  await navigateToSection(page, "Patients", true);
+  await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await expectNoHorizontalPageOverflow("Patient directory");
+  const patientTrigger = page.locator(".patient-table")
+    .getByRole("button", { name: PATIENT_RECORD.name, exact: true });
+  await expectControlInsideViewport(patientTrigger, "Patient record action");
+  await patientTrigger.click();
+  await expect(page.getByRole("heading", { name: PATIENT_RECORD.name, exact: true })).toBeVisible();
+  await expectNoHorizontalPageOverflow("Patient details");
+  await page.getByRole("button", { name: "Edit details" }).click();
+  await expect(page.getByRole("heading", { name: "Update patient details" })).toBeFocused();
+  await expectNoHorizontalPageOverflow("Patient edit form");
+  await expectControlInsideViewport(page.locator(".patient-form input[name=name]"), "Patient name field");
+  await expectControlInsideViewport(page.locator(".patient-form").getByRole("button", { name: "Save changes" }), "Patient save action");
+  await page.locator(".patient-form").getByRole("button", { name: "Cancel" }).click();
+
+  await page.getByRole("button", { name: "Delete patient record" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
+  await expect(dialog).toBeVisible();
+  await expectNoHorizontalPageOverflow("Patient delete dialog");
+  await expectControlInsideViewport(dialog.getByRole("button", { name: "Cancel" }), "Delete cancellation action");
+  await expectControlInsideViewport(dialog.getByRole("button", { name: "Delete permanently" }), "Delete confirmation action");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
