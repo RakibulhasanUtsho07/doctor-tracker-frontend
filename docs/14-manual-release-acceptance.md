@@ -151,3 +151,17 @@ Do not run this workflow against production or a staging database containing rea
 The caller-supplied frontend URL is not published as the GitHub Environment deployment URL before approval/validation. The target allowlist guard must run before the staging credential check, the read-only deployment preflight must complete before the mutating browser journey, and all external `uses:` references in the staging-smoke and frontend-CI workflows are pinned to full immutable commit SHAs. Regression coverage enforces these rules.
 
 The workflow has a non-mutating push-validation job that runs only the local target-guard regression tests; it has no staging credentials and makes no staging network requests. The mutating job is gated by both `workflow_dispatch` and `refs/heads/dev`. The default branch currently has no workflow directory, so the manual-dispatch bootstrap remains in draft PR [#25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25). Do not count the workflow as available for live staging until that bootstrap is reviewed/merged, the candidate stack is safely available on the protected `dev` branch, and environment protection (required reviewers and allowed deployment branches) is independently verified. No live staging request or mutation is authorized by these source changes.
+
+### Exact-head automated acceptance — 2026-10-28
+
+Source/test/docs head `abb4a79105ad8573edb81df22ed151fad75c685e` passed all five required automated workflows:
+- [Frontend CI #40740353256](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740353256) — PASS; unit tests, syntax checks, lint and production build succeeded. A pre-existing non-fatal React Hooks dependency warning remains.
+- [Synthetic browser E2E #40740354768](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740354768) — PASS; 2/2 journeys.
+- [Accessibility browser acceptance #40740354279](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740354279) — PASS within automated Chromium scope; 20 passed, 2 skipped.
+- [Real API + MongoDB browser acceptance #40740353249](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740353249) — PASS; 26/26 HTTP/unit, 4/4 MongoDB integration and 6/6 Chromium tests.
+- [Dependency security audit #40740353584](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740353584) — PASS; no high/critical published frontend dependency advisories.
+
+The separate [staging workflow validation run #40740346984](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40740346984) also passed local target-guard regression tests. The mutating staging job was skipped because the event was a push, which confirms that a push does not run staging mutations.
+
+This is automated candidate acceptance only. It does **not** prove that the GitHub `disposable-staging` environment has required reviewers/branch restrictions, that approved hostname variables and environment-only secrets are configured, or that the actual deployed frontend/API work. Live staging/manual acceptance, independent security review, physical-device/screen-reader/200%-zoom checks, and agreed-target performance evidence remain BLOCKED/NOT STARTED.
+
