@@ -146,3 +146,17 @@ test("mutating staging workflow uses a protected environment and only trusted de
   assert.ok(workflow.includes("STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}"));
   assert.ok(workflow.includes("STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}"));
 });
+
+test("frontend CI workflow pins every external action to an immutable commit SHA", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/frontend-ci.yml", import.meta.url),
+    "utf8"
+  );
+  const actionReferences = [...workflow.matchAll(/^\\s+uses:\\s+(\\S+)/gm)].map((match) => match[1]);
+  assert.equal(actionReferences.length, 3, "expected the three reviewed frontend CI actions");
+  assert.ok(
+    actionReferences.every((reference) => /^[^@]+@[a-f\\d]{40}$/i.test(reference)),
+    "frontend CI external actions must be pinned to immutable full commit SHAs"
+  );
+});
+
