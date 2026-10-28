@@ -258,7 +258,7 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
 }
 
-test("production frontend applies script integrity and strict CSP without breaking its loopback API harness", async ({ page }) => {
+test("production frontend applies a fresh nonce CSP and hydrates correctly after reload", async ({ page }) => {
   const cspErrors = [];
   page.on("console", (message) => {
     if (message.type() === "error" && /content security policy|refused to (execute|load|apply)|subresource integrity|integrity check/i.test(message.text())) {
@@ -279,26 +279,43 @@ test("production frontend applies script integrity and strict CSP without breaki
     });
   });
 
-  const response = await page.goto("/");
-  expect(response).not.toBeNull();
-  const headers = response.headers();
-  expect(headers["x-content-type-options"]).toBe("nosniff");
-  expect(headers["x-frame-options"]).toBe("DENY");
-  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
-  expect(headers["permissions-policy"]).toContain("camera=()");
-  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
-  expect(headers["content-security-policy"]).toContain("connect-src 'self' http://127.0.0.1:4000");
-  expect(headers["content-security-policy"]).toContain("script-src 'self'");
-  expect(headers["content-security-policy"]).toContain("style-src 'self'");
-  expect(headers["content-security-policy"]).not.toMatch(/unsafe-inline|unsafe-eval/);
-  expect(headers["strict-transport-security"]).toBeUndefined();
+  const assertNoncePolicyAndHydration = async (response) => {
+    expect(response).not.toBeNull();
+    const headers = response.headers();
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["permissions-policy"]).toContain("camera=()");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["content-security-policy"]).toContain("connect-src 'self' http://127.0.0.1:4000");
+    expect(headers["strict-transport-security"]).toBeUndefined();
 
-  const integrityValues = await page.locator('script[src^="/_next/static/"]').evaluateAll((scripts) =>
-    scripts.map((script) => script.getAttribute("integrity"))
-  );
-  expect(integrityValues.length).toBeGreaterThan(0);
-  expect(integrityValues.every((value) => typeof value === "string" && value.startsWith("sha256-"))).toBe(true);
-  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    const nonce = headers["content-security-policy"].match(/'nonce-([^']+)'/)?.[1];
+    expect(nonce).toBeTruthy();
+    expect(headers["content-security-policy"]).toContain("'strict-dynamic'");
+    expect(headers["content-security-policy"]).not.toMatch(/unsafe-inline|unsafe-eval/);
+
+    const scriptNonces = await page.locator("script").evaluateAll((scripts) =>
+      scripts.map((script) => script.getAttribute("nonce"))
+    );
+    expect(scriptNonces.length).toBeGreaterThan(0);
+    expect(scriptNonces.every((value) => value === nonce)).toBe(true);
+
+    const styleNonces = await page.locator("style[nonce]").evaluateAll((styles) =>
+      styles.map((style) => style.getAttribute("nonce"))
+    );
+    expect(styleNonces.every((value) => value === nonce)).toBe(true);
+    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    return nonce;
+  };
+
+  const firstResponse = await page.goto("/");
+  const firstNonce = await assertNoncePolicyAndHydration(firstResponse);
+  expect(cspErrors).toEqual([]);
+
+  const secondResponse = await page.reload();
+  const secondNonce = await assertNoncePolicyAndHydration(secondResponse);
+  expect(secondNonce).not.toBe(firstNonce);
   expect(cspErrors).toEqual([]);
 });
 
