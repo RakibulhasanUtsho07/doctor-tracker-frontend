@@ -2,25 +2,25 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current frontend source/test candidate:** a54e65c7389e47553842d1de7c7883400d96bb0c on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
+**Current frontend source/test candidate:** 35c508e1854163b421e8a0dc04733ab7147bf50a on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-All five required frontend workflows passed on the current source/test candidate a54e65c7389e47553842d1de7c7883400d96bb0c:
+All five required frontend workflows passed on the current source/test candidate 35c508e1854163b421e8a0dc04733ab7147bf50a:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #380](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40635812650) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #244](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40635812647) |
-| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #172](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40635812661) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #192](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40635812644) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #85](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40635812651) |
+| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #384](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40636387230) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #248](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40636387099) |
+| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #176](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40636386946) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #196](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40636387086) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #89](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40636387307) |
 
 The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
 
-The real API + MongoDB Chromium suite passes 6/6 browser tests on the source/test candidate, including Doctor edit through the protected `PATCH /doctors/:id` route, CSRF-header verification, and changed hospital/phone values after a full reload. An initial attempt caught an ambiguous generic status locator; the assertion was scoped to `.doctor-notice`, and the corrected exact-head run passed.
+The real API + MongoDB Chromium suite passes 7/7 browser tests on the source/test candidate, including Doctor edit through the protected `PATCH /doctors/:id` route, CSRF-header verification, changed hospital/phone values after reload, and a duplicate-email edit conflict that verifies an accessible field error and confirms both persisted doctor records remain unchanged. An initial attempt caught an ambiguous generic status locator; the assertion was scoped to `.doctor-notice`, and the corrected exact-head run passed.
 
 ## Implementation status by repository
 
@@ -55,8 +55,8 @@ Do not invent staging URLs, credentials, screenshots, performance SLAs or manual
 
 ## Next execution order
 
-1. Keep this status and the SRS traceability matrix synchronized to the exact current tested candidate.
-2. Review the stacked frontend PR dependency chain and the domain edge cases still not exhaustively covered; use the new exact-head workflow results, not older run numbers.
+1. Keep this status and the SRS traceability matrix synchronized to the exact current tested candidate; the duplicate-doctor-email edit conflict is now covered in the disposable real-API browser suite.
+2. Review the stacked frontend PR dependency chain and the remaining domain edge cases not exhaustively covered; use the latest exact-head workflow results, not older run numbers.
 3. Complete human accessibility/device checks and an independent security review.
 4. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that staging environment.
 5. Capture approved-target performance measurements and synthetic desktop/mobile screenshots.
