@@ -183,11 +183,22 @@ export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
     if (url.protocol !== "https:") {
       throw new Error("Pinned preflight transport only permits HTTPS.");
     }
+    // Keep this exported transport safe even when called outside runDeploymentPreflight.
+    parsePublicHttpsUrl(url.href, "Preflight request URL");
     if (init.redirect !== "error") {
       throw new Error("Pinned preflight transport requires redirect: error.");
     }
     if (!Array.isArray(init.pinnedAddresses) || init.pinnedAddresses.length === 0) {
       throw new Error("Pinned public DNS addresses are required for HTTPS requests.");
+    }
+    const invalidPinnedAddress = init.pinnedAddresses.some((entry) => {
+      if (!entry || typeof entry.address !== "string") return true;
+      const family = isIP(entry.address);
+      return !isPublicIpAddress(entry.address) ||
+        (entry.family !== undefined && entry.family !== family);
+    });
+    if (invalidPinnedAddress) {
+      throw new Error("Pinned addresses must be public IPs with matching address families.");
     }
 
     const lookupPinned = createPinnedLookup(url.hostname, init.pinnedAddresses);
