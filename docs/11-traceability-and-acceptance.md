@@ -46,7 +46,7 @@ Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI o
 
 ## Protected staging workflow environment — PR #19 / PR #24
 
-The mutating staging smoke job is source-restricted to `dev` or `main` and uses the `disposable-staging` environment. A static regression checks those declarations. This is not enough by itself: configure required reviewers, deployment-branch restrictions and environment-scoped staging secrets in repository settings. Until those external settings are inspected and confirmed, the live staging smoke remains BLOCKED.
+The mutating staging smoke job is source-restricted to `dev` only and uses the `disposable-staging` environment. A static regression checks those declarations. This is not enough by itself: configure required reviewers, deployment-branch restriction to `dev` and environment-scoped staging secrets in repository settings. Until those external settings are inspected and confirmed, the live staging smoke remains BLOCKED.
 
 ## Guarded staging smoke target ownership — PR #19 / follow-up review
 
