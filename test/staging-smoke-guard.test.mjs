@@ -125,7 +125,24 @@ test("mutating staging workflow uses a protected environment and only trusted de
   assert.ok(workflow.includes("if: github.ref == 'refs/heads/dev'"));
   assert.ok(workflow.includes("environment:"));
   assert.ok(workflow.includes("name: disposable-staging"));
-  assert.ok(workflow.includes("url: ${{ inputs.frontend_url }}"));
+  assert.ok(
+    !workflow.includes("url: ${{ inputs.frontend_url }}"),
+    "unvalidated caller-controlled URLs must not be published as deployment links before environment approval"
+  );
+  const actionReferences = [...workflow.matchAll(/^\\s+uses:\\s+(\\S+)/gm)].map((match) => match[1]);
+  assert.ok(actionReferences.length > 0, "staging workflow must include its required actions");
+  assert.ok(
+    actionReferences.every((reference) => /^[^@]+@[a-f\\d]{40}$/i.test(reference)),
+    "external GitHub Actions must be pinned to immutable full commit SHAs"
+  );
+  const guardIndex = workflow.indexOf("run: node scripts/staging-smoke-guard.mjs");
+  const secretsIndex = workflow.indexOf("Require staging-only test administrator secrets");
+  const preflightIndex = workflow.indexOf("run: node scripts/deployment-preflight.mjs");
+  const mutationIndex = workflow.indexOf("Run deployed staging browser acceptance");
+  assert.ok(
+    guardIndex >= 0 && secretsIndex > guardIndex && preflightIndex > secretsIndex && mutationIndex > preflightIndex,
+    "target allowlist guard, then environment secrets, then deployment preflight must precede mutating browser acceptance"
+  );
   assert.ok(workflow.includes("STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}"));
   assert.ok(workflow.includes("STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}"));
 });
