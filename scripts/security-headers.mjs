@@ -35,8 +35,8 @@ function productionApiOrigin(value) {
 
 /**
  * Returns browser hardening headers for the frontend.
- * Production network access is restricted to this app and the configured HTTPS API origin.
- * The inline-script exception preserves Next's built-in hydration; it is not a nonce-based strict CSP.
+ * Production scripts are governed by same-origin sources and Next's SHA-256 SRI.
+ * The local HTTP API exception is limited to the isolated production-mode CI harness.
  */
 export function getSecurityHeaders({
   isProduction = process.env.NODE_ENV === "production",
@@ -47,8 +47,11 @@ export function getSecurityHeaders({
     ? ["'self'", productionApiOrigin(apiBaseUrl)].filter(Boolean)
     : ["'self'", "http:", "https:", "ws:", "wss:"];
   const scriptSources = isProduction
-    ? "'self' 'unsafe-inline'"
+    ? "'self'"
     : "'self' 'unsafe-inline' 'unsafe-eval'";
+  const styleSources = isProduction
+    ? "'self'"
+    : "'self' 'unsafe-inline'";
   const csp = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -57,7 +60,7 @@ export function getSecurityHeaders({
     "form-action 'self'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src " + styleSources,
     "script-src " + scriptSources,
     "connect-src " + connectSources.join(" "),
     ...(isProduction && !localHttpHarness ? ["upgrade-insecure-requests"] : [])
