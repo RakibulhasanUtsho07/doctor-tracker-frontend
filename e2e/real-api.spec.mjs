@@ -966,7 +966,7 @@ test("real API keyboard-only Doctor creation handles duplicate email conflict an
     return { form, submit };
   }
 
-  const originalForm = await openAndFillDoctorFormByKeyboard(
+  await openAndFillDoctorFormByKeyboard(
     existingName,
     existingEmail,
     "Keyboard Acceptance Clinic"
