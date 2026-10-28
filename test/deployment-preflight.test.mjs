@@ -215,6 +215,45 @@ test("pinned HTTPS fetch connects using the validated address while preserving T
   assert.deepEqual(lookupResult, { address: "93.184.216.34", family: 4 });
 });
 
+
+test("pinned HTTPS fetch aborts and rejects a response body larger than the safety limit", async () => {
+  const maxResponseBytes = 2 * 1024 * 1024;
+  let destroyed = false;
+  const requestImpl = () => {
+    const request = new EventEmitter();
+    request.destroy = (error) => {
+      destroyed = true;
+      if (error) process.nextTick(() => request.emit("error", error));
+      return request;
+    };
+    request.end = () => {
+      const response = new EventEmitter();
+      response.statusCode = 200;
+      response.statusMessage = "OK";
+      response.headers = { "content-type": "text/html" };
+      process.nextTick(() => {
+        request.emit("response", response);
+        response.emit("data", Buffer.alloc(maxResponseBytes));
+        response.emit("data", Buffer.from("x"));
+        response.emit("end");
+      });
+    };
+    return request;
+  };
+
+  const fetchImpl = createPinnedHttpsFetch(requestImpl);
+  await assert.rejects(
+    fetchImpl("https://frontend.candidate-host.com/", {
+      method: "GET",
+      redirect: "error",
+      signal: AbortSignal.timeout(1_000),
+      pinnedAddresses: [{ address: "93.184.216.34", family: 4 }]
+    }),
+    /HTTPS response exceeded 2097152 bytes/
+  );
+  assert.equal(destroyed, true, "oversized response should destroy the HTTPS request");
+});
+
 test("pinned HTTPS fetch refuses missing DNS pins, HTTP URLs and redirect-follow mode", async () => {
   let requestCount = 0;
   const requestImpl = () => {
