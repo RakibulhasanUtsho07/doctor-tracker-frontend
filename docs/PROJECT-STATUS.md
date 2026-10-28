@@ -18,6 +18,10 @@ The last fully verified candidate before this status snapshot is PR #24 document
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483847) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483931) |
 
+## Guarded staging smoke host allowlist — follow-up security work
+
+The mutating staging workflow previously accepted any public host containing a staging-like label, which did not prove that the target was owned by this deployment. The current candidate adds exact matching against trusted repository variables `STAGING_FRONTEND_HOST` and `STAGING_API_HOST`. Missing variables or host mismatches fail closed before the workflow checks staging credentials or makes network requests. The expected values must be exact lowercase DNS hostnames only. Regression tests cover missing/malformed variables and staging-looking attacker-controlled domains. This follow-up is subject to exact-head CI; it does not authorize a staging run or close live acceptance.
+
 ## Deployment preflight redirect, DNS, port, IP-pin, response-size and timeout safety — PR #24
 
 The read-only preflight rejects redirects on frontend GET, API health/readiness GET and CORS OPTIONS requests. URL validation rejects local/reserved/IP-literal, malformed/trailing-dot and IANA special-use DNS hostnames (including subdomains of `example.com`, `example.net`, `example.org`, `.onion`, `.arpa` and `.alt`) and permits only the default HTTPS port (443). Explicit :443 normalizes to the default; non-default ports such as 444 or 8443 are rejected.
