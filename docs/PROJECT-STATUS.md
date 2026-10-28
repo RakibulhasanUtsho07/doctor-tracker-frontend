@@ -18,24 +18,27 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
 
-## Deployment preflight redirect and DNS safety — PR #24
+## Deployment preflight redirect, DNS and response-size safety — PR #24
 
 The read-only preflight sets Fetch-compatible `redirect: "error"` semantics for frontend GET, API health/readiness GETs and CORS OPTIONS; redirect responses are never followed, and failed checks do not prevent independent read-only checks from running. URL validation rejects trailing-dot and malformed DNS names (empty labels, underscores, edge hyphens, labels over 63 characters and hostnames over 253 characters).
 
-Before a request, the preflight resolves the hostname, rejects any non-public IPv4/IPv6 answer in the configured range policy, and caches that validated address set for the duration of the run. The production transport then uses `node:https` with a custom DNS lookup callback pinned to those exact validated addresses. The original hostname is preserved for TLS SNI and certificate validation, and address-family failover can use only addresses from that validated list. The transport rejects non-HTTPS URLs, missing address pins and any configuration that is not fail-closed for redirects.
+Before a request, the preflight resolves the hostname, rejects any non-public IPv4/IPv6 answer in the configured range policy, and caches that validated address set for the duration of the run. The production transport uses `node:https` with a custom DNS lookup callback pinned to those exact validated addresses. The original hostname is preserved for TLS SNI and certificate validation, and address-family failover can use only addresses from the validated list. The transport rejects non-HTTPS URLs, missing address pins and any configuration that is not fail-closed for redirects.
 
-Regression coverage includes malformed/trailing-dot names; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; and unit-level transport assertions that the requested hostname and validated IPs are kept separate for TLS versus socket routing. All tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
+The HTTPS adapter also caps every response body at **2 MiB**. It counts streamed bytes, destroys the request and rejects the preflight if the cap is exceeded, preventing unbounded body buffering. Regression coverage verifies an oversized synthetic response is rejected and the request is destroyed. This is a fixed guardrail for preflight responses, not a limit for application API payloads.
+
+Regression coverage includes malformed/trailing-dot names; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family selection; missing pins, HTTP-only and redirect-follow rejection; TLS hostname versus socket IP separation; and oversized response handling. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
 **Remaining release gates:** live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and socket-pinning implementation, and final parent-PR review. Automated CI alone is not production acceptance.
 
-All five required workflows passed on source/test head `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`:
-- [Frontend CI #40687089112](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089112) — unit tests, lint and production build.
-- [Synthetic browser E2E #40687089091](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089091).
-- [Accessibility #40687089210](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089210) — automated browser scope only.
-- [Real API + MongoDB #40687089356](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089356) — isolated acceptance scope only.
-- [Dependency audit #40687089186](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089186).
+Latest source/test head: `e0b95c24761c8c11effdb27d1f5048c6e0c0c60b` (response-size guard source commit `5a578368fc8d563620bc5a5070a6eadd8da9cfaf`; oversize regression-test commit `e0b95c24761c8c11effdb27d1f5048c6e0c0c60b)). All five required workflows passed on that exact head:
+- [Frontend CI #40688489311](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489311) — unit tests, lint and production build.
+- [Synthetic browser E2E #40688489180](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489180).
+- [Accessibility #40688489117](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489117) — automated browser scope only.
+- [Real API + MongoDB #40688489047](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489047) — isolated acceptance scope only.
+- [Dependency audit #40688489131](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489131).
 
 These results verify automated source/test behavior only; they do not establish live deployment acceptance or substitute for independent review.
+
 ## CSP matcher boundary regression — PR #23
 
 The proxy matcher now excludes only the `/api` segment and descendants, the real `/_next/static` and `/_next/image` path boundaries, and the exact `favicon.ico`, `robots.txt`, and `sitemap.xml` filenames. It no longer skips CSP for similarly named frontend paths such as `/apiary-csp-boundary-regression` or `/faviconXico-csp-boundary-regression`. Chromium regression coverage asserts both paths return 404 HTML with a fresh nonce-bound CSP, `'strict-dynamic'`, and neither `unsafe-inline` nor `unsafe-eval`.
