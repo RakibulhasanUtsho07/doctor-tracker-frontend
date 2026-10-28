@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). PR #23's documentation-inclusive verification head was `e2c15857438195dd83bbae0b68a4acf002fbc797`; PR #24 exact-head checks are recorded below after they complete.
+**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). PR #23's documentation-inclusive verification head was `e2c15857438195dd83bbae0b68a4acf002fbc797`. All five required workflows passed on PR #24 documentation-inclusive verification SHA `78c3b2322f995bce3687336f5464b1bde1b10e61`; the exact run links are recorded below.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -22,7 +22,14 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 
 The read-only deployed-environment preflight now uses Fetch `redirect: "error"` for all frontend/API GET and CORS OPTIONS requests. A redirect rejection is reported as a failed check rather than silently following a same-origin or cross-origin target; independent read-only API/CORS checks continue so diagnostics remain useful. Regression tests verify every request uses error mode and that a redirected frontend request fails closed.
 
-This is synthetic unit-test evidence only. No staging endpoint was called, and the live deployment preflight remains BLOCKED until authorized HTTPS URLs and deployed SHAs are available.
+All five required workflows passed on docs-inclusive verification SHA `78c3b2322f995bce3687336f5464b1bde1b10e61`:
+- [Frontend CI #40653104165](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104165) — unit tests, lint and production build.
+- [Synthetic browser E2E #40653104254](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104254).
+- [Accessibility #40653104175](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104175) — automated browser scope only.
+- [Real API + MongoDB #40653104176](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104176) — isolated acceptance scope only.
+- [Dependency security audit #40653104562](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104562).
+
+This is synthetic CI evidence only. No staging endpoint was called, and live deployment preflight remains BLOCKED until authorized HTTPS URLs and deployed SHAs are available. This evidence documents the verified code/test candidate; after this documentation refresh, the PR-triggered workflows rerun on the updated head.
 
 ## CSP matcher boundary regression — PR #23
 
