@@ -730,7 +730,7 @@ test("320 CSS-pixel reflow keeps primary screens, forms and destructive dialogs 
   await expectNoHorizontalPageOverflow("Patient edit form");
   await expectControlInsideViewport(page.locator(".patient-form input[name=name]"), "Patient name field");
   await expectControlInsideViewport(page.locator(".patient-form").getByRole("button", { name: "Save changes" }), "Patient save action");
-  await page.locator(".patient-form").getByRole("button", { name: "Cancel" }).click();
+  await page.locator(".patient-editor").getByRole("button", { name: "Cancel" }).click();
 
   await page.getByRole("button", { name: "Delete patient record" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
