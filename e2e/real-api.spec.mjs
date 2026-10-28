@@ -780,3 +780,82 @@ test("real API rejects duplicate doctor email edits and preserves both persisted
   expect(persisted.other.doctor?.email).toBe(otherEmail);
   expect(persisted.other.doctor?.hospital).toBe("Conflict Test Clinic B");
 });
+
+test("real API rejects case-insensitive duplicate doctor email creation and preserves the existing record", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const existingName = `Dr. Create Conflict Existing ${suffix}`;
+  const rejectedName = `Dr. Create Conflict Rejected ${suffix}`;
+  const existingEmail = `create-conflict-${suffix}@example.test`;
+
+  await signIn(page);
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function fillDoctorForm(name, email, hospital) {
+    const form = page.locator(".doctor-editor form");
+    await form.getByLabel(/Full name/).fill(name);
+    await form.getByLabel(/^Specialization/).fill("Family Medicine");
+    await form.getByLabel(/Hospital \/ clinic/).fill(hospital);
+    await form.getByLabel(/^Phone/).fill("+880 1700 500001");
+    await form.getByLabel(/^Email address/).fill(email);
+  }
+
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await fillDoctorForm(existingName, existingEmail, "Create Conflict Clinic");
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  await expect(page.getByRole("heading", { name: existingName, exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeVisible();
+  await fillDoctorForm(rejectedName, existingEmail.toUpperCase(), "Must Not Persist Clinic");
+
+  const duplicateResponsePromise = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === rejectedName;
+    } catch {
+      return false;
+    }
+  });
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  const duplicateResponse = await duplicateResponsePromise;
+
+  expect(duplicateResponse.status()).toBe(409);
+  const duplicateBody = await duplicateResponse.json();
+  expect(duplicateBody?.error?.code).toBe("DOCTOR_EMAIL_EXISTS");
+  const emailField = page.locator(".doctor-editor form").getByLabel(/^Email address/);
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeVisible();
+
+  const persisted = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return {
+        status: response.status,
+        total: body?.meta?.pagination?.total,
+        doctor: body?.data?.doctors?.[0] ?? null
+      };
+    }
+    return {
+      existing: await lookup(existingName),
+      rejected: await lookup(rejectedName)
+    };
+  }, { api: API, existingName, rejectedName });
+
+  expect(persisted.existing.status).toBe(200);
+  expect(persisted.existing.total).toBe(1);
+  expect(persisted.existing.doctor?.name).toBe(existingName);
+  expect(persisted.existing.doctor?.email).toBe(existingEmail);
+  expect(persisted.existing.doctor?.hospital).toBe("Create Conflict Clinic");
+  expect(persisted.rejected.status).toBe(200);
+  expect(persisted.rejected.total).toBe(0);
+  expect(persisted.rejected.doctor).toBeNull();
+});
