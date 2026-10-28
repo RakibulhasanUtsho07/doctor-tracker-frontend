@@ -3,7 +3,7 @@
 **Date:** 2026-10-27  
 **Repository:** RakibulhasanUtsho07/doctor-tracker-frontend  
 **Working branch:** feat/patient-delete-failure-e2e  
-**Status:** FUNCTIONAL WORKSTREAMS A1–A3 IMPLEMENTED AND AUTOMATION-VERIFIED; OVERALL RELEASE BLOCKED ON LIVE/MANUAL GATES  
+**Status:** FUNCTIONAL WORKSTREAMS A1–A3 AND RESPONSIVE AUTOMATED WORKSTREAM G1 IMPLEMENTED/VERIFIED; OVERALL RELEASE BLOCKED ON LIVE/MANUAL GATES  
 **Tested frontend code/test SHA:** `f79fa6708364eb04d8bb73405c64a2d61ff351ca`  
 **Pinned API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`  
 **Exact code-head evidence:** [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135613), [real API + MongoDB](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135446), [synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135915), [accessibility](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135438), and [dependency audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135471) all passed on that exact SHA. The documentation-inclusive commit `ee6a198fad1ba355a7bc2f0bc836c205e7ae7cf4` was also independently revalidated: [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813963), [real API + MongoDB](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813684), [synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813858), [accessibility](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557804839), and [dependency audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813681) passed on that exact docs-inclusive SHA. Any later documentation-only commit must also be verified at its exact SHA. Live staging/manual release acceptance is not implied by these CI runs.
@@ -96,6 +96,17 @@ Promotion rules:
 - Do not merge to main until all release requirements have valid evidence. No live URL, deployed SHA, reviewer evidence or approved performance target means the corresponding gate stays BLOCKED, NOT STARTED or PARTIAL.
 - If any exact-head workflow fails, fix the cause and rerun required workflows on the resulting exact candidate SHA before promotion.
 
+## Workstream G — Responsive layout and reflow regression closure
+
+**Status: PASS within automated scope** on exact tested frontend code/test SHA `88aea3d72a6516959b11361d83b23ef9da633501`.
+
+- Added a single repeatable Playwright sweep for 320px narrow phone, 390px phone, 720px reflow-equivalent, 768px tablet and 1440px desktop widths.
+- Verifies no root document/body horizontal overflow on sign-in, dashboard, doctor directory/create form, patient directory/create form and the delete confirmation dialog; checks primary create actions and dialog bounds; attaches 320px and 768px synthetic patient UI screenshots.
+- Fixed a real defect discovered by the new test: the doctor-table Actions column's visually-hidden absolute-positioned text extended root document width to 739px at a 320px viewport. Replaced it with an accessible header `aria-label`, preserving screen-reader semantics without introducing overflow.
+- The test's navigation state was corrected to revisit the dashboard each iteration. The exact source/test SHA passed [CI #40624554113](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554113), [synthetic E2E #40624554063](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554063), [accessibility #40624554139](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554139), [real API/MongoDB #40624554157](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554157), and [dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024).
+
+The 720px CSS viewport is an automated reflow-equivalent to 200% zoom from 1440 CSS pixels, not a real browser zoom action. Actual 200% zoom, manual screen reader, physical touch/device acceptance and live deployment verification remain open human/environment gates.
+
 ## Current status board
 
 | Work item | Current status | Completion evidence / remaining blocker |
@@ -104,6 +115,7 @@ Promotion rules:
 | A1 — Doctor chooser beyond 100 records | PASS — automated scope | Real API/MongoDB browser journey seeds 105 doctors, finds target beyond page 1, reassigns and verifies persisted association after reload |
 | A2 — Optional-condition contract decision | PASS — decision and UI behavior | SRS/API contract does not require clearing through PATCH; empty value is rejected by the UI and tested; API contract unchanged |
 | A3 — Pagination/filter edge coverage | PASS — automated scope | Empty-page metadata, 10/50 row limits, ordered page 2, filter reset to page 1 and persisted reassignment tested |
+| G1 — Responsive layout/reflow coverage | PASS — automated scope | 320/390/720/768/1440 CSS-pixel sweep, overflow checks across auth/dashboard/doctor/patient forms and delete dialog; corrected off-screen table header overflow; exact-head five-workflow evidence linked above |
 | B — Candidate/configuration lock | PARTIAL | Full frontend code/test SHA and pinned API SHA recorded; deployment environment/configuration inventory and stacked-parent review still require owners/evidence |
 | C — Live HTTPS preflight | BLOCKED | No approved public staging frontend/API URLs or deployed SHAs are recorded |
 | D — Deployed synthetic smoke | BLOCKED on C | CI-only browser journey passes, but it is not deployed-endpoint acceptance |
@@ -114,7 +126,7 @@ Promotion rules:
 
 ## Release decision
 
-**Functional workstreams A1–A3: PASS within the exact automated scope above. Overall release acceptance: BLOCKED.** No public deployment URL/deployed SHA, dated manual accessibility/device review, independent security sign-off or approved performance target is available in the repository evidence. Do not merge or promote this stacked draft PR to `dev` or `main` until those gates and parent reviews are completed.
+**Functional workstreams A1–A3 and responsive automated workstream G1: PASS within the exact automated scope above. Overall release acceptance: BLOCKED.** No public deployment URL/deployed SHA, dated manual accessibility/device review, independent security sign-off or approved performance target is available in the repository evidence. Do not merge or promote this stacked draft PR to `dev` or `main` until those gates and parent reviews are completed.
 
 ## Required deliverables
 

@@ -105,3 +105,27 @@ An intermediate attempt surfaced the React hooks lint rule against synchronous s
 - The SRS has no numeric performance target; performance acceptance remains BLOCKED until a target is approved and repeatable p50/p95/error measurements are recorded.
 - PR #18 remains draft/stacked. Parent PR review and every required deployment/manual gate must be closed before promotion to `dev` or `main`.
 
+
+
+## Responsive reflow, narrow-screen overflow and viewport containment — 2026-10-28
+
+**Exact tested frontend source/test SHA:** `88aea3d72a6516959b11361d83b23ef9da633501`  
+**Pinned API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`
+
+| Requirement | Implementation and acceptance evidence | Status |
+|---|---|---|
+| UX-01 / NFR-A11Y-01 — responsive workspace and visible actions | `e2e/accessibility.spec.mjs` sweeps 320×800, 390×844, 720×900 (200%-zoom-equivalent reflow width), 768×1024 and 1440×1000. It checks page horizontal overflow on sign-in, dashboard, doctor directory/create, patient directory/create and delete dialog; create actions and dialog are checked against viewport bounds. 320px/768px patient screenshots are attached to the accessibility workflow artifact. | PASS — automated responsive browser scope |
+| NFR-A11Y-01 — preserve accessible table semantics while removing off-screen overflow | A test found the Doctor table's absolute-positioned visually-hidden Actions text extended document width to 739px at 320px. Replaced that span with `aria-label="Actions"` on the header cell, leaving the accessible name but no out-of-viewport element. The 320px root document-width assertion subsequently passed. | PASS — code fix + regression coverage |
+| Existing authenticated data workflows | The exact same source/test SHA retains the doctor search beyond the first 100, real patient reassignment and pagination/filter-boundary tests. Real API/MongoDB runs against pinned API SHA `efd1fd0f016d98da1fe91bdea52bc48f6295217f`. | PASS — disposable CI scope |
+
+### Exact code-head workflow evidence
+
+All five workflows passed on `88aea3d72a6516959b11361d83b23ef9da633501`:
+
+- [Frontend CI #40624554113](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554113) — 13/13 API-client/preflight tests, lint and build passed.
+- [Synthetic browser E2E #40624554063](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554063) — 2/2 journeys passed.
+- [Accessibility browser acceptance #40624554139](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554139) — 18 passed, 2 expected skips; responsive sweep passed at all five CSS viewport widths.
+- [Real API + MongoDB acceptance #40624554157](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554157) — API build/lint/typecheck, 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 5/5 Chromium journeys passed.
+- [Dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024) — passed with no high/critical published frontend dependency advisories.
+
+This closes the responsive **automated** coverage gap for these viewport widths and UI states. It does not certify manual screen-reader use, physical touch/device behavior, actual browser 200% zoom, deployment cookie/session behavior, security review, or performance against an approved target. Those release gates remain open under the manual runbook; overall release status stays BLOCKED until their evidence exists.

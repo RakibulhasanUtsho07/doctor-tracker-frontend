@@ -88,3 +88,22 @@ On exact candidate commit `b17bad713cccf231a6cb182a5ef46d8f9b472b20`, all five P
 All five exact-head job logs were reviewed; the old PNPM_HOME migration warning is absent. This PASS is limited to the preflight code/unit tests and normal regression suite. No live public frontend/API URLs or deployed SHAs are available, so the real endpoint probe and overall deployment smoke remain BLOCKED/NOT STARTED.
 
 These are mocked unit checks and regression evidence, not live deployment acceptance. Actual live URL results must be recorded separately; absent public HTTPS URLs mean the live check is BLOCKED. This preflight does not replace browser cookie/session/CSRF testing or the deployed CRUD smoke gate.
+
+
+## Responsive layout / reflow acceptance — 2026-10-28
+
+**Exact tested frontend source/test SHA:** `88aea3d72a6516959b11361d83b23ef9da633501`  
+**Pinned API SHA for the concurrent real-backend regression:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`
+
+Added an automated Playwright viewport sweep to `e2e/accessibility.spec.mjs`. It checks the sign-in page at 320×800, 390×844, 720×900 (effective reflow width comparable to 200% zoom from 1440 CSS pixels), 768×1024 and 1440×1000. After authentication, it repeats the checks on dashboard, doctor directory, doctor-create form, patient directory, patient-create form and the patient-delete dialog. At each viewport it asserts document/body horizontal overflow does not exceed the viewport and that the principal create actions and delete dialog remain within the viewport. Screenshots are attached for the 320px and 768px patient views.
+
+The first run exposed a real 320px overflow: the doctor table's absolutely-positioned `.visually-hidden` “Actions” text extended the root document width to 739px although the table itself was correctly inside a horizontally scrollable wrapper. Replaced that hidden node with an accessible `aria-label="Actions"` on the column header, retaining the accessible name without introducing an off-screen element. The browser test also revealed and corrected a test-navigation sequencing issue so each viewport begins on the dashboard before checking that view.
+
+On the exact source/test SHA above all five automated workflows passed:
+- [Frontend CI #40624554113](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554113) — 13/13 API-client/preflight unit tests, lint and production build/TypeScript passed.
+- [Synthetic browser E2E #40624554063](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554063) — 2/2 journeys passed.
+- [Accessibility browser acceptance #40624554139](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554139) — 18 passed, 2 expected project-specific skips; the five-width responsive sweep passed on the desktop project.
+- [Real API + MongoDB acceptance #40624554157](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554157) — API lint/typecheck/build, 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 5/5 real-backend Chromium journeys passed.
+- [Frontend dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024) — passed with no high/critical published package advisories for the locked frontend dependency graph.
+
+The 720px viewport is an automated reflow-equivalent, not a browser's actual 200%-zoom control. Manual 200% zoom, a real screen reader, touch and physical-device review remain separate human acceptance items in `docs/14-manual-release-acceptance.md`; this automated sweep does not close those gates or prove the deployment's actual cookie/session behavior.

@@ -88,3 +88,19 @@ On exact candidate commit `b17bad713cccf231a6cb182a5ef46d8f9b472b20`, all five P
 All five exact-head job logs were reviewed; the old PNPM_HOME migration warning is absent. This PASS is limited to the preflight code/unit tests and normal regression suite. No live public frontend/API URLs or deployed SHAs are available, so the real endpoint probe and overall deployment smoke remain BLOCKED/NOT STARTED.
 
 This evidence validates code and mocked responses only. No real public frontend/API URLs or deployed SHAs are recorded, so the live endpoint preflight is BLOCKED and deployment remains NOT STARTED. Even a successful endpoint preflight would not close browser cookie/session, CSRF rejection, CRUD persistence, manual accessibility/device, broader security or performance gates.
+
+
+## Responsive reflow acceptance — 2026-10-28
+
+Automated responsive regression coverage is added on exact tested frontend code/test SHA `88aea3d72a6516959b11361d83b23ef9da633501`. The accessibility workflow sweeps 320px, 390px, 720px reflow-equivalent, 768px and 1440px CSS viewports and checks page overflow on sign-in, dashboard, doctor directory/create form, patient directory/create form and delete dialog. It also checks primary action/dialog bounds and attaches synthetic patient screenshots at 320px and 768px.
+
+A genuine issue found by the sweep was fixed: an absolutely positioned visually-hidden “Actions” label in the doctor table expanded the document to 739px at a 320px viewport. The header now keeps its accessible name via `aria-label="Actions"` without an off-screen element.
+
+All five workflows passed on that exact source/test SHA:
+- [Frontend CI #40624554113](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554113) — 13/13 unit tests, lint and build.
+- [Synthetic browser E2E #40624554063](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554063) — 2/2 journeys.
+- [Accessibility #40624554139](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554139) — 18 passed, 2 expected skips; responsive sweep passed.
+- [Real API/MongoDB #40624554157](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554157) — 26/26 HTTP/unit, 4/4 MongoDB integration and 5/5 Chromium journeys.
+- [Dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024) — no high/critical published package advisories.
+
+Manual actual-200%-zoom verification, screen reader and physical-device/touch checks remain NOT STARTED; live HTTPS preflight/deployed smoke, independent security sign-off and approved-target performance measurements remain BLOCKED/PARTIAL. This automation is not a release approval and does not change PR #18's draft/stacked status.
