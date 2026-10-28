@@ -2,25 +2,25 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current frontend source/test candidate:** d3b767c9059db2216350d7db74a5306957f41197 on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
+**Current frontend source/test candidate:** 96564b0c446a363ea453f4f4160e5a13ffe3adf0 on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-All five required frontend workflows passed on the current source/test candidate d3b767c9059db2216350d7db74a5306957f41197:
+All five required frontend workflows passed on the current source/test candidate 96564b0c446a363ea453f4f4160e5a13ffe3adf0:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #391](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637224523) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #255](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637224629) |
-| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #182](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637220204) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #202](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637220233) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #96](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637224447) |
+| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #398](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827589) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #262](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827546) |
+| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #190](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827547) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #210](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827533) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #103](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827565) |
 
 The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
 
-The real API + MongoDB Chromium suite passes 8/8 browser tests on the source/test candidate, including Doctor edit through the protected `PATCH /doctors/:id` route, CSRF-header verification, changed hospital/phone values after reload, duplicate-email edit conflict handling, and mixed-case duplicate email rejection on create with HTTP 409 / `DOCTOR_EMAIL_EXISTS` and no second persisted record. An initial attempt caught an ambiguous generic status locator; the assertion was scoped to `.doctor-notice`, and the corrected exact-head run passed.
+The real API + MongoDB Chromium suite passes 8/8 browser tests on the source/test candidate, including Doctor edit through the protected `PATCH /doctors/:id` route, CSRF-header verification, and hospital/phone persistence after reload. Both duplicate-email conflict flows are covered: editing with another doctor's email preserves both records; case-insensitive duplicate creation returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without inserting a second record. In each flow, correcting the email clears the field error and a successful retry is confirmed through direct API reads.
 
 ## Implementation status by repository
 
@@ -38,6 +38,38 @@ The real API + MongoDB Chromium suite passes 8/8 browser tests on the source/tes
 - Current open frontend PRs are [#9–#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; code in these branches is not yet equivalent to delivery on frontend dev or main.
 - Frontend dev is still the earlier documentation baseline; the frontend main README is still the default starter README. Neither branch currently represents the full feature candidate.
 - Do not close functional SRS items solely because an implementation exists in a draft PR. Require exact-head tests, review, required manual evidence and correct promotion.
+
+## Branch integration audit — verified 2026-10-28
+
+The feature branches have implementation and automated test evidence, but the integration graph is not yet ready to merge:
+
+- Frontend `dev` is **9 commits ahead of `main`**; `main` is behind and has not received the current feature stack.
+- `rakibul-hasan` is **20 commits ahead of `dev` and 3 commits behind it** (diverged). PR #9 therefore needs a reviewed reconciliation with current `dev` before its eventual merge.
+- PRs #9–#20 are all still **open and draft**. GitHub reports them structurally mergeable; that is not equivalent to approved review, passing current-head checks or manual release acceptance.
+
+| PR | Base branch | Head branch | State |
+|---|---|---|---|
+| [#9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9) | `dev` | `rakibul-hasan` | OPEN / DRAFT |
+| [#10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10) | `rakibul-hasan` | `feat/step-7-auth-dashboard` | OPEN / DRAFT |
+| [#11](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/11) | `feat/step-7-auth-dashboard` | `feat/step-8-doctor-management` | OPEN / DRAFT |
+| [#12](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/12) | `feat/step-8-doctor-management` | `feat/step-9-patient-management` | OPEN / DRAFT |
+| [#13](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/13) | `feat/step-9-patient-management` | `feat/step-10-release-e2e` | OPEN / DRAFT |
+| [#14](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/14) | `feat/step-10-release-e2e` | `feat/step-11-real-api-e2e` | OPEN / DRAFT |
+| [#15](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/15) | `feat/step-11-real-api-e2e` | `feat/step-12-accessibility-e2e` | OPEN / DRAFT |
+| [#16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/16) | `feat/step-12-accessibility-e2e` | `feat/form-dialog-accessibility-e2e` | OPEN / DRAFT |
+| [#17](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/17) | `feat/form-dialog-accessibility-e2e` | `feat/patient-detach-failure-e2e` | OPEN / DRAFT |
+| [#18](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/18) | `feat/patient-detach-failure-e2e` | `feat/patient-delete-failure-e2e` | OPEN / DRAFT |
+| [#19](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/19) | `feat/patient-delete-failure-e2e` | `feat/staging-browser-smoke` | OPEN / DRAFT |
+| [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20) | `feat/staging-browser-smoke` | `feat/320px-reflow-acceptance` | OPEN / DRAFT |
+
+Safe next sequence:
+
+1. Reconcile the latest `dev` commits into `rakibul-hasan` with a reviewed, non-force update; resolve and review any changed code, then rerun the root candidate's CI and browser checks.
+2. Keep PR #9 and the stacked children in draft until the required manual keyboard/screen-reader, actual 200% zoom and physical-device checks have dated evidence.
+3. After PR #9 is accepted and integrated into `dev`, promote the child PRs in dependency order, checking each diff against its new base and rerunning CI on the resulting branch SHA.
+4. Promote the validated `dev` state to `main` only after the frontend and API release gates are met; verify post-merge CI against both resulting SHAs.
+
+No frontend feature PR was merged or promoted by this audit. Live deployment, manual device acceptance, independent security review and agreed-target performance evidence remain open.
 
 ## Outstanding release gates
 
