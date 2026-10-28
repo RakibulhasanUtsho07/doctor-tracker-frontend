@@ -2,21 +2,21 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`, including DNS pinning, fail-closed redirect handling, IANA IPv6 special-range blocking and IANA special-use DNS suffix/subdomain rejection. Source/test head `a34bd77643bfbfc2fdda341eda5d33d24de05b00` includes the latest code and regression cases. The documentation update changes the tested head; acceptance remains pending until all five required workflows pass on the exact final PR #24 head. Live staging and independent review remain separate release gates.
+**Latest verified preflight-hardening candidate at this snapshot:** source/test head `a34bd77643bfbfc2fdda341eda5d33d24de05b00`, included in documentation-inclusive head `59c07b5e3870c6546e31e834ce5c9f5ae049117d`; all five required workflows passed on that exact documentation-inclusive head. The current branch's Actions results are authoritative for any subsequent commit. Live staging, independent security review and manual accessibility/device acceptance remain separate release gates. Live staging and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd035b20e23b0c4f480a33266ed8ce4d`; all five required workflows passed there. PR #23 adds a route-boundary regression and is being validated on its own exact head:
+The last fully verified candidate before this status snapshot is PR #24 documentation-inclusive head `59c07b5e3870c6546e31e834ce5c9f5ae049117d`; all five required workflows passed. Performance comparison remains observational only, not an SLA gate:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40649163233](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163233) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #40649163110](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163110) |
-| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40649163301](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163301) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
+| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40697483960](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483960) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #40697484066](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697484066) |
+| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40697484156](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697484156) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483847) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40697483931) |
 
 ## Deployment preflight redirect, DNS, port, IP-pin, response-size and timeout safety — PR #24
 
@@ -30,7 +30,7 @@ The HTTPS adapter caps response bodies at **2 MiB**. It counts streamed bytes, d
 
 Regression coverage includes malformed/trailing-dot and IANA special-use DNS names/subdomains; HTTPS port validation; IPv4 and IPv6 private/special ranges including IANA benchmarking and deprecated ORCHID; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family behavior; standalone adapter rejection of private pins, family mismatch, IP-literal targets, non-default ports and redirect-follow; TLS hostname versus socket IP separation; oversized-response rejection; and default timeout-signal creation. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
-Previously verified source/test head: `e6ae741fbd78680075f25a7121198c406e7c67e4` passed all five required workflows. New source/test head with the additional DNS regression cases: `a34bd77643bfbfc2fdda341eda5d33d24de05b00`; see PR #24 Actions for current exact-head results:
+Source/test head `a34bd77643bfbfc2fdda341eda5d33d24de05b00` was included in documentation-inclusive head `59c07b5e3870c6546e31e834ce5c9f5ae049117d`; all five required workflows passed on that exact head. The links below are the verification evidence; any later commit must be checked on its own exact head:
 - [Frontend CI #40693923599](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923599) — unit tests, lint and production build.
 - [Synthetic browser E2E #40693923693](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923693).
 - [Accessibility #40693915201](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693915201) — automated browser scope only.
