@@ -22,6 +22,7 @@ test("API requests include credentials and unwrap the documented response envelo
     assert.equal(capturedUrl, "http://localhost:4000/api/v1/auth/me");
     assert.equal(capturedInit.credentials, "include");
     assert.equal(capturedInit.cache, "no-store");
+    assert.equal(capturedInit.redirect, "error");
     assert.equal(result.user.email, "admin@example.com");
   } finally {
     globalThis.fetch = originalFetch;
@@ -166,5 +167,96 @@ test("patient delete and doctor detachment are credentialed CSRF-protected no-co
     ]);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("production API calls reject insecure HTTP endpoints before sending credentials", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return new Response(JSON.stringify({ data: {} }), { status: 200 });
+  };
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://api.example.com/api/v1";
+
+  try {
+    await assert.rejects(
+      apiRequest("/auth/me"),
+      (error) => error instanceof ApiClientError &&
+        error.code === "INSECURE_API_URL" &&
+        error.message === "The API URL must use HTTPS in production."
+    );
+    assert.equal(fetchCalled, false, "the client must fail closed before sending cookies or request data");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalApiBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBaseUrl;
+  }
+});
+
+test("production-mode browser harness may use HTTP only for a loopback API", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  let capturedUrl = "";
+  let capturedInit;
+  globalThis.fetch = async (url, init) => {
+    capturedUrl = String(url);
+    capturedInit = init;
+    return new Response(JSON.stringify({ data: { ok: true } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://127.0.0.1:4000/api/v1";
+
+  try {
+    assert.deepEqual(await apiRequest("/auth/me"), { ok: true });
+    assert.equal(capturedUrl, "http://127.0.0.1:4000/api/v1/auth/me");
+    assert.equal(capturedInit.credentials, "include");
+    assert.equal(capturedInit.redirect, "error");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalApiBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBaseUrl;
+  }
+});
+
+test("production API calls accept HTTPS endpoints and disallow automatic redirects", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  let capturedUrl = "";
+  let capturedInit;
+  globalThis.fetch = async (url, init) => {
+    capturedUrl = String(url);
+    capturedInit = init;
+    return new Response(JSON.stringify({ data: { ok: true } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_PUBLIC_API_BASE_URL = "https://api.example.com/api/v1";
+
+  try {
+    assert.deepEqual(await apiRequest("/auth/me"), { ok: true });
+    assert.equal(capturedUrl, "https://api.example.com/api/v1/auth/me");
+    assert.equal(capturedInit.credentials, "include");
+    assert.equal(capturedInit.redirect, "error");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalApiBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBaseUrl;
   }
 });

@@ -199,6 +199,18 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
 
   await expect(page.getByRole("heading", { name: doctorName })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Associated patients/ })).toBeVisible();
+
+  // Exercise a real API-backed doctor edit, including the protected PATCH.
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Update doctor details" })).toBeVisible();
+  const doctorEditForm = page.locator(".doctor-editor form");
+  await doctorEditForm.getByLabel(/Hospital \/ clinic/).fill("Real API E2E Hospital Updated");
+  await doctorEditForm.getByLabel(/^Phone/).fill("+880 1700-100002");
+  await doctorEditForm.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { name: doctorName })).toBeVisible();
+  await expect(page.getByText(/Cardiology · Real API E2E Hospital Updated/)).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record updated successfully.");
+
   await page.getByRole("button", { name: /Add patient/ }).click();
   await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
   const doctorId = await page.getByLabel(/Doctor association/).inputValue();
@@ -265,6 +277,16 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await expect(dashboardMetric(page, "Patient records")).toHaveText("1");
   await page.screenshot({ path: testInfo.outputPath("real-api-dashboard-desktop.png"), fullPage: true });
 
+  // The edited values must still be returned by the persisted API after reload.
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+  await page.getByLabel("Search directory").fill(doctorName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const updatedDoctorRow = page.locator(".doctor-table").getByRole("row").filter({ hasText: doctorName });
+  await expect(updatedDoctorRow).toContainText("Real API E2E Hospital Updated");
+  await expect(updatedDoctorRow).toContainText("+880 1700-100002");
+  await page.getByRole("button", { name: "Reset" }).click();
+
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Patients/ }).click();
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
   const persistence = await page.evaluate(async ({ api, preserved, deleted }) => {
@@ -295,6 +317,7 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   expect(mutationRequests.some((entry) => entry.method === "POST" && entry.url.endsWith("/doctors") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
+  expect(mutationRequests.some((entry) => entry.method === "PATCH" && /\/doctors\/[a-f\d]{24}$/i.test(new URL(entry.url).pathname) && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "POST" && entry.url.endsWith("/patients") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "PATCH" && entry.url.includes("/patients/") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "DELETE" && entry.url.includes("/doctors/") && entry.url.includes("/patients/") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
@@ -677,4 +700,374 @@ test("real API session revocation clears the stale patient workspace on the next
     session: Object.keys(sessionStorage)
   }));
   expect(browserStorage).toEqual({ local: [], session: [] });
+});
+
+
+test("real API duplicate doctor email edit preserves records and allows a corrected retry", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const originalName = `Dr. Conflict Original ${suffix}`;
+  const otherName = `Dr. Conflict Existing ${suffix}`;
+  const originalEmail = `conflict-original-${suffix}@example.test`;
+  const otherEmail = `conflict-existing-${suffix}@example.test`;
+
+  await signIn(page);
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function createDoctor(name, email, hospital) {
+    await page.getByRole("button", { name: /Add doctor/ }).click();
+    const form = page.locator(".doctor-editor form");
+    await form.getByLabel(/Full name/).fill(name);
+    await form.getByLabel(/^Specialization/).fill("Family Medicine");
+    await form.getByLabel(/Hospital \/ clinic/).fill(hospital);
+    await form.getByLabel(/^Phone/).fill("+880 1700 400001");
+    await form.getByLabel(/^Email address/).fill(email);
+    await form.getByRole("button", { name: "Create doctor" }).click();
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+
+  // Both records exist only in this workflow's disposable MongoDB container.
+  // The API contract intentionally provides no doctor-delete route.
+  await createDoctor(originalName, originalEmail, "Conflict Test Clinic A");
+  await createDoctor(otherName, otherEmail, "Conflict Test Clinic B");
+
+  await page.getByLabel("Search directory").fill(originalName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const originalRow = page.locator(".doctor-table").getByRole("row").filter({ hasText: originalName });
+  await expect(originalRow).toBeVisible();
+  await originalRow.getByRole("button", { name: originalName, exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+
+  const form = page.locator(".doctor-editor form");
+  const emailField = form.getByLabel(/^Email address/);
+  await emailField.fill(otherEmail);
+  await form.getByRole("button", { name: "Save changes" }).click();
+
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  await expect(page.getByRole("heading", { name: "Update doctor details" })).toBeVisible();
+
+  const persisted = await page.evaluate(async ({ api, originalName, otherName }) => {
+    async function getDoctor(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return {
+        status: response.status,
+        total: body?.meta?.pagination?.total,
+        doctor: body?.data?.doctors?.[0] ?? null
+      };
+    }
+    return {
+      original: await getDoctor(originalName),
+      other: await getDoctor(otherName)
+    };
+  }, { api: API, originalName, otherName });
+
+  expect(persisted.original.status).toBe(200);
+  expect(persisted.original.total).toBe(1);
+  expect(persisted.original.doctor?.name).toBe(originalName);
+  expect(persisted.original.doctor?.email).toBe(originalEmail);
+  expect(persisted.original.doctor?.hospital).toBe("Conflict Test Clinic A");
+  expect(persisted.other.status).toBe(200);
+  expect(persisted.other.total).toBe(1);
+  expect(persisted.other.doctor?.name).toBe(otherName);
+  expect(persisted.other.doctor?.email).toBe(otherEmail);
+  expect(persisted.other.doctor?.hospital).toBe("Conflict Test Clinic B");
+
+  // The user can correct the conflicting email and retry without losing the form.
+  const recoveredEmail = `conflict-recovered-${suffix}@example.test`;
+  await emailField.fill(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await form.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { name: originalName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record updated successfully.");
+
+  const recovered = await page.evaluate(async ({ api, originalName, otherName }) => {
+    async function getDoctor(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { original: await getDoctor(originalName), other: await getDoctor(otherName) };
+  }, { api: API, originalName, otherName });
+
+  expect(recovered.original.status).toBe(200);
+  expect(recovered.original.total).toBe(1);
+  expect(recovered.original.doctor?.email).toBe(recoveredEmail);
+  expect(recovered.original.doctor?.hospital).toBe("Conflict Test Clinic A");
+  expect(recovered.other.status).toBe(200);
+  expect(recovered.other.total).toBe(1);
+  expect(recovered.other.doctor?.email).toBe(otherEmail);
+  expect(recovered.other.doctor?.hospital).toBe("Conflict Test Clinic B");
+});
+
+test("real API duplicate doctor email creation preserves the existing record and allows a corrected retry", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const existingName = `Dr. Create Conflict Existing ${suffix}`;
+  const rejectedName = `Dr. Create Conflict Rejected ${suffix}`;
+  const existingEmail = `create-conflict-${suffix}@example.test`;
+
+  await signIn(page);
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function fillDoctorForm(name, email, hospital) {
+    const form = page.locator(".doctor-editor form");
+    await form.getByLabel(/Full name/).fill(name);
+    await form.getByLabel(/^Specialization/).fill("Family Medicine");
+    await form.getByLabel(/Hospital \/ clinic/).fill(hospital);
+    await form.getByLabel(/^Phone/).fill("+880 1700 500001");
+    await form.getByLabel(/^Email address/).fill(email);
+  }
+
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await fillDoctorForm(existingName, existingEmail, "Create Conflict Clinic");
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  await expect(page.getByRole("heading", { name: existingName, exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: /Add doctor/ }).click();
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeVisible();
+  await fillDoctorForm(rejectedName, existingEmail.toUpperCase(), "Must Not Persist Clinic");
+
+  const duplicateResponsePromise = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === rejectedName;
+    } catch {
+      return false;
+    }
+  });
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  const duplicateResponse = await duplicateResponsePromise;
+
+  expect(duplicateResponse.status()).toBe(409);
+  const duplicateBody = await duplicateResponse.json();
+  expect(duplicateBody?.error?.code).toBe("DOCTOR_EMAIL_EXISTS");
+  const emailField = page.locator(".doctor-editor form").getByLabel(/^Email address/);
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeVisible();
+
+  const persisted = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return {
+        status: response.status,
+        total: body?.meta?.pagination?.total,
+        doctor: body?.data?.doctors?.[0] ?? null
+      };
+    }
+    return {
+      existing: await lookup(existingName),
+      rejected: await lookup(rejectedName)
+    };
+  }, { api: API, existingName, rejectedName });
+
+  expect(persisted.existing.status).toBe(200);
+  expect(persisted.existing.total).toBe(1);
+  expect(persisted.existing.doctor?.name).toBe(existingName);
+  expect(persisted.existing.doctor?.email).toBe(existingEmail);
+  expect(persisted.existing.doctor?.hospital).toBe("Create Conflict Clinic");
+  expect(persisted.rejected.status).toBe(200);
+  expect(persisted.rejected.total).toBe(0);
+  expect(persisted.rejected.doctor).toBeNull();
+
+  // Correcting the field clears the conflict feedback and allows a successful retry.
+  const recoveredEmail = `create-recovered-${suffix}@example.test`;
+  await emailField.fill(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await page.getByRole("button", { name: "Create doctor" }).click();
+  await expect(page.getByRole("heading", { name: rejectedName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record created successfully.");
+
+  const recovered = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), recovered: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+
+  expect(recovered.existing.status).toBe(200);
+  expect(recovered.existing.total).toBe(1);
+  expect(recovered.existing.doctor?.email).toBe(existingEmail);
+  expect(recovered.existing.doctor?.hospital).toBe("Create Conflict Clinic");
+  expect(recovered.recovered.status).toBe(200);
+  expect(recovered.recovered.total).toBe(1);
+  expect(recovered.recovered.doctor?.name).toBe(rejectedName);
+  expect(recovered.recovered.doctor?.email).toBe(recoveredEmail);
+  expect(recovered.recovered.doctor?.hospital).toBe("Must Not Persist Clinic");
+});
+
+test("real API keyboard-only Doctor creation handles duplicate email conflict and corrected retry", async ({ page }) => {
+  test.setTimeout(90_000);
+  const suffix = randomUUID().slice(0, 8);
+  const existingName = `Dr. Keyboard Existing ${suffix}`;
+  const rejectedName = `Dr. Keyboard Rejected ${suffix}`;
+  const existingEmail = `keyboard-conflict-${suffix}@example.test`;
+  const recoveredEmail = `keyboard-recovered-${suffix}@example.test`;
+
+  await signIn(page);
+  const doctorsNavigation = page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ });
+  await doctorsNavigation.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function openAndFillDoctorFormByKeyboard(name, email, hospital) {
+    const addDoctor = page.getByRole("button", { name: /Add doctor/ });
+    await addDoctor.focus();
+    await page.keyboard.press("Enter");
+
+    const heading = page.getByRole("heading", { name: "Add a doctor" });
+    await expect(heading).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+
+    const form = page.locator(".doctor-editor form");
+    const values = [
+      [form.getByLabel(/Full name/), name],
+      [form.getByLabel(/^Specialization/), "Family Medicine"],
+      [form.getByLabel(/Hospital \/ clinic/), hospital],
+      [form.getByLabel(/^Phone/), "+880 1700 600001"],
+      [form.getByLabel(/^Email address/), email]
+    ];
+    for (const [field, value] of values) {
+      await page.keyboard.press("Tab");
+      await expect(field).toBeFocused();
+      await page.keyboard.type(value);
+    }
+
+    const submit = form.getByRole("button", { name: "Create doctor" });
+    await page.keyboard.press("Tab");
+    await expect(submit).toBeFocused();
+    return { form, submit };
+  }
+
+  await openAndFillDoctorFormByKeyboard(
+    existingName,
+    existingEmail,
+    "Keyboard Acceptance Clinic"
+  );
+  const createOriginal = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === existingName;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  expect((await createOriginal).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: existingName, exact: true })).toBeVisible();
+
+  const duplicateForm = await openAndFillDoctorFormByKeyboard(
+    rejectedName,
+    existingEmail.toUpperCase(),
+    "Must Not Persist Keyboard Clinic"
+  );
+  const duplicateRequest = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      return JSON.parse(response.request().postData() ?? "{}").name === rejectedName;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  const duplicateResponse = await duplicateRequest;
+  expect(duplicateResponse.status()).toBe(409);
+  expect((await duplicateResponse.json())?.error?.code).toBe("DOCTOR_EMAIL_EXISTS");
+
+  const emailField = duplicateForm.form.getByLabel(/^Email address/);
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(emailField).toHaveAttribute("aria-describedby", "doctor-field-error-email");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  // Server validation returns focus to the invalid field so a keyboard user can recover immediately.
+  await expect(emailField).toBeFocused();
+
+  const rejectedState = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), rejected: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+  expect(rejectedState.existing.status).toBe(200);
+  expect(rejectedState.existing.total).toBe(1);
+  expect(rejectedState.existing.doctor?.email).toBe(existingEmail);
+  expect(rejectedState.rejected.status).toBe(200);
+  expect(rejectedState.rejected.total).toBe(0);
+  expect(rejectedState.rejected.doctor).toBeNull();
+
+  // Keep the full recovery pointer-free: focus is already on the invalid email field.
+  await expect(emailField).toBeFocused();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type(recoveredEmail);
+  await expect(emailField).not.toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email")).toHaveCount(0);
+  await page.keyboard.press("Tab");
+  await expect(duplicateForm.submit).toBeFocused();
+
+  const recoveryRequest = page.waitForResponse((response) => {
+    if (response.url() !== API + "/doctors" || response.request().method() !== "POST") return false;
+    try {
+      const body = JSON.parse(response.request().postData() ?? "{}");
+      return body.name === rejectedName && body.email === recoveredEmail;
+    } catch {
+      return false;
+    }
+  });
+  await page.keyboard.press("Enter");
+  expect((await recoveryRequest).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: rejectedName, exact: true })).toBeVisible();
+  await expect(page.locator(".doctor-notice")).toHaveText("Doctor record created successfully.");
+
+  const recoveredState = await page.evaluate(async ({ api, existingName, rejectedName }) => {
+    async function lookup(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return { status: response.status, total: body?.meta?.pagination?.total, doctor: body?.data?.doctors?.[0] ?? null };
+    }
+    return { existing: await lookup(existingName), recovered: await lookup(rejectedName) };
+  }, { api: API, existingName, rejectedName });
+  expect(recoveredState.existing.status).toBe(200);
+  expect(recoveredState.existing.total).toBe(1);
+  expect(recoveredState.existing.doctor?.email).toBe(existingEmail);
+  expect(recoveredState.recovered.status).toBe(200);
+  expect(recoveredState.recovered.total).toBe(1);
+  expect(recoveredState.recovered.doctor?.email).toBe(recoveredEmail);
+  expect(recoveredState.recovered.doctor?.hospital).toBe("Must Not Persist Keyboard Clinic");
 });

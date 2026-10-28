@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
+import { getSecurityHeaders } from "./scripts/security-headers.mjs";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  async headers() {
+    return getSecurityHeaders();
+  },
   turbopack: {
     rules: {
       "*.css": {

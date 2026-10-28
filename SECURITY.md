@@ -9,3 +9,8 @@ Doctor Tracker contains doctor records and sensitive patient-related information
 - Do not expose patient details in URLs, browser telemetry, screenshots or frontend error logs.
 - Test unauthorized, expired-session and cross-record scenarios against the API.
 Report suspected vulnerabilities privately through GitHub private vulnerability reporting if enabled, or directly to the maintainer. Do not publish personal data or live exploit details. This policy is not compliance certification.
+
+- Production API calls must use HTTPS. The frontend rejects non-loopback HTTP API URLs before sending credentials or request data and refuses to follow API redirects.
+- The frontend sets baseline response hardening headers, including CSP, clickjacking protection, MIME-sniffing protection, referrer policy and permissions policy. The production CSP restricts cross-origin connections to the configured HTTPS API origin.
+- The loopback HTTP exception exists for the isolated production-mode CI browser harness only. It does not allow public HTTP deployment targets; staging preflight must use public HTTPS.
+- Current CSP permits inline scripts for Next.js hydration compatibility. Do not claim strict nonce-based CSP or a completed independent security review until those are implemented/reviewed and evidenced.

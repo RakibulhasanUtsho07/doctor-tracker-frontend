@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test test/api-client.test.mjs test/deployment-preflight.test.mjs test/staging-smoke-guard.test.mjs"
+    "test": "node --experimental-strip-types --test test/api-client.test.mjs test/security-headers.test.mjs test/deployment-preflight.test.mjs test/staging-smoke-guard.test.mjs"
   },
   "dependencies": {
     "next": "16.4.3",
