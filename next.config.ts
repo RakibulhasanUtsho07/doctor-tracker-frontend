@@ -4,6 +4,12 @@ import { getSecurityHeaders } from "./scripts/security-headers.mjs";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Keep static/PPR rendering while removing production's inline-script CSP exception.
+    sri: {
+      algorithm: "sha256",
+    },
+  },
   async headers() {
     return getSecurityHeaders();
   },
