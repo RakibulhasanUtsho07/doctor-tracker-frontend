@@ -120,3 +120,15 @@ Acceptance is covered by a 5-second synthetic session that expires without anoth
 - [Frontend CI #40625887608](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887608) and [Synthetic E2E #40625887630](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887630) passed again after the real-API test ordering fix.
 
 Automated session-expiry handling is PASS in the tested scope. Live deployed HTTPS cookie/session verification, human screen-reader/physical-device acceptance, independent security sign-off and performance target approval remain open; overall release stays BLOCKED, and PR #18 remains draft/stacked.
+
+## Staging smoke workflow security hardening — 2026-10-28
+
+The staged release workflow has been tightened across the feature PR and default-branch bootstrap PR:
+- Do not publish the caller-supplied frontend URL as a clickable GitHub Environment deployment URL before target validation and approval.
+- Require the exact out-of-band frontend/API hostname allowlist guard before reading staging credentials; keep administrator credentials as secrets in the `disposable-staging` environment rather than repository-level secrets.
+- Keep the read-only deployment preflight before the mutating Chromium browser journey.
+- Pin all third-party actions in the staging-smoke and frontend-CI workflows to full commit SHAs; regression tests enforce SHA references, guard ordering and absence of the unvalidated deployment URL.
+- The staging bootstrap remains draft [PR #25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25), and the staging implementation remains draft [PR #19](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/19). Independent repository/environment protection review and exact-head CI are required before promotion.
+
+**Acceptance boundary:** source-level guard and regression coverage have been updated; the latest full CI result is not yet recorded as PASS on the final docs-inclusive SHA. Live staging has not been contacted. Environment reviewer/branch restrictions, approved host variables, staging-only administrator secrets, deployed SHA capture, and manual accessibility/device/security/performance acceptance remain open. Overall release remains PARTIAL/BLOCKED.
+
