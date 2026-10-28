@@ -1,5 +1,6 @@
 import { BlockList, isIP } from "node:net";
 import { lookup } from "node:dns/promises";
+import { request as httpsRequest } from "node:https";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -114,9 +115,143 @@ function createPublicHostnameGuard(lookupImpl) {
         if (addresses.some((entry) => !entry || !isPublicIpAddress(entry.address))) {
           throw new Error("Hostname must resolve only to globally routable IP addresses.");
         }
+        return addresses.map((entry) => ({
+          address: entry.address,
+          family: entry.family || isIP(entry.address)
+        }));
       })());
     }
     return resolutions.get(hostname);
+  };
+}
+
+/**
+ * Build a Node DNS lookup callback that pins a request to the addresses
+ * already validated by the public-hostname guard. The URL hostname remains
+ * unchanged, so HTTPS SNI and certificate verification still use the hostname.
+ */
+export function createPinnedLookup(hostname, addresses) {
+  const expectedHostname = hostname.toLowerCase();
+  const pinnedAddresses = addresses.map((entry) => ({
+    address: entry.address,
+    family: entry.family || isIP(entry.address)
+  }));
+
+  return (requestedHostname, options, callback) => {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    const requestedName = String(requestedHostname).toLowerCase();
+    const requestedFamily = typeof options === "number" ? options : (options?.family || 0);
+    const wantsAll = typeof options === "object" && options !== null && options.all === true;
+
+    process.nextTick(() => {
+      if (requestedName !== expectedHostname) {
+        callback(new Error("Pinned DNS lookup rejected an unexpected hostname."));
+        return;
+      }
+
+      const candidates = pinnedAddresses.filter((entry) =>
+        requestedFamily === 0 || entry.family === requestedFamily
+      );
+      if (candidates.length === 0) {
+        callback(new Error("No pinned DNS address matches the requested address family."));
+        return;
+      }
+
+      if (wantsAll) {
+        callback(null, candidates);
+        return;
+      }
+      callback(null, candidates[0].address, candidates[0].family);
+    });
+  };
+}
+
+/**
+ * HTTPS fetch adapter with connection-level DNS pinning.
+ * It intentionally does not follow redirects. Inject requestImpl only in tests.
+ */
+export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
+  return async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.protocol !== "https:") {
+      throw new Error("Pinned preflight transport only permits HTTPS.");
+    }
+    if (init.redirect !== "error") {
+      throw new Error("Pinned preflight transport requires redirect: error.");
+    }
+    if (!Array.isArray(init.pinnedAddresses) || init.pinnedAddresses.length === 0) {
+      throw new Error("Pinned public DNS addresses are required for HTTPS requests.");
+    }
+
+    const lookupPinned = createPinnedLookup(url.hostname, init.pinnedAddresses);
+    const method = init.method || "GET";
+    const headers = new Headers(init.headers || {});
+    if (!headers.has("accept-encoding")) headers.set("accept-encoding", "identity");
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const rejectOnce = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
+
+      let request;
+      try {
+        request = requestImpl(url, {
+          method,
+          headers: Object.fromEntries(headers.entries()),
+          lookup: lookupPinned,
+          autoSelectFamily: false,
+          rejectUnauthorized: true,
+          servername: url.hostname,
+          signal: init.signal
+        });
+      } catch (error) {
+        rejectOnce(error);
+        return;
+      }
+
+      request.once("error", rejectOnce);
+      request.once("response", (incoming) => {
+        const chunks = [];
+        incoming.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        incoming.once("aborted", () => rejectOnce(new Error("HTTPS response was aborted.")));
+        incoming.once("error", rejectOnce);
+        incoming.once("end", () => {
+          if (settled) return;
+          const status = incoming.statusCode;
+          if (!Number.isInteger(status) || status < 200 || status > 599) {
+            rejectOnce(new Error("HTTPS response returned an invalid status code."));
+            return;
+          }
+
+          const responseHeaders = new Headers();
+          for (const [name, value] of Object.entries(incoming.headers || {})) {
+            if (value !== undefined) {
+              responseHeaders.set(name, Array.isArray(value) ? value.join(", ") : String(value));
+            }
+          }
+
+          const noBody = method.toUpperCase() === "HEAD" || [204, 205, 304].includes(status);
+          try {
+            const responseBody = noBody ? null : Buffer.concat(chunks);
+            settled = true;
+            resolve(new Response(responseBody, {
+              status,
+              statusText: incoming.statusMessage || "",
+              headers: responseHeaders
+            }));
+          } catch (error) {
+            rejectOnce(error);
+          }
+        });
+      });
+      request.end();
+    });
   };
 }
 
@@ -133,12 +268,13 @@ async function responseJson(response) {
 }
 
 async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeoutMs, assertPublicHostname }) {
-  await assertPublicHostname(url.hostname);
+  const pinnedAddresses = await assertPublicHostname(url.hostname);
   return fetchImpl(url, {
     method,
     headers,
     redirect: "error",
-    signal: AbortSignal.timeout(timeoutMs)
+    signal: AbortSignal.timeout(timeoutMs),
+    pinnedAddresses
   });
 }
 
@@ -155,7 +291,7 @@ function stayedOnSameSecureOrigin(response, requestedUrl) {
 export async function runDeploymentPreflight({
   frontendUrl,
   apiBaseUrl,
-  fetchImpl = globalThis.fetch,
+  fetchImpl = createPinnedHttpsFetch(),
   lookupImpl = lookup,
   timeoutMs = 10_000
 }) {
