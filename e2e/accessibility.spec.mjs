@@ -412,8 +412,15 @@ test("confirmation dialog contains escaped focus and stays modal while an action
   // after the request response, but the focus boundary must be exercised in flight.
   const clickConfirmation = confirm.click();
   await deleteRequest;
-  await expect(confirm).toBeDisabled();
-  await expect(dialog).toContainText("Working…");
+  const pendingDialogState = await dialog.evaluate((element) => {
+    const buttons = Array.from(element.querySelectorAll("button"));
+    return {
+      text: element.textContent ?? "",
+      disabledStates: buttons.map((button) => (button as HTMLButtonElement).disabled)
+    };
+  });
+  expect(pendingDialogState.text).toContain("Working…");
+  expect(pendingDialogState.disabledStates).toEqual([true, true]);
   await backgroundAction.focus();
   await page.keyboard.press("Tab");
   await expect(dialog).toBeFocused();
