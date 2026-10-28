@@ -18,24 +18,24 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
 
-## Deployment preflight redirect, DNS and response-size safety — PR #24
+## Deployment preflight redirect, DNS, port and response-size safety — PR #24
 
-The read-only preflight sets Fetch-compatible `redirect: "error"` semantics for frontend GET, API health/readiness GETs and CORS OPTIONS; redirect responses are never followed, and failed checks do not prevent independent read-only checks from running. URL validation rejects trailing-dot and malformed DNS names (empty labels, underscores, edge hyphens, labels over 63 characters and hostnames over 253 characters).
+The read-only preflight sets Fetch-compatible `redirect: "error"` semantics for frontend GET, API health/readiness GETs and CORS OPTIONS; redirect responses are never followed, and failed checks do not prevent independent read-only checks from running. URL validation rejects trailing-dot and malformed DNS names (empty labels, underscores, edge hyphens, labels over 63 characters and hostnames over 253 characters) and permits only the default HTTPS port (443). Explicit `:443` normalizes to the default; non-default ports such as 444 or 8443 are rejected to keep this deployment checker from reaching unrelated public-host services. Hostname/local-reserved validation runs before port validation so errors retain their intended meaning.
 
 Before a request, the preflight resolves the hostname, rejects any non-public IPv4/IPv6 answer in the configured range policy, and caches that validated address set for the duration of the run. The production transport uses `node:https` with a custom DNS lookup callback pinned to those exact validated addresses. The original hostname is preserved for TLS SNI and certificate validation, and address-family failover can use only addresses from the validated list. The transport rejects non-HTTPS URLs, missing address pins and any configuration that is not fail-closed for redirects.
 
 The HTTPS adapter also caps every response body at **2 MiB**. It counts streamed bytes, destroys the request and rejects the preflight if the cap is exceeded, preventing unbounded body buffering. Regression coverage verifies an oversized synthetic response is rejected and the request is destroyed. This is a fixed guardrail for preflight responses, not a limit for application API payloads.
 
-Regression coverage includes malformed/trailing-dot names; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family selection; missing pins, HTTP-only and redirect-follow rejection; TLS hostname versus socket IP separation; and oversized response handling. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
+Regression coverage includes malformed/trailing-dot names; public URL HTTPS/port validation; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family selection; missing pins, HTTP and redirect-follow rejection; TLS hostname versus socket IP separation; and oversized-response handling. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
 **Remaining release gates:** live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and socket-pinning implementation, and final parent-PR review. Automated CI alone is not production acceptance.
 
-Latest source/test head: `e0b95c24761c8c11effdb27d1f5048c6e0c0c60b` (response-size guard source commit `5a578368fc8d563620bc5a5070a6eadd8da9cfaf`; oversize regression-test commit `e0b95c24761c8c11effdb27d1f5048c6e0c0c60b)). All five required workflows passed on that exact head:
-- [Frontend CI #40688489311](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489311) — unit tests, lint and production build.
-- [Synthetic browser E2E #40688489180](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489180).
-- [Accessibility #40688489117](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489117) — automated browser scope only.
-- [Real API + MongoDB #40688489047](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489047) — isolated acceptance scope only.
-- [Dependency audit #40688489131](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40688489131).
+Latest source/test head: `fb6b9da7e71867c1f3d5f0a5a602ae4790489eb8` (port guard source commit `d86c469dc53f100716c57728c2db172e76657a50`; port regression-test commit `538767869502dcc92bf73c7b3085dee5b38cd5e4`; validation-precedence fix `fb6b9da7e71867c1f3d5f0a5a602ae4790489eb8`). All five required workflows passed on that exact source/test head:
+- [Frontend CI #40690242307](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242307) — unit tests, lint and production build.
+- [Synthetic browser E2E #40690242551](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242551).
+- [Accessibility #40690242732](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242732) — automated browser scope only.
+- [Real API + MongoDB #40690242564](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242564) — isolated acceptance scope only.
+- [Dependency audit #40690242853](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242853).
 
 These results verify automated source/test behavior only; they do not establish live deployment acceptance or substitute for independent review.
 
