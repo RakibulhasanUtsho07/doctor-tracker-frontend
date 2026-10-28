@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). PR #23's documentation-inclusive verification head was `e2c15857438195dd83bbae0b68a4acf002fbc797`. All five required workflows passed on PR #24 documentation-inclusive verification SHA `5b48668bd7800de262d6125119bd5b80586a016f`; the exact run links are recorded below.
+**Current preflight-hardening candidate:** source-change commit SHA `095261d2a447f47fbce918cdf9e699a312b7d6c9`, regression-test commit SHA `11eda5ceed4fc4807d8047f1a099e87e725531ae`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The code/test verification head `11eda5ceed4fc4807d8047f1a099e87e725531ae` passed all five required workflows; detailed run links are listed in the PR #24 section below. Live deployment acceptance and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -20,17 +20,16 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 
 ## Deployment preflight redirect hardening — PR #24
 
-The read-only deployed-environment preflight now uses Fetch `redirect: "error"` for all frontend/API GET and CORS OPTIONS requests. A redirect rejection is reported as a failed check rather than silently following a same-origin or cross-origin target; independent read-only API/CORS checks continue so diagnostics remain useful. Regression tests verify every request uses error mode and that a redirected frontend request fails closed.
+The read-only deployed-environment preflight uses Fetch `redirect: "error"` for frontend/API GET and CORS OPTIONS requests. Redirect rejection becomes a failed check while independent read-only checks continue. Host validation now also rejects any hostname ending in a trailing dot before reserved/local-host checks, closing ambiguous forms such as `localhost.`, `example.com.`, and `service.localhost.`. Regression tests cover those cases, a trailing-dot public hostname and a trailing-dot API base hostname.
 
-All five required workflows passed on docs-inclusive verification SHA `5b48668bd7800de262d6125119bd5b80586a016f`:
-- [Frontend CI #40653490736](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490736) — unit tests, lint and production build.
-- [Synthetic browser E2E #40653490781](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490781).
-- [Accessibility #40653490739](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490739) — automated browser scope only.
-- [Real API + MongoDB #40653490740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490740) — isolated acceptance scope only.
-- [Dependency security audit #40653490733](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490733).
+All five required workflows passed on source/test verification head `11eda5ceed4fc4807d8047f1a099e87e725531ae`:
+- [Frontend CI #40657877488](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877488) — unit tests, lint and production build.
+- [Synthetic browser E2E #40657877442](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877442).
+- [Accessibility #40657877476](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877476) — automated browser scope only.
+- [Real API + MongoDB #40657877657](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877657) — isolated acceptance scope only.
+- [Dependency security audit #40657877531](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877531).
 
-This is synthetic CI evidence only. The five workflows above completed successfully on verification head `5b48668bd7800de262d6125119bd5b80586a016f`; all five job summaries were inspected. No staging endpoint was called. Live deployment preflight remains BLOCKED until authorized HTTPS URLs and deployed SHAs are available, and independent human review is still required.
-
+This is automated synthetic/isolated CI evidence only. No live staging endpoint was called. Live HTTPS/CORS/session/CSRF smoke remains BLOCKED until authorized endpoints and deployed SHAs are available, and independent human review is still required.
 ## CSP matcher boundary regression — PR #23
 
 The proxy matcher now excludes only the `/api` segment and descendants, the real `/_next/static` and `/_next/image` path boundaries, and the exact `favicon.ico`, `robots.txt`, and `sitemap.xml` filenames. It no longer skips CSP for similarly named frontend paths such as `/apiary-csp-boundary-regression` or `/faviconXico-csp-boundary-regression`. Chromium regression coverage asserts both paths return 404 HTML with a fresh nonce-bound CSP, `'strict-dynamic'`, and neither `unsafe-inline` nor `unsafe-eval`.
