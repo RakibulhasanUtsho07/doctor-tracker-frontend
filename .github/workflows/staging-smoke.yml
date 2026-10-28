@@ -1,6 +1,10 @@
 name: Staging browser smoke
 
 on:
+  push:
+    branches:
+      - dev
+      - 'feat/**'
   workflow_dispatch:
     inputs:
       frontend_url:
@@ -28,9 +32,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate-staging-workflow:
+    # Pushes and wrong-ref manual dispatches validate safely; this job has no secrets or staging access.
+    if: github.event_name == 'push' || github.ref != 'refs/heads/dev'
+    name: Validate staging guard without network access
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout candidate for local guard tests
+        if: github.event_name == 'push'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        if: github.event_name == 'push'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Run staging target guard regression tests
+        if: github.event_name == 'push'
+        run: node --test test/staging-smoke-guard.test.mjs
+
+      - name: Explain the manual-dispatch branch restriction
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/dev'
+        run: echo "Staging smoke is restricted to refs/heads/dev; this run made no staging requests and accessed no staging secrets."
+
   staging-smoke:
-    # Do not expose staging credentials from feature/unreviewed refs.
-    if: github.ref == 'refs/heads/dev'
+    # The mutating smoke is manual-only and may run only on the protected release-candidate ref.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
     name: Deployed HTTPS browser smoke (mutating staging data)
     environment:
       name: disposable-staging
