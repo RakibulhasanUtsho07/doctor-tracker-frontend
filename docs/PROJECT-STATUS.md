@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** connection-pinned DNS guard source commit SHA `a8f4c812cd48f8555c584c089a499a86bbdce3c6`, regression-test commit SHA `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). All five required workflows passed on source/test head `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`; exact run links are recorded below. Live staging acceptance and independent security review remain separate release gates.
+**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`, latest source/test head `2e19d975ab3d34149ceda96093ed04fcac0fb4c1`, on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24) stacked on PRs #23–#21. Five required workflows pass on this exact head; run links are recorded in the deployment-preflight section below. Live staging and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -18,26 +18,26 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 | Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
 | Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
 
-## Deployment preflight redirect, DNS, port and response-size safety — PR #24
+## Deployment preflight redirect, DNS, port, IP-pin and response-size safety — PR #24
 
-The read-only preflight sets Fetch-compatible `redirect: "error"` semantics for frontend GET, API health/readiness GETs and CORS OPTIONS; redirect responses are never followed, and failed checks do not prevent independent read-only checks from running. URL validation rejects trailing-dot and malformed DNS names (empty labels, underscores, edge hyphens, labels over 63 characters and hostnames over 253 characters) and permits only the default HTTPS port (443). Explicit `:443` normalizes to the default; non-default ports such as 444 or 8443 are rejected to keep this deployment checker from reaching unrelated public-host services. Hostname/local-reserved validation runs before port validation so errors retain their intended meaning.
+The read-only preflight rejects redirects on frontend GET, API health/readiness GET and CORS OPTIONS requests. URL validation rejects local/reserved/IP-literal and malformed/trailing-dot hostnames and permits only the default HTTPS port (443). Explicit :443 normalizes to the default; non-default ports such as 444 or 8443 are rejected.
 
-Before a request, the preflight resolves the hostname, rejects any non-public IPv4/IPv6 answer in the configured range policy, and caches that validated address set for the duration of the run. The production transport uses `node:https` with a custom DNS lookup callback pinned to those exact validated addresses. The original hostname is preserved for TLS SNI and certificate validation, and address-family failover can use only addresses from the validated list. The transport rejects non-HTTPS URLs, missing address pins and any configuration that is not fail-closed for redirects.
+Before each request, DNS is resolved and all answers are checked against the non-public IPv4/IPv6 policy; unsafe or empty answers fail closed. The HTTPS socket lookup is pinned to those validated addresses so it does not perform a second independent DNS resolution. The original hostname remains in TLS SNI and certificate verification, and address-family failover is limited to the validated set. Defense in depth: the exported transport independently validates its target URL, confirms every pin is a public IP and rejects address-family mismatches, including when called outside the normal preflight wrapper.
 
-The HTTPS adapter also caps every response body at **2 MiB**. It counts streamed bytes, destroys the request and rejects the preflight if the cap is exceeded, preventing unbounded body buffering. Regression coverage verifies an oversized synthetic response is rejected and the request is destroyed. This is a fixed guardrail for preflight responses, not a limit for application API payloads.
+The [IANA IPv6 Special-Purpose registry](https://www.iana.org/assignments/iana-ipv6-special-registry) marks 2001:2::/48 (benchmarking) as not globally reachable. The policy now rejects that range and conservatively rejects deprecated former ORCHID prefix 2001:10::/28 as well as existing local, link-local, documentation, multicast and other reserved ranges. This is a reviewed static policy, not a runtime registry fetch; independent security review remains required.
 
-Regression coverage includes malformed/trailing-dot names; public URL HTTPS/port validation; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family selection; missing pins, HTTP and redirect-follow rejection; TLS hostname versus socket IP separation; and oversized-response handling. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
+The HTTPS adapter caps response bodies at **2 MiB**. It counts streamed bytes, destroys the request and rejects the preflight when the limit is exceeded. This guard applies only to deployment-preflight responses, not normal application API payloads.
 
-**Remaining release gates:** live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and socket-pinning implementation, and final parent-PR review. Automated CI alone is not production acceptance.
+Regression coverage includes malformed/trailing-dot names; HTTPS port validation; IPv4 and IPv6 private/special ranges including IANA benchmarking and deprecated ORCHID; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family behavior; standalone adapter rejection of private pins, family mismatch, IP-literal targets, non-default ports and redirect-follow; TLS hostname versus socket IP separation; and oversized-response rejection. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
-Latest source/test head: `fb6b9da7e71867c1f3d5f0a5a602ae4790489eb8` (port guard source commit `d86c469dc53f100716c57728c2db172e76657a50`; port regression-test commit `538767869502dcc92bf73c7b3085dee5b38cd5e4`; validation-precedence fix `fb6b9da7e71867c1f3d5f0a5a602ae4790489eb8`). All five required workflows passed on that exact source/test head:
-- [Frontend CI #40690242307](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242307) — unit tests, lint and production build.
-- [Synthetic browser E2E #40690242551](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242551).
-- [Accessibility #40690242732](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242732) — automated browser scope only.
-- [Real API + MongoDB #40690242564](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242564) — isolated acceptance scope only.
-- [Dependency audit #40690242853](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40690242853).
+Latest source/test head: `2e19d975ab3d34149ceda96093ed04fcac0fb4c1`. All five required workflows passed on that exact head:
+- [Frontend CI #40691778740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40691778740) — unit tests, lint and production build.
+- [Synthetic browser E2E #40691778722](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40691778722).
+- [Accessibility #40691778775](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40691778775) — automated browser scope only.
+- [Real API + MongoDB #40691778786](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40691778786) — isolated acceptance scope only.
+- [Dependency audit #40691778739](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40691778739).
 
-These results verify automated source/test behavior only; they do not establish live deployment acceptance or substitute for independent review.
+**Remaining release gates:** authorized live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and pinned transport, and parent-PR review. Automated CI does not establish production acceptance.
 
 ## CSP matcher boundary regression — PR #23
 
