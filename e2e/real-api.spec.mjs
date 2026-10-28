@@ -1006,7 +1006,8 @@ test("real API keyboard-only Doctor creation handles duplicate email conflict an
   await expect(emailField).toHaveAttribute("aria-describedby", "doctor-field-error-email");
   await expect(page.locator("#doctor-field-error-email"))
     .toHaveText("A doctor with this email already exists.");
-  await expect(duplicateForm.submit).toBeFocused();
+  // Server validation returns focus to the invalid field so a keyboard user can recover immediately.
+  await expect(emailField).toBeFocused();
 
   const rejectedState = await page.evaluate(async ({ api, existingName, rejectedName }) => {
     async function lookup(name) {
@@ -1027,9 +1028,7 @@ test("real API keyboard-only Doctor creation handles duplicate email conflict an
   expect(rejectedState.rejected.total).toBe(0);
   expect(rejectedState.rejected.doctor).toBeNull();
 
-  // Keep the full recovery pointer-free: Shift+Tab returns to the invalid email
-  // field, typing clears the field error, and Tab returns to the submit button.
-  await page.keyboard.press("Shift+Tab");
+  // Keep the full recovery pointer-free: focus is already on the invalid email field.
   await expect(emailField).toBeFocused();
   await page.keyboard.press("Control+A");
   await page.keyboard.type(recoveredEmail);

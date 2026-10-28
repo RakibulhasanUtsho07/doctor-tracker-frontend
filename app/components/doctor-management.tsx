@@ -120,6 +120,7 @@ export default function DoctorManagement({
   const [savePending, setSavePending] = useState(false);
   const [notice, setNotice] = useState("");
   const editorHeadingRef = useRef<HTMLHeadingElement>(null);
+  const editorFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -189,6 +190,16 @@ export default function DoctorManagement({
   useEffect(() => {
     if (editorMode) editorHeadingRef.current?.focus();
   }, [editorMode]);
+
+  // Server-side field validation (for example, a duplicate-email 409) must return
+  // keyboard focus to the field that needs correction, not leave focus on a disabled submit button.
+  useEffect(() => {
+    const invalidField = fields.find(({ id }) => Boolean(fieldErrors[id]));
+    if (!invalidField) return;
+    editorFormRef.current
+      ?.querySelector<HTMLInputElement>(`[name="${invalidField.id}"]`)
+      ?.focus();
+  }, [fieldErrors]);
 
   async function openDetails(doctorId: string) {
     detailController.current?.abort();
@@ -370,7 +381,7 @@ export default function DoctorManagement({
             <button type="button" className="secondary-button" onClick={cancelEditor} disabled={savePending}>Cancel</button>
           </div>
           {formError && <p className="doctor-error" role="alert">{formError}</p>}
-          <form className="doctor-form" onSubmit={saveDoctor}>
+          <form className="doctor-form" ref={editorFormRef} onSubmit={saveDoctor}>
             {fields.map((field) => (
               <label className="doctor-field" key={field.id}>
                 <span>{field.label}<i aria-hidden="true"> *</i></span>
