@@ -65,9 +65,6 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   if (url.protocol !== "https:") {
     throw new Error(label + " must use HTTPS.");
   }
-  if (url.port && url.port !== "443") {
-    throw new Error(label + " must use the default HTTPS port (443).");
-  }
   if (url.username || url.password) {
     throw new Error(label + " must not contain credentials.");
   }
@@ -86,6 +83,9 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
     isIP(hostname) !== 0
   ) {
     throw new Error(label + " must use a public DNS hostname, not a local, reserved, or IP-literal host.");
+  }
+  if (url.port && url.port !== "443") {
+    throw new Error(label + " must use the default HTTPS port (443).");
   }
   if (requireApiBase && !/\/api\/v1\/?$/i.test(url.pathname)) {
     throw new Error("API base URL must end with /api/v1.");
