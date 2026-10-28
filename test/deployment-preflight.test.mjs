@@ -224,6 +224,36 @@ test("pinned HTTPS fetch connects using the validated address while preserving T
   assert.deepEqual(lookupResult, { address: "93.184.216.34", family: 4 });
 });
 
+test("pinned HTTPS fetch supplies a default abort timeout when callers omit a signal", async () => {
+  let capturedSignal;
+  const requestImpl = (url, options) => {
+    capturedSignal = options.signal;
+    const request = new EventEmitter();
+    request.end = () => {
+      const response = new EventEmitter();
+      response.statusCode = 200;
+      response.statusMessage = "OK";
+      response.headers = { "content-type": "text/plain" };
+      process.nextTick(() => {
+        request.emit("response", response);
+        response.emit("data", Buffer.from("ok"));
+        response.emit("end");
+      });
+    };
+    return request;
+  };
+
+  const fetchImpl = createPinnedHttpsFetch(requestImpl);
+  const response = await fetchImpl("https://api.candidate-host.com/api/v1/health", {
+    method: "GET",
+    redirect: "error",
+    pinnedAddresses: [{ address: "93.184.216.34", family: 4 }]
+  });
+
+  assert.equal(response.status, 200);
+  assert.ok(capturedSignal instanceof AbortSignal);
+  assert.equal(capturedSignal.aborted, false);
+});
 
 test("pinned HTTPS fetch aborts and rejects a response body larger than the safety limit", async () => {
   const maxResponseBytes = 2 * 1024 * 1024;
