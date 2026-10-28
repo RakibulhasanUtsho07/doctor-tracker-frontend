@@ -18,6 +18,10 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   }
 
   const hostname = url.hostname.toLowerCase();
+  // Reject non-canonical FQDN spelling so reserved/local-host checks cannot be bypassed.
+  if (hostname.endsWith(".")) {
+    throw new Error(label + " must not use a trailing-dot hostname.");
+  }
   if (url.protocol !== "https:") {
     throw new Error(label + " must use HTTPS.");
   }
