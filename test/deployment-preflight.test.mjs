@@ -211,7 +211,7 @@ test("pinned HTTPS fetch connects using the validated address while preserving T
   assert.equal(capturedOptions.url.hostname, "api.candidate-host.com");
   assert.equal(capturedOptions.options.servername, "api.candidate-host.com");
   assert.equal(capturedOptions.options.rejectUnauthorized, true);
-  assert.equal(capturedOptions.options.autoSelectFamily, false);
+  assert.equal(capturedOptions.options.autoSelectFamily, true);
   assert.deepEqual(lookupResult, { address: "93.184.216.34", family: 4 });
 });
 
