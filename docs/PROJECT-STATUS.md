@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** DNS/private-address guard source commit SHA `dd7064063ae756d5b29d67951f7d3b97c72ef1a4`, regression-test commit SHA `69b48449940483ba500a01f0de00660569fa4c84`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). All five required workflows passed on DNS/private-address guard source/test head `69b48449940483ba500a01f0de00660569fa4c84`; exact run links are recorded below. Live deployment acceptance, independent review and connection-level DNS pinning remain separate gates. Live deployment acceptance and independent review remain separate release gates.
+**Current preflight-hardening candidate:** connection-pinned DNS guard source commit SHA `a8f4c812cd48f8555c584c089a499a86bbdce3c6`, regression-test commit SHA `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). All five required workflows passed on source/test head `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`; exact run links are recorded below. Live staging acceptance and independent security review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -20,20 +20,22 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 
 ## Deployment preflight redirect and DNS safety — PR #24
 
-The read-only deployment preflight uses Fetch `redirect: "error"` for frontend/API GET and CORS OPTIONS requests. Redirect rejection fails that check while independent read-only checks continue. Hostname validation rejects trailing-dot and malformed DNS names, including empty labels, underscores, leading/trailing hyphens, labels longer than 63 characters and hostnames longer than 253 characters.
+The read-only preflight sets Fetch-compatible `redirect: "error"` semantics for frontend GET, API health/readiness GETs and CORS OPTIONS; redirect responses are never followed, and failed checks do not prevent independent read-only checks from running. URL validation rejects trailing-dot and malformed DNS names (empty labels, underscores, edge hyphens, labels over 63 characters and hostnames over 253 characters).
 
-Immediately before each request, the preflight resolves the hostname and refuses to send that request if any returned address is private, loopback, link-local, shared-address-space, documentation, multicast, reserved or outside the configured globally-routable ranges. DNS results are cached per hostname for one preflight invocation. Regression tests cover non-public IPv4/IPv6 answers, mixed public/private answers, DNS lookup errors and empty DNS answers. These requests still use only synthetic fixtures in tests; no deployed endpoint was called.
+Before a request, the preflight resolves the hostname, rejects any non-public IPv4/IPv6 answer in the configured range policy, and caches that validated address set for the duration of the run. The production transport then uses `node:https` with a custom DNS lookup callback pinned to those exact validated addresses. The original hostname is preserved for TLS SNI and certificate validation, and address-family failover can use only addresses from that validated list. The transport rejects non-HTTPS URLs, missing address pins and any configuration that is not fail-closed for redirects.
 
-**Residual limitation:** Fetch performs its own DNS lookup for the actual connection. The validation lookup is not pinned to the socket destination, so DNS rebinding is not fully prevented. Connection-level IP pinning and authorized live staging validation remain open security/release gates.
+Regression coverage includes malformed/trailing-dot names; IPv4/IPv6 loopback, private, link-local, shared and documentation ranges; mixed public/private DNS answers; DNS failure and empty answers; and unit-level transport assertions that the requested hostname and validated IPs are kept separate for TLS versus socket routing. All tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
-All five required workflows passed on source/test head `69b48449940483ba500a01f0de00660569fa4c84`:
-- [Frontend CI #40685231086](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40685231086) — unit tests, lint and production build.
-- [Synthetic browser E2E #40685231183](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40685231183).
-- [Accessibility #40685231089](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40685231089) — automated browser scope only.
-- [Real API + MongoDB #40685231049](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40685231049) — isolated acceptance scope only.
-- [Dependency audit #40685231079](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40685231079).
+**Remaining release gates:** live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and socket-pinning implementation, and final parent-PR review. Automated CI alone is not production acceptance.
 
-These results establish automated test scope only; they do not establish live HTTPS/CORS/session/CSRF acceptance, connection-pinned DNS safety or independent security approval.
+All five required workflows passed on source/test head `379c443dc8397e48c9a0e3c140fbd70e0c3d8c0d`:
+- [Frontend CI #40687089112](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089112) — unit tests, lint and production build.
+- [Synthetic browser E2E #40687089091](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089091).
+- [Accessibility #40687089210](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089210) — automated browser scope only.
+- [Real API + MongoDB #40687089356](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089356) — isolated acceptance scope only.
+- [Dependency audit #40687089186](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40687089186).
+
+These results verify automated source/test behavior only; they do not establish live deployment acceptance or substitute for independent review.
 ## CSP matcher boundary regression — PR #23
 
 The proxy matcher now excludes only the `/api` segment and descendants, the real `/_next/static` and `/_next/image` path boundaries, and the exact `favicon.ico`, `robots.txt`, and `sitemap.xml` filenames. It no longer skips CSP for similarly named frontend paths such as `/apiary-csp-boundary-regression` or `/faviconXico-csp-boundary-regression`. Chromium regression coverage asserts both paths return 404 HTML with a fresh nonce-bound CSP, `'strict-dynamic'`, and neither `unsafe-inline` nor `unsafe-eval`.
