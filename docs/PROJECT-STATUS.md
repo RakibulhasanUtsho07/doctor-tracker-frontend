@@ -1,20 +1,34 @@
 # Project Status
-Last verified: 2026-10-27
 
-## Completed
-- Frontend documentation baseline merged to dev via [PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
-- Backend API Step 1 foundation merged to API dev via [PRs #7–#9](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pulls); [CI #13](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40477435393) passed lint, typecheck, 9/9 tests and build.
-- Backend API Step 2 auth/session foundation merged to API dev via [PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/11); [CI #28](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40479777698) passed lint, typecheck, 15/15 HTTP/auth tests, 1/1 MongoDB integration test and production build.
+**Last reviewed:** 2026-10-28  
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**
 
-## Frontend status
-- Responsive application shell, visual tokens, dashboard/doctors/patients navigation, explicit preview-only data states and reduced-motion CSS: implemented in draft [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9). [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint and production build on tested code commit `dda345a84530ff224d30ace034af09ec369b717a`.
-- Mobile menu focus handling and Escape-to-close, visible keyboard focus and skip link: implemented; manual keyboard/browser validation remains pending.
-- Sign-in/session integration and live dashboard data: NOT STARTED.
-- Doctor and patient CRUD screens/API integration: NOT STARTED.
-- Desktop/tablet/mobile screenshots, manual accessibility review, E2E and frontend deployment: NOT STARTED.
+A passing workflow proves only its tested scope and exact commit. It does not prove that a feature PR has been approved, merged, deployed, or accepted through manual release checks.
 
-## Current progress
-Frontend documentation baseline: merged to dev. Backend API Steps 1–5: PASS in the API repository with linked CI evidence. Frontend shell Step 6: IN PROGRESS in PR #9; automated lint/build CI passes, but manual responsive/keyboard/reduced-motion review and screenshot evidence are not yet accepted.
+## Backend — doctor-tracker-api
 
-## Next
-Finish acceptance for [frontend Step 6 — responsive app shell and accessible motion](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/2): run desktop/tablet/mobile and keyboard/reduced-motion checks, and attach synthetic-only screenshots. CI is green. Then proceed to [Step 7 — sign-in and dashboard visualization](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/issues/3).
+API foundation, administrator authentication/session, doctor CRUD/search/filter/pagination, patient CRUD and relationship semantics, and dashboard aggregation are merged to API `dev`. The API `dev` head is `efd1fd0f016d98da1fe91bdea52bc48f6295217f`; [API CI #40549035764](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40549035764) passed lint, typecheck, unit/MongoDB integration tests and production build. Production HTTPS-origin and MongoDB TLS hardening are included in API dev through [PR #19](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/19) and [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/20). API `main` has not yet received the current dev stack.
+
+## Frontend — doctor-tracker-frontend
+
+- [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9) implements the responsive workspace shell, navigation, preview-only states, visible focus, skip link and reduced-motion behavior. It remains draft because browser/manual acceptance is not complete.
+- This change adds a dedicated synthetic Playwright shell-acceptance workflow for desktop, tablet, mobile and 320 CSS-pixel viewports. It checks horizontal overflow, keyboard navigation, active navigation semantics, heading focus, skip-link behavior, preview-only content, reduced motion and mobile focus restoration. **Exact-head workflow results are pending for the commit that adds this suite.**
+- The sign-in/dashboard, doctor and patient screens plus synthetic E2E, real API/MongoDB acceptance, accessibility, staging, narrow reflow and security/performance work exist in stacked PRs #10–#24; they remain open/draft and must be reviewed in dependency order, not treated as merged features.
+- [PR #25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25) separately bootstraps the staging-smoke workflow on `main`. It is infrastructure-only, open/draft, and requires review plus trusted staging environment configuration.
+
+## Current blockers
+
+- Manual browser checks for keyboard-only use, visible focus, reduced motion, desktop/tablet/mobile and real 200% zoom have not been accepted by a human reviewer.
+- Physical touch-device and screen-reader acceptance has not been evidenced.
+- Independent application/configuration security review remains open.
+- No authorized public staging frontend/API URLs, deployed SHAs or successful live HTTPS/session/CSRF/CRUD smoke are recorded.
+- Performance is observational only until a numeric target is agreed and approved-environment results are collected.
+- Feature PR review and promotion to frontend `dev`, frontend `main`, and API `main` remain incomplete.
+
+## Next execution
+
+1. Finish the new exact-head shell-acceptance CI and inspect all generated synthetic screenshots/reports.
+2. Record manual acceptance as NOT STARTED until an actual reviewer, browser/device, date and results are available; leave PR #9/Issue #2 open meanwhile.
+3. Review the PR dependency chain from #9 upward, then provision and verify approved disposable staging and complete release gates before promotion.
+
+Never invent device results, screenshot review, deployment URLs, credentials, performance SLAs or manual approval. Unavailable evidence remains BLOCKED/NOT STARTED, not PASS.

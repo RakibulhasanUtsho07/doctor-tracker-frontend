@@ -1,0 +1,67 @@
+name: Shell browser acceptance
+
+on:
+  pull_request:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+  push:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shell-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shell-browser:
+    name: Responsive shell, navigation and motion (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install pinned isolated Playwright runner
+        run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-1.64.1
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: ./.e2e-tools/node_modules/.bin/playwright install chromium
+
+      - name: Run responsive shell acceptance
+        run: ./.e2e-tools/node_modules/.bin/playwright test --config=e2e/shell-acceptance.config.mjs
+        env:
+          CI: "true"
+
+      - name: Upload synthetic shell screenshots and Playwright diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctor-tracker-shell-acceptance
+          path: |
+            test-results/
+            shell-acceptance-report/
+          if-no-files-found: warn
+          retention-days: 14
