@@ -85,6 +85,9 @@ export default function PatientManagement({
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const confirmationCancelRef = useRef<HTMLButtonElement>(null);
+  const confirmationDialogRef = useRef<HTMLElement | null>(null);
+  const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const confirmationFallbackFocusRef = useRef(false);
 
   const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
   const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
@@ -147,7 +150,10 @@ export default function PatientManagement({
 
   useEffect(() => {
     if (!confirmation) return;
-    confirmationCancelRef.current?.focus();
+    const dialog = confirmationDialogRef.current;
+    if (actionPending) dialog?.focus();
+    else confirmationCancelRef.current?.focus();
+
     const handleDialogKeys = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !actionPending) {
         setConfirmation(null);
@@ -155,12 +161,24 @@ export default function PatientManagement({
         return;
       }
       if (event.key !== "Tab") return;
-      const dialog = document.querySelector<HTMLElement>(".patient-confirm-dialog");
-      const focusable = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
-      if (!focusable || focusable.length === 0) return;
+      const activeDialog = confirmationDialogRef.current;
+      if (!activeDialog) return;
+      const focusable = activeDialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) {
+        // During an in-flight action, both controls are disabled. Keep focus on
+        // the dialog itself rather than allowing Tab to enter the background.
+        event.preventDefault();
+        activeDialog.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!activeDialog.contains(document.activeElement)) {
+        // aria-modal describes modality to assistive technology; it does not
+        // physically prevent script-driven focus from escaping the dialog.
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -171,6 +189,21 @@ export default function PatientManagement({
     window.addEventListener("keydown", handleDialogKeys);
     return () => window.removeEventListener("keydown", handleDialogKeys);
   }, [confirmation, actionPending]);
+
+  useEffect(() => {
+    if (confirmation) return;
+    if (confirmationFallbackFocusRef.current) {
+      confirmationFallbackFocusRef.current = false;
+      confirmationTriggerRef.current = null;
+      document.getElementById("patient-list-heading")?.focus();
+      return;
+    }
+    const trigger = confirmationTriggerRef.current;
+    if (!trigger) return;
+    confirmationTriggerRef.current = null;
+    if (trigger.isConnected) trigger.focus();
+    else document.getElementById("patient-list-heading")?.focus();
+  }, [confirmation]);
 
   useEffect(() => {
     if (initialRequest) onInitialRequestConsumed();
@@ -327,6 +360,13 @@ export default function PatientManagement({
     }
   }
 
+  function requestConfirmation(kind: "detach" | "delete", patient: Patient, trigger: HTMLButtonElement) {
+    confirmationFallbackFocusRef.current = false;
+    confirmationTriggerRef.current = trigger;
+    setActionError("");
+    setConfirmation({ kind, patient });
+  }
+
   async function performConfirmedAction() {
     if (!confirmation || actionPending) return;
     const current = confirmation;
@@ -344,6 +384,8 @@ export default function PatientManagement({
           { method: "DELETE", csrfToken }
         );
       }
+      confirmationFallbackFocusRef.current = true;
+      confirmationTriggerRef.current = null;
       setConfirmation(null);
       setSelectedPatient(null);
       setEditorMode(null);
@@ -372,7 +414,7 @@ export default function PatientManagement({
       <div className="patient-toolbar">
         <div>
           <p className="section-kicker">PATIENT RECORDS</p>
-          <h2 id="patient-list-heading">Patient directory</h2>
+          <h2 id="patient-list-heading" tabIndex={-1}>Patient directory</h2>
           <p>Manage the minimum patient record fields and preserve the distinction between detaching and deleting.</p>
         </div>
         <button type="button" className="primary-button patient-add-button" onClick={startCreate}>+ Add patient</button>
@@ -458,8 +500,8 @@ export default function PatientManagement({
                 <div><dt>Last updated (UTC)</dt><dd>{utcDate(selectedPatient.updatedAt)}</dd></div>
               </dl>
               <div className="patient-detail-actions patient-detail-bottom">
-                {selectedPatient.doctorId && <button type="button" className="secondary-button" onClick={() => setConfirmation({ kind: "detach", patient: selectedPatient })}>Detach from doctor</button>}
-                <button type="button" className="danger-button" onClick={() => setConfirmation({ kind: "delete", patient: selectedPatient })}>Delete patient record</button>
+                {selectedPatient.doctorId && <button type="button" className="secondary-button" onClick={(event) => requestConfirmation("detach", selectedPatient, event.currentTarget)}>Detach from doctor</button>}
+                <button type="button" className="danger-button" onClick={(event) => requestConfirmation("delete", selectedPatient, event.currentTarget)}>Delete patient record</button>
               </div>
             </>
           )}
@@ -485,7 +527,7 @@ export default function PatientManagement({
                   <td>{doctorLabel(patient.doctorId)}</td>
                   <td>{patient.condition ?? "—"}</td>
                   <td>{utcDate(patient.createdAt)}</td>
-                  <td><div className="patient-row-actions"><button type="button" className="patient-view-link" onClick={() => void openPatient(patient.id)}>View</button>{patient.doctorId && <button type="button" className="patient-detach-link" onClick={() => setConfirmation({ kind: "detach", patient })}>Detach</button>}<button type="button" className="patient-delete-link" onClick={() => setConfirmation({ kind: "delete", patient })}>Delete</button></div></td>
+                  <td><div className="patient-row-actions"><button type="button" className="patient-view-link" onClick={() => void openPatient(patient.id)}>View</button>{patient.doctorId && <button type="button" className="patient-detach-link" onClick={(event) => requestConfirmation("detach", patient, event.currentTarget)}>Detach</button>}<button type="button" className="patient-delete-link" onClick={(event) => requestConfirmation("delete", patient, event.currentTarget)}>Delete</button></div></td>
                 </tr>
               ))}
               {!loading && !listError && patients.length === 0 && <tr><td colSpan={5}><div className="patient-empty-state"><span className="patient-empty-symbol" aria-hidden="true">＋</span><strong>No patients found</strong><p>Create a patient record or adjust the current search and filters.</p><button type="button" className="secondary-button" onClick={resetFilters}>Clear filters</button></div></td></tr>}
@@ -504,7 +546,7 @@ export default function PatientManagement({
 
       {confirmation && (
         <div className="patient-dialog-backdrop">
-          <section className="patient-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-confirm-heading" aria-describedby="patient-confirm-description">
+          <section ref={confirmationDialogRef} tabIndex={-1} className="patient-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-confirm-heading" aria-describedby="patient-confirm-description">
             <p className="section-kicker">{confirmation.kind === "delete" ? "PERMANENT ACTION" : "RELATIONSHIP CHANGE"}</p>
             <h3 id="patient-confirm-heading">{confirmation.kind === "delete" ? "Delete this patient record?" : "Detach this patient from the doctor?"}</h3>
             <p id="patient-confirm-description">{confirmation.kind === "delete"

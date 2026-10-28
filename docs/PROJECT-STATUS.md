@@ -21,7 +21,20 @@ Last verified: 2026-10-27
 ## Remaining release gates
 - Manual assistive-technology and screen-reader walkthroughs, exhaustive keyboard-only forms/dialogs and physical desktop/tablet/mobile touch review.
 - Production HTTPS/cookie policy and deployed smoke test, plus performance/security review.
-- Stacked PRs #9–#15 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
+- Stacked PRs #9–#16 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
+
+## Form/dialog accessibility extension — 2026-10-27
+- Draft [PR #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/16), exact tested code head `4c3c73db59c8d425195c518fd5518fa0f2d58bce): [Frontend CI #247](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520035122), [synthetic browser E2E #111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034820), [accessibility #38](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034573) all passed; [real API/MongoDB #59](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034007) passed.
+- Accessibility run: 13 passed, 1 expected desktop-only skip; [axe JSON, screenshots and Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40520034573/artifacts/12741611304). Coverage now includes create/edit forms, duplicate-email/API validation error association, keyboard navigation, confirmation Tab/Shift+Tab loop, Escape/Cancel focus return and contrast on newly exposed states.
+- Real API run: 24/24 HTTP/unit, 4/4 MongoDB integration and 2/2 real-backend Chromium journeys passed on the same tested head.
+- Manual screen-reader/assistive technology, device/touch, production HTTPS/cookie behavior, performance/security and deployed smoke remain open; the release remains PARTIAL and all dependent PRs stay draft.
+
+
+## PR #16 modal focus-containment follow-up — 2026-10-28
+
+Code/test commit `127e6286233c024d28d4407a7a049f00064e888d` adds an explicit focus boundary for confirmation dialogs while destructive actions are pending, including the case where both controls are disabled. The regression moves focus outside the modal, checks Tab/Shift+Tab recapture in the idle state, observes a delayed DELETE request and asserts the pending DOM state atomically. The synthetic response is an intentional delayed failure, and the test verifies the patient remains in the directory after the action fails.
+
+All four workflows passed on the exact code/test head: [Frontend CI #40723317874](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317874), [Synthetic E2E #40723317760](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317760), [Accessibility #40723317798](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317798), [Real API + MongoDB #40723317740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317740). PR #16 stays draft/unmerged: its parent review is still required, and manual screen-reader/device/deployed acceptance remains incomplete. This documentation update creates a new head; re-run all four workflows on that SHA.
