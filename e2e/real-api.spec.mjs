@@ -199,6 +199,18 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
 
   await expect(page.getByRole("heading", { name: doctorName })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Associated patients/ })).toBeVisible();
+
+  // Exercise a real API-backed doctor edit, including the protected PATCH.
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Update doctor details" })).toBeVisible();
+  const doctorEditForm = page.locator(".doctor-editor form");
+  await doctorEditForm.getByLabel(/Hospital \/ clinic/).fill("Real API E2E Hospital Updated");
+  await doctorEditForm.getByLabel(/^Phone/).fill("+880 1700-100002");
+  await doctorEditForm.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { name: doctorName })).toBeVisible();
+  await expect(page.getByText(/Cardiology · Real API E2E Hospital Updated/)).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Doctor record updated successfully.");
+
   await page.getByRole("button", { name: /Add patient/ }).click();
   await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
   const doctorId = await page.getByLabel(/Doctor association/).inputValue();
@@ -265,6 +277,16 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await expect(dashboardMetric(page, "Patient records")).toHaveText("1");
   await page.screenshot({ path: testInfo.outputPath("real-api-dashboard-desktop.png"), fullPage: true });
 
+  // The edited values must still be returned by the persisted API after reload.
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+  await page.getByLabel("Search directory").fill(doctorName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const updatedDoctorRow = page.locator(".doctor-table").getByRole("row").filter({ hasText: doctorName });
+  await expect(updatedDoctorRow).toContainText("Real API E2E Hospital Updated");
+  await expect(updatedDoctorRow).toContainText("+880 1700-100002");
+  await page.getByRole("button", { name: "Reset" }).click();
+
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: /Patients/ }).click();
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
   const persistence = await page.evaluate(async ({ api, preserved, deleted }) => {
@@ -295,6 +317,7 @@ test("real API browser journey verifies cookie CORS, CSRF, persisted patient lif
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   expect(mutationRequests.some((entry) => entry.method === "POST" && entry.url.endsWith("/doctors") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
+  expect(mutationRequests.some((entry) => entry.method === "PATCH" && /\/doctors\/[a-f\d]{24}$/i.test(new URL(entry.url).pathname) && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "POST" && entry.url.endsWith("/patients") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "PATCH" && entry.url.includes("/patients/") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
   expect(mutationRequests.some((entry) => entry.method === "DELETE" && entry.url.includes("/doctors/") && entry.url.includes("/patients/") && Boolean(entry.headers["x-csrf-token"]))).toBe(true);
