@@ -701,3 +701,82 @@ test("real API session revocation clears the stale patient workspace on the next
   }));
   expect(browserStorage).toEqual({ local: [], session: [] });
 });
+
+
+test("real API rejects duplicate doctor email edits and preserves both persisted records", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const originalName = `Dr. Conflict Original ${suffix}`;
+  const otherName = `Dr. Conflict Existing ${suffix}`;
+  const originalEmail = `conflict-original-${suffix}@example.test`;
+  const otherEmail = `conflict-existing-${suffix}@example.test`;
+
+  await signIn(page);
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("button", { name: /Doctors/ }).click();
+  await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+
+  async function createDoctor(name, email, hospital) {
+    await page.getByRole("button", { name: /Add doctor/ }).click();
+    const form = page.locator(".doctor-editor form");
+    await form.getByLabel(/Full name/).fill(name);
+    await form.getByLabel(/^Specialization/).fill("Family Medicine");
+    await form.getByLabel(/Hospital \/ clinic/).fill(hospital);
+    await form.getByLabel(/^Phone/).fill("+880 1700 400001");
+    await form.getByLabel(/^Email address/).fill(email);
+    await form.getByRole("button", { name: "Create doctor" }).click();
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+
+  // Both records exist only in this workflow's disposable MongoDB container.
+  // The API contract intentionally provides no doctor-delete route.
+  await createDoctor(originalName, originalEmail, "Conflict Test Clinic A");
+  await createDoctor(otherName, otherEmail, "Conflict Test Clinic B");
+
+  await page.getByLabel("Search directory").fill(originalName);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  const originalRow = page.locator(".doctor-table").getByRole("row").filter({ hasText: originalName });
+  await expect(originalRow).toBeVisible();
+  await originalRow.getByRole("button", { name: originalName, exact: true }).click();
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+
+  const form = page.locator(".doctor-editor form");
+  const emailField = form.getByLabel(/^Email address/);
+  await emailField.fill(otherEmail);
+  await form.getByRole("button", { name: "Save changes" }).click();
+
+  await expect(emailField).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#doctor-field-error-email"))
+    .toHaveText("A doctor with this email already exists.");
+  await expect(page.getByRole("heading", { name: "Update doctor details" })).toBeVisible();
+
+  const persisted = await page.evaluate(async ({ api, originalName, otherName }) => {
+    async function getDoctor(name) {
+      const url = new URL(api + "/doctors");
+      url.searchParams.set("search", name);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("limit", "10");
+      const response = await fetch(url.toString(), { credentials: "include" });
+      const body = await response.json();
+      return {
+        status: response.status,
+        total: body?.meta?.pagination?.total,
+        doctor: body?.data?.doctors?.[0] ?? null
+      };
+    }
+    return {
+      original: await getDoctor(originalName),
+      other: await getDoctor(otherName)
+    };
+  }, { api: API, originalName, otherName });
+
+  expect(persisted.original.status).toBe(200);
+  expect(persisted.original.total).toBe(1);
+  expect(persisted.original.doctor?.name).toBe(originalName);
+  expect(persisted.original.doctor?.email).toBe(originalEmail);
+  expect(persisted.original.doctor?.hospital).toBe("Conflict Test Clinic A");
+  expect(persisted.other.status).toBe(200);
+  expect(persisted.other.total).toBe(1);
+  expect(persisted.other.doctor?.name).toBe(otherName);
+  expect(persisted.other.doctor?.email).toBe(otherEmail);
+  expect(persisted.other.doctor?.hospital).toBe("Conflict Test Clinic B");
+});
