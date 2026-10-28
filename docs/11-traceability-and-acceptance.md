@@ -19,3 +19,12 @@ Statuses: NOT STARTED, IN PROGRESS, PASS, FAIL, PARTIAL, BLOCKED. PASS requires 
 | Deployment | Live frontend URL and integrated smoke test | NOT STARTED |
 ## Evidence record template
 Requirement IDs, commit/PR, CI link/commit SHA, commands and pass/fail counts, manual/device evidence, limitations and reviewer/date. Code presence alone is not acceptance evidence.
+
+
+## PR #16 pending destructive-action focus acceptance — 2026-10-28
+
+| Acceptance item | Result and evidence | Remaining boundary |
+|---|---|---|
+| Keep keyboard focus within a confirmation modal when an action is pending and its controls are disabled | PASS within automated Chromium scope on source/test SHA `127e6286233c024d28d4407a7a049f00064e888d`: [Frontend CI #40723317874](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317874), [synthetic E2E #40723317760](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317760), [accessibility #40723317798](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317798), [real API/MongoDB #40723317740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317740) all passed. | Manual screen-reader/keyboard review remains open. The test uses a delayed synthetic failure to prove the record is preserved; it is not production endpoint evidence. |
+
+Implementation: the modal container is focusable and is focused while destructive work is pending; Tab trapping explicitly handles the state with zero enabled controls and recaptures focus moved outside. The regression uses desktop and mobile Chromium and confirms the failed action leaves the record present. Documentation-only changes below create a new commit and require new exact-head CI before that newer SHA can be called PASS.
