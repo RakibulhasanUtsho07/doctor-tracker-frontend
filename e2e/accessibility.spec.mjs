@@ -714,7 +714,7 @@ test("320 CSS-pixel reflow keeps primary screens, forms and destructive dialogs 
   await expectControlInsideViewport(page.locator(".doctor-form input[name=name]"), "Doctor name field");
   await expectControlInsideViewport(page.locator(".doctor-form input[name=email]"), "Doctor email field");
   await expectControlInsideViewport(page.locator(".doctor-form").getByRole("button", { name: "Create doctor" }), "Doctor create action");
-  await page.locator(".doctor-form").getByRole("button", { name: "Cancel" }).click();
+  await page.locator(".doctor-editor").getByRole("button", { name: "Cancel" }).click();
 
   await navigateToSection(page, "Patients", true);
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
