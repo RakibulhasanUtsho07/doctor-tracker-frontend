@@ -33,6 +33,8 @@ const PATIENT_RECORD = {
 };
 
 async function installSyntheticApi(page, options = {}) {
+  const sessionTtlMs = options.sessionTtlMs ?? 60 * 60 * 1000;
+  const sessionPayload = () => ({ ...USER, expiresAt: new Date(Date.now() + sessionTtlMs).toISOString() });
   const state = {
     authenticated: false,
     doctors: options.seedDoctor || options.seedPatient ? [{ ...DOCTOR_RECORD }] : [],
@@ -77,11 +79,11 @@ async function installSyntheticApi(page, options = {}) {
     };
 
     if (path === "/auth/me" && method === "GET") {
-      return state.authenticated ? send(200, USER) : send(401, "Authentication required.");
+      return state.authenticated ? send(200, sessionPayload()) : send(401, "Authentication required.");
     }
     if (path === "/auth/login" && method === "POST") {
       state.authenticated = true;
-      return send(200, USER);
+      return send(200, sessionPayload());
     }
     if (path === "/auth/logout" && method === "POST") {
       state.authenticated = false;
@@ -305,6 +307,27 @@ test("reduced-motion preference removes smooth scrolling and reduces transition 
   expect(motion.scrollBehavior).toBe("auto");
   expect(motion.transitionDurations.length).toBeGreaterThan(0);
   expect(motion.transitionDurations.every((milliseconds) => milliseconds <= 0.1), JSON.stringify(motion)).toBe(true);
+});
+
+test("session deadline clears protected workspace and returns to sign-in", async ({ page }, testInfo) => {
+  await installSyntheticApi(page, { seedDoctor: true, seedPatient: true, sessionTtlMs: 5_000 });
+  await signIn(page, { doctorCount: 1 });
+
+  await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
+  await expect(page.getByRole("row").filter({ hasText: PATIENT_RECORD.name })).toBeVisible();
+
+  // No API request is made here. The client must expire the visible workspace at expiresAt.
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByRole("status")).toContainText("Your administrator session expired. Sign in again to continue.");
+  await expect(page.locator(".patient-table")).toHaveCount(0);
+  await expect(page.getByText(PATIENT_RECORD.name, { exact: true })).toHaveCount(0);
+  await expect(page.getByText("API CONNECTED", { exact: true })).toHaveCount(0);
+
+  const browserStorage = await page.evaluate(() => ({
+    local: Object.keys(localStorage),
+    session: Object.keys(sessionStorage)
+  }));
+  expect(browserStorage).toEqual({ local: [], session: [] });
 });
 
 test("mobile navigation is keyboard operable and restores focus after Escape", async ({ page }, testInfo) => {
