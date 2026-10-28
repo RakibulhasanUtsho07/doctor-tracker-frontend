@@ -514,3 +514,109 @@ test("delete confirmation keeps the record on failure and removes it after keybo
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeFocused();
   await expect(patientRow).toHaveCount(0);
 });
+
+
+async function assertNoHorizontalPageOverflow(page, context) {
+  const metrics = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    bodyWidth: document.body.scrollWidth,
+    bodyClientWidth: document.body.clientWidth
+  }));
+  expect(
+    metrics.documentWidth,
+    context + " document width: " + JSON.stringify(metrics)
+  ).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+  expect(
+    metrics.bodyWidth,
+    context + " body width: " + JSON.stringify(metrics)
+  ).toBeLessThanOrEqual(metrics.bodyClientWidth + 1);
+}
+
+async function assertInsideViewport(page, locator, context) {
+  await locator.scrollIntoViewIfNeeded();
+  const bounds = await locator.boundingBox();
+  const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(bounds, context + " should have a visible bounding box").not.toBeNull();
+  expect(bounds.x, context + " should not be clipped off the left side").toBeGreaterThanOrEqual(-1);
+  expect(
+    bounds.x + bounds.width,
+    context + " should not extend past viewport width " + viewportWidth
+  ).toBeLessThanOrEqual(viewportWidth + 1);
+}
+
+test("responsive workspace stays within 320/390/720/768/1440 CSS-pixel viewports", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Run the multi-viewport sweep once in the desktop project.");
+
+  await installSyntheticApi(page, { seedDoctor: true, seedPatient: true });
+
+  const viewports = [
+    { width: 320, height: 800, label: "narrow phone" },
+    { width: 390, height: 844, label: "phone" },
+    { width: 720, height: 900, label: "200-percent zoom reflow equivalent" },
+    { width: 768, height: 1024, label: "tablet" },
+    { width: 1440, height: 1000, label: "desktop" }
+  ];
+
+  // Validate the unauthenticated sign-in page at every target CSS viewport.
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " sign-in");
+  }
+
+  // Sign in once and keep the same synthetic API-backed session while sweeping every workspace view.
+  await signIn(page, { doctorCount: 1 });
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " dashboard");
+
+    const mobileNavigation = viewport.width <= 760;
+    await navigateToSection(page, "Doctors", mobileNavigation);
+    await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " doctor directory");
+
+    await page.getByRole("button", { name: /Add doctor/ }).click();
+    await expect(page.getByRole("heading", { name: "Add a doctor" })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " doctor editor");
+    const createDoctorButton = page.locator(".doctor-form").getByRole("button", { name: "Create doctor" });
+    await assertInsideViewport(page, createDoctorButton, viewport.label + " create-doctor action");
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await navigateToSection(page, "Patients", mobileNavigation);
+    await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " patient directory");
+
+    if (viewport.width === 320 || viewport.width === 768) {
+      await testInfo.attach("responsive-" + viewport.width + "-patient-directory.png", {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: "image/png"
+      });
+    }
+
+    await page.getByRole("button", { name: /Add patient/ }).click();
+    await expect(page.getByRole("heading", { name: "Add a patient" })).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " patient editor");
+    const createPatientButton = page.locator(".patient-form").getByRole("button", { name: "Create patient" });
+    await assertInsideViewport(page, createPatientButton, viewport.label + " create-patient action");
+    if (viewport.width === 320 || viewport.width === 768) {
+      await testInfo.attach("responsive-" + viewport.width + "-patient-editor.png", {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: "image/png"
+      });
+    }
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    const deleteTrigger = page.locator(".patient-table tbody")
+      .getByRole("button", { name: "Delete", exact: true }).first();
+    await deleteTrigger.click();
+    const dialog = page.getByRole("dialog", { name: "Delete this patient record?" });
+    await expect(dialog).toBeVisible();
+    await assertNoHorizontalPageOverflow(page, viewport.label + " delete dialog");
+    await assertInsideViewport(page, dialog, viewport.label + " delete dialog bounds");
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
+  }
+});
