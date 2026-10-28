@@ -471,7 +471,7 @@ export default function DoctorManagement({
         <div className="doctor-table-wrap">
           <table className="doctor-table">
             <caption>Doctor directory records returned by the API</caption>
-            <thead><tr><th scope="col">Doctor</th><th scope="col">Specialization</th><th scope="col">Hospital / clinic</th><th scope="col">Phone</th><th scope="col">Created (UTC)</th><th scope="col"><span className="visually-hidden">Actions</span></th></tr></thead>
+            <thead><tr><th scope="col">Doctor</th><th scope="col">Specialization</th><th scope="col">Hospital / clinic</th><th scope="col">Phone</th><th scope="col">Created (UTC)</th><th scope="col" aria-label="Actions"></th></tr></thead>
             <tbody>
               {doctors.map((doctor) => (
                 <tr key={doctor.id}>
