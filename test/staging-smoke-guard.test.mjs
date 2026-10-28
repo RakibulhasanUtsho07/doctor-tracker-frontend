@@ -141,10 +141,9 @@ test("mutating staging workflow uses a protected environment and only trusted de
   );
   assert.doesNotMatch(
     workflow,
-    /^[ \\t]{6,}runs-on:/m,
+    /^ {6,}runs-on:/m,
     "runs-on must not be accidentally nested inside job configuration"
-  );
-  assert.ok(
+  );  assert.ok(
     !workflow.includes("url: ${{ inputs.frontend_url }}"),
     "unvalidated caller-controlled URLs must not be published as deployment links before environment approval"
   );
