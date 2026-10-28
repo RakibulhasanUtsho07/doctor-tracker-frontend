@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -110,5 +111,29 @@ test("host allowlists are case-canonical DNS hostnames", () => {
   assert.throws(
     () => validateStagingSmokeTarget(validTarget({ expectedFrontendHost: "Frontend-Staging.acme.io" })),
     /must be a DNS hostname only/
+  );
+});
+
+
+test("mutating staging workflow uses a protected environment and only trusted deployment branches", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/staging-smoke.yml", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    workflow,
+    /^    if: github\\.ref == 'refs\\/heads\\/dev' \\|\\| github\\.ref == 'refs\\/heads\\/main'$/m
+  );
+  assert.match(workflow, /^    environment:$/m);
+  assert.match(workflow, /^      name: disposable-staging$/m);
+  assert.match(workflow, /^      url: \\$\\{\\{ inputs\\.frontend_url \\}\\}$/m);
+  assert.match(
+    workflow,
+    /STAGING_ADMIN_EMAIL: \\$\\{\\{ secrets\\.STAGING_ADMIN_EMAIL \\}\\}/
+  );
+  assert.match(
+    workflow,
+    /STAGING_ADMIN_PASSWORD: \\$\\{\\{ secrets\\.STAGING_ADMIN_PASSWORD \\}\\}/
   );
 });
