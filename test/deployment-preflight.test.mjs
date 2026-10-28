@@ -13,6 +13,24 @@ test("public deployment URLs require HTTPS and a public DNS hostname", () => {
   assert.throws(() => parsePublicHttpsUrl("https://frontend.candidate-host.com/#fragment", "Frontend URL"), /query string or fragment/);
 });
 
+test("deployment URL validator rejects trailing-dot hostnames", () => {
+  const cases = [
+    ["https://localhost.", "Frontend URL", false],
+    ["https://example.com.", "Frontend URL", false],
+    ["https://service.localhost.", "Frontend URL", false],
+    ["https://frontend.candidate-host.com.", "Frontend URL", false],
+    ["https://api.candidate-host.com./api/v1", "API base URL", true]
+  ];
+
+  for (const [value, label, requireApiBase] of cases) {
+    assert.throws(
+      () => parsePublicHttpsUrl(value, label, { requireApiBase }),
+      /must not use a trailing-dot hostname/,
+      value
+    );
+  }
+});
+
 test("API base URL must identify the versioned API prefix", () => {
   assert.equal(
     parsePublicHttpsUrl("https://api.candidate-host.com/api/v1/", "API base URL", { requireApiBase: true }).pathname,
