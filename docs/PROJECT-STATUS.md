@@ -12,13 +12,13 @@ API foundation, administrator authentication/session, doctor CRUD/search/filter/
 ## Frontend — doctor-tracker-frontend
 
 - [PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9) implements the responsive workspace shell, navigation, preview-only states, visible focus, skip link and reduced-motion behavior. It remains draft because browser/manual acceptance is not complete.
-- This change adds a dedicated synthetic Playwright shell-acceptance workflow for desktop, tablet, mobile and 320 CSS-pixel viewports. The initial suite passed 18 tests with 2 expected desktop/tablet skips on [source/test commit `fba944f`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/fba944f4926fa18e192f1447a86b919fba34544e); [shell run #40734087305](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734087305) and [Frontend CI #40734087102](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734087102) both passed. The follow-up adds horizontal overflow assertions to doctor/patient placeholder states and upgrades workflow Action runtimes; exact-head results for later commits must be read from their own branch Actions runs.
-- The sign-in/dashboard, doctor and patient screens plus synthetic E2E, real API/MongoDB acceptance, accessibility, staging, narrow reflow and security/performance work exist in stacked PRs #10–#24; they remain open/draft and must be reviewed in dependency order, not treated as merged features.
+- The latest validated shell source/test candidate is `90acaacffd3ae7d7b8b2497f0d981bc1ef0d73d6`: [Shell acceptance #40734481302](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734481302) passed 18 tests with 2 expected desktop/tablet skips, [Frontend CI #40734481280](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734481280) passed lint/build, and PR-triggered checks [#40734490848](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734490848) / [#40734490743](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734490743) passed. [Synthetic screenshots/test output](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40734481302/artifacts/12837305294) covers 1440×1000, 768×1024, 390×844 and 320×800. It is automated Chromium evidence only.
+- The sign-in/dashboard, doctor and patient screens are implemented in stacked [draft PR #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10), [draft PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/11) and [draft PR #12](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/12). Synthetic E2E, real API/MongoDB acceptance, accessibility, staging, narrow reflow and security/performance work exists in draft PRs #13–#24. These are not merged features and must be reviewed in dependency order.
 - [PR #25](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/25) separately bootstraps the staging-smoke workflow on `main`. It is infrastructure-only, open/draft, and requires review plus trusted staging environment configuration.
 
 ## Current blockers
 
-- Manual browser checks for keyboard-only use, visible focus, reduced motion, desktop/tablet/mobile and real 200% zoom have not been accepted by a human reviewer.
+- Manual browser checks for keyboard-only use, visible focus, reduced motion, desktop/tablet/mobile and actual 200% zoom have not been accepted by a human reviewer.
 - Physical touch-device and screen-reader acceptance has not been evidenced.
 - Independent application/configuration security review remains open.
 - No authorized public staging frontend/API URLs, deployed SHAs or successful live HTTPS/session/CSRF/CRUD smoke are recorded.
@@ -27,8 +27,8 @@ API foundation, administrator authentication/session, doctor CRUD/search/filter/
 
 ## Next execution
 
-1. Finish the new exact-head shell-acceptance CI and inspect all generated synthetic screenshots/reports.
-2. Record manual acceptance as NOT STARTED until an actual reviewer, browser/device, date and results are available; leave PR #9/Issue #2 open meanwhile.
-3. Review the PR dependency chain from #9 upward, then provision and verify approved disposable staging and complete release gates before promotion.
+1. Collect the remaining manual browser/device acceptance for shell milestone #2 and retain the reviewer/date/environment evidence; leave PR #9 and Issue #2 open until then.
+2. Review the PR dependency chain from #9 upward; don't mark a feature PR ready before its parent and acceptance gates are resolved.
+3. Provision and verify approved disposable staging, complete live HTTPS/session/CSRF/CRUD smoke, independent security review and agreed-target performance evidence, then promote branches and rerun CI on the resulting SHAs.
 
 Never invent device results, screenshot review, deployment URLs, credentials, performance SLAs or manual approval. Unavailable evidence remains BLOCKED/NOT STARTED, not PASS.
