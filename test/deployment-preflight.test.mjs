@@ -435,16 +435,27 @@ test("deployment preflight fails closed when redirect:error rejects a redirected
 
 test("deployment preflight blocks hostname resolutions to non-public IP ranges before fetch", async () => {
   const cases = [
+    ["IPv4 unspecified", [{ address: "0.0.0.0", family: 4 }]],
     ["IPv4 loopback", [{ address: "127.0.0.1", family: 4 }]],
     ["IPv4 private", [{ address: "10.20.30.40", family: 4 }]],
     ["IPv4 link-local", [{ address: "169.254.1.2", family: 4 }]],
     ["IPv4 shared address space", [{ address: "100.64.0.1", family: 4 }]],
+    ["IPv4 multicast", [{ address: "224.0.0.1", family: 4 }]],
+    ["IPv4 limited broadcast", [{ address: "255.255.255.255", family: 4 }]],
+    ["IPv4 IANA protocol-assignment block", [{ address: "192.0.0.170", family: 4 }]],
+    ["IPv6 unspecified", [{ address: "::", family: 6 }]],
     ["IPv6 loopback", [{ address: "::1", family: 6 }]],
+    ["IPv6 IPv4-mapped loopback", [{ address: "::ffff:127.0.0.1", family: 6 }]],
     ["IPv6 unique-local", [{ address: "fc00::1", family: 6 }]],
     ["IPv6 link-local", [{ address: "fe80::1", family: 6 }]],
+    ["IPv6 discard-only block", [{ address: "100::1", family: 6 }]],
+    ["IPv6 IANA dummy prefix", [{ address: "100:0:0:1::1", family: 6 }]],
+    ["IPv6 IANA SRv6 SID prefix", [{ address: "5f00::1", family: 6 }]],
     ["IPv6 IANA benchmarking range", [{ address: "2001:2::1", family: 6 }]],
     ["IPv6 deprecated ORCHID range", [{ address: "2001:10::1", family: 6 }]],
     ["IPv6 documentation range", [{ address: "2001:db8::1", family: 6 }]],
+    ["IPv6 6to4 range", [{ address: "2002::1", family: 6 }]],
+    ["IPv6 documentation prefix", [{ address: "3fff::1", family: 6 }]],
     ["mixed public and private answers", [
       { address: "93.184.216.34", family: 4 },
       { address: "192.168.1.10", family: 4 }
@@ -488,6 +499,29 @@ test("deployment preflight blocks hostname resolutions to non-public IP ranges b
       label + ": cache DNS results per hostname during one preflight"
     );
   }
+});
+
+test("deployment preflight accepts a globally routed IPv6 address when every DNS answer is public", async () => {
+  const { fetchImpl, requests } = healthyFetch();
+  const lookupImpl = async (hostname) => hostname === "frontend.candidate-host.com"
+    ? [{ address: "2606:4700:4700::1111", family: 6 }]
+    : [{ address: "93.184.216.34", family: 4 }];
+
+  const report = await runDeploymentPreflight({
+    frontendUrl: "https://frontend.candidate-host.com",
+    apiBaseUrl: "https://api.candidate-host.com/api/v1",
+    fetchImpl,
+    lookupImpl,
+    timeoutMs: 1_000
+  });
+
+  assert.equal(report.passed, true);
+  assert.ok(report.checks.every((check) => check.passed));
+  assert.equal(requests.length, 4);
+  assert.deepEqual(
+    requests[0].pinnedAddresses,
+    [{ address: "2606:4700:4700::1111", family: 6 }]
+  );
 });
 
 test("deployment preflight fails closed when DNS lookup fails or returns no addresses", async () => {
