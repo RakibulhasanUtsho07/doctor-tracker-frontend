@@ -593,10 +593,11 @@ test("responsive workspace stays within 320/390/720/768/1440 CSS-pixel viewports
   await signIn(page, { doctorCount: 1 });
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const mobileNavigation = viewport.width <= 760;
+    await navigateToSection(page, "Dashboard", mobileNavigation);
     await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
     await assertNoHorizontalPageOverflow(page, viewport.label + " dashboard");
 
-    const mobileNavigation = viewport.width <= 760;
     await navigateToSection(page, "Doctors", mobileNavigation);
     await expect(page.getByRole("heading", { name: "Care team directory" })).toBeVisible();
     await assertNoHorizontalPageOverflow(page, viewport.label + " doctor directory");
