@@ -381,7 +381,7 @@ test("patient create/edit form validation errors are linked to their fields", as
 });
 
 test("confirmation dialog contains escaped focus and stays modal while an action is pending", async ({ page }, testInfo) => {
-  await installSyntheticApi(page, { seedPatient: true, actionDelayMs: 1200 });
+  await installSyntheticApi(page, { seedPatient: true, actionDelayMs: 2500 });
   await signIn(page, { doctorCount: 1 });
   await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
 
@@ -405,7 +405,13 @@ test("confirmation dialog contains escaped focus and stays modal while an action
 
   // The action disables both dialog buttons temporarily. Focus must remain in
   // the modal, and Tab must not move into the background while no controls work.
-  await confirm.click();
+  const deleteRequest = page.waitForRequest((request) =>
+    request.method() === "DELETE" && request.url().endsWith("/patients/" + PATIENT_ID)
+  );
+  // Do not await the click yet: some browser action helpers can complete only
+  // after the request response, but the focus boundary must be exercised in flight.
+  const clickConfirmation = confirm.click();
+  await deleteRequest;
   await expect(confirm).toBeDisabled();
   await expect(dialog).toContainText("Working…");
   await backgroundAction.focus();
@@ -413,6 +419,7 @@ test("confirmation dialog contains escaped focus and stays modal while an action
   await expect(dialog).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(dialog).toBeFocused();
+  await clickConfirmation;
 
   // This parent-PR synthetic API intentionally has no successful DELETE route;
   // the delayed 404 keeps the dialog open so the in-flight focus boundary is tested.
