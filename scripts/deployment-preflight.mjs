@@ -205,7 +205,7 @@ export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
           method,
           headers: Object.fromEntries(headers.entries()),
           lookup: lookupPinned,
-          autoSelectFamily: false,
+          autoSelectFamily: true,
           rejectUnauthorized: true,
           servername: url.hostname,
           signal: init.signal
