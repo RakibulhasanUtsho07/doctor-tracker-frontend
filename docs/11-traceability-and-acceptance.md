@@ -1,7 +1,7 @@
 # Traceability and Acceptance
 
 **Snapshot date:** 2026-10-28  
-**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78` on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on CSP route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) and nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21). The docs-inclusive verification SHA `78c3b2322f995bce3687336f5464b1bde1b10e61` passed all five required workflows; links are recorded in the PR #24 section below. This evidence is for the code/test candidate; a documentation-only refresh triggers another exact-head run. Last verified parent baseline: `e2c15857438195dd83bbae0b68a4acf002fbc797`.  
+**Current preflight-hardening candidate:** code SHA `1c7cf9372797b2cc190066d2a0952d047edd52ad`, test SHA `3e0e6801182c5d3b5e49ecddb03218480ca08d78` on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on CSP route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) and nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21). The docs-inclusive verification SHA `5b48668bd7800de262d6125119bd5b80586a016f` passed all five required workflows; links are recorded in the PR #24 section below. All five required workflows also completed successfully on verification head `5b48668bd7800de262d6125119bd5b80586a016f`; the five jobs were inspected after completion. These results prove automated code/test scope only, not live deployment acceptance. Last verified parent baseline: `e2c15857438195dd83bbae0b68a4acf002fbc797`.  
 **Overall release status:** **PARTIAL / BLOCKED**.  
 Statuses used below: NOT STARTED, IN PROGRESS, PASS, FAIL, PARTIAL, BLOCKED. A PASS applies only to the explicit tested scope, environment and commit; it does not imply production release acceptance.
 
@@ -48,12 +48,12 @@ Current API dev SHA is efd1fd0f016d98da1fe91bdea52bc48f6295217f; latest API CI o
 
 The preflight's `getResponse` now sets `redirect: "error"` for frontend GET, API health/readiness GETs, and CORS OPTIONS. This prevents the preflight from silently following same-origin or cross-origin redirects; thrown redirect errors become failed checks, while independent read-only checks continue. Tests verify all four requests set the redirect mode and that an error-mode rejection marks the frontend check failed.
 
-All five workflows passed on docs-inclusive verification SHA `78c3b2322f995bce3687336f5464b1bde1b10e61`:
-- [Frontend CI #40653104165](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104165)
-- [Synthetic browser E2E #40653104254](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104254)
-- [Accessibility #40653104175](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104175)
-- [Real API + MongoDB #40653104176](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104176)
-- [Dependency audit #40653104562](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653104562)
+All five workflows passed on docs-inclusive verification SHA `5b48668bd7800de262d6125119bd5b80586a016f`:
+- [Frontend CI #40653490736](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490736)
+- [Synthetic browser E2E #40653490781](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490781)
+- [Accessibility #40653490739](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490739)
+- [Real API + MongoDB #40653490740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490740)
+- [Dependency audit #40653490733](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40653490733)
 
 No real staging endpoint was accessed as part of this code change. This is code-level acceptance only; live HTTPS/CORS/session/CSRF smoke remains BLOCKED. Documentation refresh triggers another exact-head CI run.
 
