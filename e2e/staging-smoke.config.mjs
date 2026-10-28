@@ -18,7 +18,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "off",
-    screenshot: "only-on-failure",
+    screenshot: "off",
     video: "off",
     ignoreHTTPSErrors: false,
     viewport: { width: 1440, height: 1000 }
