@@ -156,5 +156,5 @@ The following required workflows passed across the implementation and test-order
 
 These statuses are deliberately not marked PASS based only on source changes. Re-evaluate against the final SHA and saved CI evidence, then close external environment and manual release gates independently.
 
-The staging-smoke workflow includes a separate push-validation job for local target-guard tests; it has no staging credentials and makes no network requests. The mutating browser job is gated on both `workflow_dispatch` and the protected `dev` ref. This branch's exact-head CI must pass before automated implementation evidence can be marked PASS; independent environment settings and live/manual acceptance remain separate gates.
+The staging-smoke workflow includes a separate push-validation job for local target-guard tests; it has no staging credentials and makes no network requests. The mutating browser job is gated on both `workflow_dispatch` and the protected `dev` ref. The browser acceptance test arms cleanup before the patient-create request, with regression coverage for ambiguous response failures. This branch's exact-head CI must pass before automated implementation evidence can be marked PASS; independent environment settings and live/manual acceptance remain separate gates.
 
