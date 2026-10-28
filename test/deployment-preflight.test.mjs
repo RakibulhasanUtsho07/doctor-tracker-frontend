@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import test from "node:test";
 
-import { parsePublicHttpsUrl, runDeploymentPreflight } from "../scripts/deployment-preflight.mjs";
+import { createPinnedHttpsFetch, createPinnedLookup, parsePublicHttpsUrl, runDeploymentPreflight } from "../scripts/deployment-preflight.mjs";
 
 const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
 
@@ -77,7 +78,7 @@ function healthyFetch({ invalidCors = false, notReady = false } = {}) {
   const fetchImpl = async (input, init = {}) => {
     const url = new URL(String(input));
     const method = init.method || "GET";
-    requests.push({ url: url.href, method, headers: init.headers || {}, redirect: init.redirect });
+    requests.push({ url: url.href, method, headers: init.headers || {}, redirect: init.redirect, pinnedAddresses: init.pinnedAddresses });
 
     if (url.hostname === "frontend.candidate-host.com") {
       return fakeResponse(200, "<!doctype html>", { "content-type": "text/html; charset=utf-8" });
@@ -119,11 +120,125 @@ test("deployment preflight passes with healthy HTTPS frontend, API, readiness an
   assert.deepEqual(requests.map((request) => request.method), ["GET", "GET", "GET", "OPTIONS"]);
   assert.ok(requests.every((request) => ["GET", "OPTIONS"].includes(request.method)));
   assert.ok(requests.every((request) => request.redirect === "error"), "preflight must reject redirects for every request");
+  assert.ok(requests.every((request) => request.pinnedAddresses?.length === 1 && request.pinnedAddresses[0].address === "93.184.216.34"), "every request receives the exact DNS answers that were validated");
   assert.equal(requests[3].headers.Origin, "https://frontend.candidate-host.com");
   assert.equal(requests[3].headers["Access-Control-Request-Method"], "POST");
   assert.equal(requests[3].headers["Access-Control-Request-Headers"], "content-type,x-csrf-token");
 });
 
+
+
+test("pinned DNS lookup only returns the prevalidated addresses for the expected host", async () => {
+  const lookup = createPinnedLookup("api.candidate-host.com", [
+    { address: "93.184.216.34", family: 4 },
+    { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 }
+  ]);
+
+  const all = await new Promise((resolve, reject) => {
+    lookup("api.candidate-host.com", { all: true, verbatim: true }, (error, addresses) => {
+      if (error) reject(error);
+      else resolve(addresses);
+    });
+  });
+  assert.deepEqual(all, [
+    { address: "93.184.216.34", family: 4 },
+    { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 }
+  ]);
+
+  const ipv4 = await new Promise((resolve, reject) => {
+    lookup("api.candidate-host.com", { family: 4 }, (error, address, family) => {
+      if (error) reject(error);
+      else resolve({ address, family });
+    });
+  });
+  assert.deepEqual(ipv4, { address: "93.184.216.34", family: 4 });
+
+  await new Promise((resolve) => {
+    lookup("attacker.candidate-host.com", { family: 4 }, (error) => {
+      assert.match(error.message, /unexpected hostname/);
+      resolve();
+    });
+  });
+
+  await new Promise((resolve) => {
+    lookup("api.candidate-host.com", { family: 2 }, (error) => {
+      assert.match(error.message, /No pinned DNS address/);
+      resolve();
+    });
+  });
+});
+
+test("pinned HTTPS fetch connects using the validated address while preserving TLS hostname", async () => {
+  let capturedOptions;
+  let lookupResult;
+  let requestCount = 0;
+  const requestImpl = (url, options) => {
+    capturedOptions = { url: new URL(url.href), options };
+    const request = new EventEmitter();
+    request.end = () => {
+      requestCount += 1;
+      options.lookup(url.hostname, { family: 4 }, (error, address, family) => {
+        if (error) {
+          request.emit("error", error);
+          return;
+        }
+        lookupResult = { address, family };
+        const response = new EventEmitter();
+        response.statusCode = 200;
+        response.statusMessage = "OK";
+        response.headers = { "content-type": "text/plain; charset=utf-8" };
+        process.nextTick(() => {
+          request.emit("response", response);
+          response.emit("data", Buffer.from("pinned"));
+          response.emit("end");
+        });
+      });
+    };
+    return request;
+  };
+
+  const fetchImpl = createPinnedHttpsFetch(requestImpl);
+  const response = await fetchImpl("https://api.candidate-host.com/api/v1/health", {
+    method: "GET",
+    redirect: "error",
+    signal: AbortSignal.timeout(1_000),
+    pinnedAddresses: [{ address: "93.184.216.34", family: 4 }]
+  });
+
+  assert.equal(requestCount, 1);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "pinned");
+  assert.equal(capturedOptions.url.hostname, "api.candidate-host.com");
+  assert.equal(capturedOptions.options.servername, "api.candidate-host.com");
+  assert.equal(capturedOptions.options.rejectUnauthorized, true);
+  assert.equal(capturedOptions.options.autoSelectFamily, false);
+  assert.deepEqual(lookupResult, { address: "93.184.216.34", family: 4 });
+});
+
+test("pinned HTTPS fetch refuses missing DNS pins, HTTP URLs and redirect-follow mode", async () => {
+  let requestCount = 0;
+  const requestImpl = () => {
+    requestCount += 1;
+    const request = new EventEmitter();
+    request.end = () => {};
+    return request;
+  };
+  const fetchImpl = createPinnedHttpsFetch(requestImpl);
+
+  await assert.rejects(
+    fetchImpl("https://api.candidate-host.com/api/v1/health", { redirect: "error" }),
+    /Pinned public DNS addresses are required/
+  );
+  await assert.rejects(
+    fetchImpl("http://api.candidate-host.com/api/v1/health", { redirect: "error", pinnedAddresses: [{ address: "93.184.216.34", family: 4 }] }),
+    /only permits HTTPS/
+  );
+  await assert.rejects(
+    fetchImpl("https://api.candidate-host.com/api/v1/health", { redirect: "follow", pinnedAddresses: [{ address: "93.184.216.34", family: 4 }] }),
+    /requires redirect: error/
+  );
+  assert.equal(requestCount, 0, "invalid transport configuration must fail before opening a socket");
+});
 
 test("deployment preflight fails closed when redirect:error rejects a redirected frontend request", async () => {
   const { fetchImpl: healthyFetchImpl } = healthyFetch();
