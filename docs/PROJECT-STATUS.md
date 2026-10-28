@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`; source/test head `e6ae741fbd78680075f25a7121198c406e7c67e4` passed all five required workflows. Documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also passed all five workflows, listed in the deployment-preflight section below. This subsequent status refresh requires its own exact-head CI. Live staging and independent review remain separate release gates.
+**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`, including DNS pinning, fail-closed redirect handling, IANA IPv6 special-range blocking and IANA special-use DNS suffix/subdomain rejection. Source/test head `a34bd77643bfbfc2fdda341eda5d33d24de05b00` includes the latest code and regression cases. The documentation update changes the tested head; acceptance remains pending until all five required workflows pass on the exact final PR #24 head. Live staging and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -20,7 +20,7 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 
 ## Deployment preflight redirect, DNS, port, IP-pin, response-size and timeout safety — PR #24
 
-The read-only preflight rejects redirects on frontend GET, API health/readiness GET and CORS OPTIONS requests. URL validation rejects local/reserved/IP-literal and malformed/trailing-dot hostnames and permits only the default HTTPS port (443). Explicit :443 normalizes to the default; non-default ports such as 444 or 8443 are rejected.
+The read-only preflight rejects redirects on frontend GET, API health/readiness GET and CORS OPTIONS requests. URL validation rejects local/reserved/IP-literal, malformed/trailing-dot and IANA special-use DNS hostnames (including subdomains of `example.com`, `example.net`, `example.org`, `.onion`, `.arpa` and `.alt`) and permits only the default HTTPS port (443). Explicit :443 normalizes to the default; non-default ports such as 444 or 8443 are rejected.
 
 Before each request, DNS is resolved and all answers are checked against the non-public IPv4/IPv6 policy; unsafe or empty answers fail closed. The HTTPS socket lookup is pinned to those validated addresses so it does not perform a second independent DNS resolution. The original hostname remains in TLS SNI and certificate verification, and address-family failover is limited to the validated set. Defense in depth: the exported transport independently validates its target URL, confirms every pin is a public IP and rejects address-family mismatches, including when called outside the normal preflight wrapper.
 
@@ -28,9 +28,9 @@ The [IANA IPv6 Special-Purpose registry](https://www.iana.org/assignments/iana-i
 
 The HTTPS adapter caps response bodies at **2 MiB**. It counts streamed bytes, destroys the request and rejects the preflight when the limit is exceeded. The exported adapter also creates a default **10-second AbortSignal timeout** if a caller omits a signal, preventing direct adapter calls from accidentally running indefinitely; the normal preflight continues to pass its configured per-request timeout. These safeguards apply only to deployment-preflight responses, not normal application API payloads.
 
-Regression coverage includes malformed/trailing-dot names; HTTPS port validation; IPv4 and IPv6 private/special ranges including IANA benchmarking and deprecated ORCHID; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family behavior; standalone adapter rejection of private pins, family mismatch, IP-literal targets, non-default ports and redirect-follow; TLS hostname versus socket IP separation; oversized-response rejection; and default timeout-signal creation. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
+Regression coverage includes malformed/trailing-dot and IANA special-use DNS names/subdomains; HTTPS port validation; IPv4 and IPv6 private/special ranges including IANA benchmarking and deprecated ORCHID; mixed public/private DNS answers; DNS failure and empty answers; pinned lookup hostname/family behavior; standalone adapter rejection of private pins, family mismatch, IP-literal targets, non-default ports and redirect-follow; TLS hostname versus socket IP separation; oversized-response rejection; and default timeout-signal creation. Tests use injected synthetic DNS/fetch/request fixtures or isolated CI services. No deployed endpoint was contacted.
 
-Latest source/test head: `e6ae741fbd78680075f25a7121198c406e7c67e4`. All five required workflows passed on that exact head:
+Previously verified source/test head: `e6ae741fbd78680075f25a7121198c406e7c67e4` passed all five required workflows. New source/test head with the additional DNS regression cases: `a34bd77643bfbfc2fdda341eda5d33d24de05b00`; see PR #24 Actions for current exact-head results:
 - [Frontend CI #40693923599](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923599) — unit tests, lint and production build.
 - [Synthetic browser E2E #40693923693](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923693).
 - [Accessibility #40693915201](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693915201) — automated browser scope only.
