@@ -517,12 +517,35 @@ test("delete confirmation keeps the record on failure and removes it after keybo
 
 
 async function assertNoHorizontalPageOverflow(page, context) {
-  const metrics = await page.evaluate(() => ({
-    viewportWidth: document.documentElement.clientWidth,
-    documentWidth: document.documentElement.scrollWidth,
-    bodyWidth: document.body.scrollWidth,
-    bodyClientWidth: document.body.clientWidth
-  }));
+  const metrics = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const overflowers = Array.from(document.querySelectorAll("body *"))
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className: typeof element.className === "string" ? element.className : "",
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          width: Math.round(rect.width),
+          position: style.position,
+          overflowX: style.overflowX,
+          display: style.display
+        };
+      })
+      .filter((item) => item.display !== "none" && item.width > 0 && item.right > viewportWidth + 1)
+      .sort((left, right) => right.right - left.right)
+      .slice(0, 12);
+    return {
+      viewportWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.scrollWidth,
+      bodyClientWidth: document.body.clientWidth,
+      overflowers
+    };
+  });
   expect(
     metrics.documentWidth,
     context + " document width: " + JSON.stringify(metrics)
