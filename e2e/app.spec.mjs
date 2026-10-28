@@ -319,6 +319,19 @@ test("production frontend applies a fresh nonce CSP and hydrates correctly after
   expect(cspErrors).toEqual([]);
 });
 
+test("CSP matcher excludes only API/static path boundaries", async ({ page }) => {
+  for (const path of ["/apiary-csp-boundary-regression", "/faviconXico-csp-boundary-regression"]) {
+    const response = await page.goto(path);
+    expect(response).not.toBeNull();
+    expect(response.status()).toBe(404);
+
+    const csp = response.headers()["content-security-policy"] ?? "";
+    expect(csp).toMatch(/'nonce-[^']+'/);
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/);
+  }
+});
+
 test("admin can create a doctor and patient, detach without deleting, then explicitly delete another patient", async ({ page }, testInfo) => {
   const state = await installSyntheticApi(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
