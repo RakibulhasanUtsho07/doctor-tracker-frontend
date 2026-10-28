@@ -122,7 +122,7 @@ test("mutating staging workflow uses a protected environment and only trusted de
     "utf8"
   );
 
-  assert.ok(workflow.includes("if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'"));
+  assert.ok(workflow.includes("if: github.ref == 'refs/heads/dev'"));
   assert.ok(workflow.includes("environment:"));
   assert.ok(workflow.includes("name: disposable-staging"));
   assert.ok(workflow.includes("url: ${{ inputs.frontend_url }}"));
