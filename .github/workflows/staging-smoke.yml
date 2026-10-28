@@ -63,7 +63,7 @@ jobs:
     name: Deployed HTTPS browser smoke (mutating staging data)
     environment:
       name: disposable-staging
-          runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - name: Checkout selected candidate
