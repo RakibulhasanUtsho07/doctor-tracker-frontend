@@ -10,21 +10,21 @@ import {
 } from "../scripts/performance-baseline.mjs";
 
 test("benchmark target accepts HTTPS roots and loopback HTTP only", () => {
-  assert.equal(parseBenchmarkTarget("https://frontend.example.com/").origin, "https://frontend.example.com");
+  assert.equal(parseBenchmarkTarget("https://frontend.candidate-host.com/").origin, "https://frontend.candidate-host.com");
   assert.equal(parseBenchmarkTarget("http://127.0.0.1:3100/").origin, "http://127.0.0.1:3100");
   assert.equal(parseBenchmarkTarget("http://localhost:3100/").hostname, "localhost");
 
   for (const value of [
     "",
     "not a url",
-    "ftp://frontend.example.com/",
-    "http://frontend.example.com/",
+    "ftp://frontend.candidate-host.com/",
+    "http://frontend.candidate-host.com/",
     "https://localhost/",
     "https://127.0.0.1/",
-    "https://user:secret@frontend.example.com/",
-    "https://frontend.example.com/?token=secret",
-    "https://frontend.example.com/#fragment",
-    "https://frontend.example.com/patient/123"
+    "https://user:secret@frontend.candidate-host.com/",
+    "https://frontend.candidate-host.com/?token=secret",
+    "https://frontend.candidate-host.com/#fragment",
+    "https://frontend.candidate-host.com/patient/123"
   ]) {
     assert.throws(() => parseBenchmarkTarget(value));
   }
@@ -46,7 +46,7 @@ test("single document measurement sends a credential-free GET and records header
   const calls = [];
   const clockValues = [10, 13, 19];
   const result = await measureDocument({
-    targetUrl: "https://frontend.example.com/",
+    targetUrl: "https://frontend.candidate-host.com/",
     fetchImpl: async (url, init) => {
       calls.push({ url: String(url), init });
       return new Response("<!doctype html><title>Doctor Tracker</title>", {
@@ -58,7 +58,7 @@ test("single document measurement sends a credential-free GET and records header
     now: () => clockValues.shift()
   });
 
-  assert.deepEqual(calls.map(({ url }) => url), ["https://frontend.example.com/"]);
+  assert.deepEqual(calls.map(({ url }) => url), ["https://frontend.candidate-host.com/"]);
   assert.equal(calls[0].init.method, "GET");
   assert.equal(calls[0].init.redirect, "error");
   assert.equal(calls[0].init.headers.Accept, "text/html");
@@ -73,21 +73,21 @@ test("single document measurement sends a credential-free GET and records header
 test("measurement fails closed for unexpected status, non-HTML and redirect/network failures", async () => {
   await assert.rejects(
     measureDocument({
-      targetUrl: "https://frontend.example.com/",
+      targetUrl: "https://frontend.candidate-host.com/",
       fetchImpl: async () => new Response("not found", { status: 404, headers: { "content-type": "text/html" } })
     }),
     /returned HTTP 404/
   );
   await assert.rejects(
     measureDocument({
-      targetUrl: "https://frontend.example.com/",
+      targetUrl: "https://frontend.candidate-host.com/",
       fetchImpl: async () => new Response("json", { status: 200, headers: { "content-type": "application/json" } })
     }),
     /did not return a text\/html/
   );
   await assert.rejects(
     measureDocument({
-      targetUrl: "https://frontend.example.com/",
+      targetUrl: "https://frontend.candidate-host.com/",
       fetchImpl: async () => { throw new Error("network detail must not be exposed"); }
     }),
     /network, timeout or redirect policy/
@@ -137,7 +137,7 @@ test("baseline validates run counts and timeout limits", async () => {
     status: 200,
     headers: { "content-type": "text/html" }
   });
-  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.example.com/", runs: 4, fetchImpl: validFetch }), /PERF_RUNS/);
-  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.example.com/", runs: 5, warmupRuns: 21, fetchImpl: validFetch }), /PERF_WARMUP_RUNS/);
-  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.example.com/", runs: 5, timeoutMs: 100, fetchImpl: validFetch }), /PERF_TIMEOUT_MS/);
+  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.candidate-host.com/", runs: 4, fetchImpl: validFetch }), /PERF_RUNS/);
+  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.candidate-host.com/", runs: 5, warmupRuns: 21, fetchImpl: validFetch }), /PERF_WARMUP_RUNS/);
+  await assert.rejects(runPerformanceBaseline({ targetUrl: "https://frontend.candidate-host.com/", runs: 5, timeoutMs: 100, fetchImpl: validFetch }), /PERF_TIMEOUT_MS/);
 });
