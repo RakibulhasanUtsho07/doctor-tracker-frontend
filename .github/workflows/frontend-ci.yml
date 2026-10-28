@@ -38,3 +38,36 @@ jobs:
         run: pnpm lint
       - name: Production build (includes TypeScript checks)
         run: pnpm build
+      - name: Start built frontend for observational performance baseline
+        run: |
+          pnpm start --hostname 127.0.0.1 --port 3100 > /tmp/doctor-tracker-next-start.log 2>&1 &
+          echo $! > /tmp/doctor-tracker-next.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3100/; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/doctor-tracker-next-start.log
+          exit 1
+      - name: Record root response baseline (no SLA threshold)
+        env:
+          PERF_BASE_URL: http://127.0.0.1:3100/
+          PERF_RUNS: "30"
+          PERF_WARMUP_RUNS: "3"
+          PERF_TIMEOUT_MS: "5000"
+        run: node scripts/performance-baseline.mjs | tee performance-baseline.json
+      - name: Upload observational performance report
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: frontend-performance-baseline
+          path: performance-baseline.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop built frontend
+        if: always()
+        run: |
+          if [ -f /tmp/doctor-tracker-next.pid ]; then
+            kill "$(cat /tmp/doctor-tracker-next.pid)" 2>/dev/null || true
+          fi
