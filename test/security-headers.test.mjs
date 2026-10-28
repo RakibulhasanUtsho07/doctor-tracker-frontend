@@ -50,6 +50,17 @@ test("production CSP does not grant a remote API origin to a missing or insecure
   }
 });
 
+test("production-mode loopback acceptance is scoped to the exact local API origin and skips HSTS upgrade", () => {
+  const headers = headerMap(getSecurityHeaders({
+    isProduction: true,
+    apiBaseUrl: "http://127.0.0.1:4000/api/v1"
+  }));
+  const csp = cspDirectives(headers.get("content-security-policy"));
+  assert.equal(csp.get("connect-src"), "'self' http://127.0.0.1:4000");
+  assert.equal(csp.has("upgrade-insecure-requests"), false);
+  assert.equal(headers.has("strict-transport-security"), false);
+});
+
 test("development headers allow local API and hot-reload protocols without sending HSTS", () => {
   const headers = headerMap(getSecurityHeaders({
     isProduction: false,

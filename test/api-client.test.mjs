@@ -199,6 +199,37 @@ test("production API calls reject insecure HTTP endpoints before sending credent
   }
 });
 
+test("production-mode browser harness may use HTTP only for a loopback API", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  let capturedUrl = "";
+  let capturedInit;
+  globalThis.fetch = async (url, init) => {
+    capturedUrl = String(url);
+    capturedInit = init;
+    return new Response(JSON.stringify({ data: { ok: true } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_PUBLIC_API_BASE_URL = "http://127.0.0.1:4000/api/v1";
+
+  try {
+    assert.deepEqual(await apiRequest("/auth/me"), { ok: true });
+    assert.equal(capturedUrl, "http://127.0.0.1:4000/api/v1/auth/me");
+    assert.equal(capturedInit.credentials, "include");
+    assert.equal(capturedInit.redirect, "error");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalApiBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBaseUrl;
+  }
+});
+
 test("production API calls accept HTTPS endpoints and disallow automatic redirects", async () => {
   const originalFetch = globalThis.fetch;
   const originalNodeEnv = process.env.NODE_ENV;

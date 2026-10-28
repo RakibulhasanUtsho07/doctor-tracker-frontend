@@ -258,6 +258,33 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
 }
 
+test("production frontend returns baseline security headers without breaking its loopback API harness", async ({ page }) => {
+  await page.route(`${API}/**`, async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      headers: {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-credentials": "true",
+        "cache-control": "no-store"
+      },
+      body: JSON.stringify({ error: { code: "UNAUTHENTICATED", message: "Authentication required." } })
+    });
+  });
+
+  const response = await page.goto("/");
+  expect(response).not.toBeNull();
+  const headers = response.headers();
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["permissions-policy"]).toContain("camera=()");
+  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(headers["content-security-policy"]).toContain("connect-src 'self' http://127.0.0.1:4000");
+  expect(headers["strict-transport-security"]).toBeUndefined();
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+});
+
 test("admin can create a doctor and patient, detach without deleting, then explicitly delete another patient", async ({ page }, testInfo) => {
   const state = await installSyntheticApi(page);
   await page.setViewportSize({ width: 1440, height: 1000 });

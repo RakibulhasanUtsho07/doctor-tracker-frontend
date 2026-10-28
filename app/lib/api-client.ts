@@ -64,13 +64,16 @@ export async function apiRequestWithMeta<T>(
   }
 
   if (process.env.NODE_ENV === "production") {
-    let protocol: string;
+    let endpoint: URL;
     try {
-      protocol = new URL(baseUrl).protocol;
+      endpoint = new URL(baseUrl);
     } catch {
       throw new ApiClientError(0, "INVALID_API_URL", "The configured API URL is invalid.");
     }
-    if (protocol !== "https:") {
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+    const isLocalHttpTestEndpoint = endpoint.protocol === "http:" &&
+      loopbackHosts.has(endpoint.hostname.toLowerCase());
+    if (endpoint.protocol !== "https:" && !isLocalHttpTestEndpoint) {
       throw new ApiClientError(0, "INSECURE_API_URL", "The API URL must use HTTPS in production.");
     }
   }
