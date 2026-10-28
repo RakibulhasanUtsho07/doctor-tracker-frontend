@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
 const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 const NON_PUBLIC_IPV4 = new BlockList();
 for (const [subnet, prefix] of [
@@ -218,7 +219,19 @@ export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
       request.once("error", rejectOnce);
       request.once("response", (incoming) => {
         const chunks = [];
-        incoming.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        let receivedBytes = 0;
+        incoming.on("data", (chunk) => {
+          if (settled) return;
+          const bytes = Buffer.from(chunk);
+          receivedBytes += bytes.length;
+          if (receivedBytes > MAX_RESPONSE_BYTES) {
+            const error = new Error("HTTPS response exceeded " + MAX_RESPONSE_BYTES + " bytes.");
+            request.destroy(error);
+            rejectOnce(error);
+            return;
+          }
+          chunks.push(bytes);
+        });
         incoming.once("aborted", () => rejectOnce(new Error("HTTPS response was aborted.")));
         incoming.once("error", rejectOnce);
         incoming.once("end", () => {
