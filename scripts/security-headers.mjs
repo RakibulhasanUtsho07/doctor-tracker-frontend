@@ -41,7 +41,7 @@ function productionApiOrigin(value) {
 export function getSecurityHeaders({
   isProduction = process.env.NODE_ENV === "production",
   apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL,
-  nonce,
+  nonce = "",
   includeCsp = true
 } = {}) {
   const localHttpHarness = isProduction && isLoopbackHttpApi(apiBaseUrl);
