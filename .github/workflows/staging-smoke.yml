@@ -34,7 +34,7 @@ jobs:
     name: Deployed HTTPS browser smoke (mutating staging data)
     environment:
       name: disposable-staging
-      url: ${{ inputs.frontend_url }}
+      # Do not publish the untrusted input as a clickable deployment URL before the target guard runs.
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -61,8 +61,8 @@ jobs:
           STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}
           STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
         run: |
-          test -n "$STAGING_ADMIN_EMAIL" || { echo "::error::Configure the STAGING_ADMIN_EMAIL repository secret."; exit 1; }
-          test -n "$STAGING_ADMIN_PASSWORD" || { echo "::error::Configure the STAGING_ADMIN_PASSWORD repository secret."; exit 1; }
+          test -n "$STAGING_ADMIN_EMAIL" || { echo "::error::Configure STAGING_ADMIN_EMAIL as a secret in the disposable-staging GitHub Actions environment."; exit 1; }
+          test -n "$STAGING_ADMIN_PASSWORD" || { echo "::error::Configure STAGING_ADMIN_PASSWORD as a secret in the disposable-staging GitHub Actions environment."; exit 1; }
 
       - name: Setup pnpm
         uses: pnpm/setup@v3.1.2
