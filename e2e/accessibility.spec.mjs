@@ -416,7 +416,7 @@ test("confirmation dialog contains escaped focus and stays modal while an action
     const buttons = Array.from(element.querySelectorAll("button"));
     return {
       text: element.textContent ?? "",
-      disabledStates: buttons.map((button) => (button as HTMLButtonElement).disabled)
+      disabledStates: buttons.map((button) => button.disabled)
     };
   });
   expect(pendingDialogState.text).toContain("Working…");
