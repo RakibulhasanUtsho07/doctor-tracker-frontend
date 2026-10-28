@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** source-change commit SHA `f99dd6bc595813c458996583329b3f31a3e0dff6`, regression-test commit SHA `30ba148b6263fd6d0bb7a947c4adfd61ff1006af`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The preceding trailing-dot-only candidate passed all five required workflows. For the DNS-label validation expansion, Frontend CI, synthetic browser E2E and dependency audit pass on source/test head `30ba148b6263fd6d0bb7a947c4adfd61ff1006af`; accessibility and real API/MongoDB workflows were still pending at this snapshot. Live deployment acceptance and independent review remain separate release gates.
+**Current preflight-hardening candidate:** source-change commit SHA `f99dd6bc595813c458996583329b3f31a3e0dff6`, regression-test commit SHA `30ba148b6263fd6d0bb7a947c4adfd61ff1006af`, on `feat/preflight-no-redirects` (draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on route-boundary [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), performance [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The preceding trailing-dot-only candidate passed all five required workflows. All five required workflows passed on DNS-label source/test head `30ba148b6263fd6d0bb7a947c4adfd61ff1006af` and documentation-inclusive verification head `57962356b658bfbe0492c2aabb5f4efadeaddd7f`; exact run links are recorded below. Live deployment acceptance and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -29,7 +29,21 @@ The preceding trailing-dot-only candidate `11eda5ceed4fc4807d8047f1a099e87e72553
 - [Real API + MongoDB #40657877657](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877657) — isolated acceptance scope only.
 - [Dependency security audit #40657877531](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40657877531).
 
-The subsequent DNS-label validation expansion is on source/test head `30ba148b6263fd6d0bb7a947c4adfd61ff1006af`. At this snapshot, [Frontend CI #40680359746](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359746), [Synthetic browser E2E #40680359829](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359829) and [Dependency audit #40680359771](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359771) passed. [Accessibility #40680359679](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359679) and [Real API + MongoDB #40680359674](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359674) were still pending; do not count the incremental revision as fully CI-verified until both finish.
+All five workflows passed on DNS-label source/test head `30ba148b6263fd6d0bb7a947c4adfd61ff1006af`:
+- [Frontend CI #40680359746](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359746)
+- [Synthetic browser E2E #40680359829](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359829)
+- [Accessibility #40680359679](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359679)
+- [Real API + MongoDB #40680359674](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359674)
+- [Dependency audit #40680359771](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680359771)
+
+The documentation-inclusive verification head `57962356b658bfbe0492c2aabb5f4efadeaddd7f` also passed all five workflows:
+- [Frontend CI #40680707176](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680707176)
+- [Synthetic browser E2E #40680707248](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680707248)
+- [Accessibility #40680707156](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680707156)
+- [Real API + MongoDB #40680707267](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680707267)
+- [Dependency audit #40680707225](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40680707225)
+
+These checks verify automated code/test scope only. Live staging acceptance and independent human review remain open.
 
 This is automated synthetic/isolated CI evidence only. No live staging endpoint was called. Live HTTPS/CORS/session/CSRF smoke remains BLOCKED until authorized endpoints and deployed SHAs are available, and independent human review is still required.
 ## CSP matcher boundary regression — PR #23
