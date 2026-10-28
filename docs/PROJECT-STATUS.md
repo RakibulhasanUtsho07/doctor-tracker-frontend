@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current route-boundary candidate:** source/test SHA `61d5f2358fdfb1e8a76240c69193b0258ef93062` on `feat/csp-route-boundary-hardening` (draft [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), stacked on [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The route-boundary regression workflows are in progress; the last fully verified parent candidate is `15bd4f2ebd035b20e23b0c4f480a33266ed8ce4d`.
+**Current route-boundary candidate:** source/test SHA `61d5f2358fdfb1e8a76240c69193b0258ef93062` on `feat/csp-route-boundary-hardening` (draft [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), stacked on [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22), nonce-CSP [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21), and responsive/security [PR #20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)). The CSP matcher regression is implemented in source/test SHA `61d5f2358fdfb1e8a76240c69193b0258ef93062`; documentation-inclusive verification at head `e2c15857438195dd83bbae0b68a4acf002fbc797` passed all five workflows (evidence below). The fully verified parent baseline is `15bd4f2ebd035b20e23b0c4f480a33266ed8ce4d`.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -12,15 +12,27 @@ The last fully verified parent baseline is performance candidate SHA `15bd4f2ebd
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40648782677](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163233) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #40648782680](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163110) |
-| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40648782792](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163301) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40648782709](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40648782733](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
+| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40649163233](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163233) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #40649163110](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163110) |
+| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40649163301](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163301) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40649163489](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163489) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40649163123](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40649163123) |
 
+## CSP matcher boundary regression — PR #23
+
+The proxy matcher now excludes only the `/api` segment and descendants, the real `/_next/static` and `/_next/image` path boundaries, and the exact `favicon.ico`, `robots.txt`, and `sitemap.xml` filenames. It no longer skips CSP for similarly named frontend paths such as `/apiary-csp-boundary-regression` or `/faviconXico-csp-boundary-regression`. Chromium regression coverage asserts both paths return 404 HTML with a fresh nonce-bound CSP, `'strict-dynamic'`, and neither `unsafe-inline` nor `unsafe-eval`.
+
+The documentation-inclusive head `e2c15857438195dd83bbae0b68a4acf002fbc797` passed all five workflows:
+- [Frontend CI #40650964437](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964437)
+- [Synthetic browser E2E #40650964406](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964406) — includes the new 404-path CSP regression.
+- [Accessibility #40650964482](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964482)
+- [Real API + MongoDB #40650964392](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964392)
+- [Dependency audit #40650964434](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964434)
+
+PR #23 remains draft and unmerged pending review and exact-head workflow verification after documentation refresh. Live deployed-header verification and independent security review remain open release gates.
 The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. A separate real-API keyboard test then exposed a genuine focus-recovery defect after a 409 field error; the Doctor editor now focuses the invalid field and the fixed journey passes. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
 
-The real API + MongoDB Chromium suite passes 9/9 browser tests on the current security-hardening candidate; the docs-inclusive verification run also passed at `75f70bce3d4223dd5a71005270b92730d5ec7676`. Coverage includes Doctor edit through protected `PATCH /doctors/:id`, CSRF-header verification, hospital/phone persistence after reload, and duplicate-email recovery. A new keyboard-only real-API journey creates an original Doctor, verifies a mixed-case duplicate returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record, verifies both records through direct API reads, corrects the email using only the keyboard, and confirms the successful retry persists. The journey also asserts that a server-side field error returns focus to the invalid email input so keyboard users can recover without a pointer.
+The real API + MongoDB Chromium suite passed 9/9 browser tests on the security-hardening candidate; the PR #21 docs-inclusive verification also passed at `75f70bce3d4223dd5a71005270b92730d5ec7676`. Coverage includes Doctor edit through protected `PATCH /doctors/:id`, CSRF-header verification, hospital/phone persistence after reload, and duplicate-email recovery. A new keyboard-only real-API journey creates an original Doctor, verifies a mixed-case duplicate returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record, verifies both records through direct API reads, corrects the email using only the keyboard, and confirms the successful retry persists. The journey also asserts that a server-side field error returns focus to the invalid email input so keyboard users can recover without a pointer.
 
 The frontend now generates a fresh per-response CSP nonce in `proxy.ts`, forwards that CSP to Next.js for nonce propagation, and sets production `script-src`/`style-src` without `'unsafe-inline'`. Chromium acceptance verifies script nonce matching, nonce rotation on reload, the sign-in screen/hydration, and no CSP-related console errors. Baseline response headers and narrow production `connect-src` remain configured; public HTTP API targets are rejected and API redirects are not automatically followed. To support a per-response nonce safely, the root route uses `connection()` and the previous static/PPR-oriented config was removed. This is an explicit cache/performance trade-off; performance acceptance is still blocked until measured. Live deployed-header verification and an independent security review remain open.
 
@@ -39,7 +51,7 @@ The comparison was measured on [Frontend CI run #40648782677](https://github.com
 ### Frontend — doctor-tracker-frontend
 
 - Responsive shell, sign-in/session, dashboard, doctor management, patient management and automated acceptance are implemented across stacked feature branches and draft PRs.
-- Current open frontend PRs are [#9–#23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP and PR #22 adds observational comparison tooling, neither promoted to frontend dev/main.
+- Current open frontend PRs are [#9–#23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP, PR #22 adds observational comparison tooling, and PR #23 narrows CSP matcher exclusions. None is promoted to frontend dev/main.
 - Frontend dev is still the earlier documentation baseline; the frontend main README is still the default starter README. Neither branch currently represents the full feature candidate.
 - Do not close functional SRS items solely because an implementation exists in a draft PR. Require exact-head tests, review, required manual evidence and correct promotion.
 
