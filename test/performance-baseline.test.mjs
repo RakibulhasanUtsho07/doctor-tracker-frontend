@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  comparePerformanceReports,
+  comparisonMarkdown,
   measureDocument,
   parseBenchmarkTarget,
   reportMarkdown,
@@ -130,6 +132,48 @@ test("baseline warms up, measures the configured number of root requests, and ne
   assert.match(markdown, /p95/);
   assert.match(markdown, /OBSERVATIONAL_ONLY/);
   assert.match(markdown, /not be reported as performance PASS/);
+});
+
+test("comparison reports p50/p95 deltas without converting the result into a PASS", () => {
+  const baseline = {
+    label: "cached PPR",
+    targetOrigin: "http://127.0.0.1:3100",
+    measuredAt: "2026-10-28T00:00:00.000Z",
+    sampleCount: 30,
+    metrics: {
+      responseHeadersMs: { p50: 4, p95: 8 },
+      totalResponseMs: { p50: 7, p95: 13 },
+      responseBytes: { p50: 1000, p95: 1100 }
+    }
+  };
+  const candidate = {
+    label: "nonce dynamic",
+    targetOrigin: "http://127.0.0.1:3101",
+    measuredAt: "2026-10-28T00:01:00.000Z",
+    sampleCount: 30,
+    metrics: {
+      responseHeadersMs: { p50: 5, p95: 10 },
+      totalResponseMs: { p50: 9, p95: 15 },
+      responseBytes: { p50: 1200, p95: 1350 }
+    }
+  };
+
+  const comparison = comparePerformanceReports(baseline, candidate);
+  assert.equal(comparison.metrics.responseHeadersMs.p50Delta, 1);
+  assert.equal(comparison.metrics.responseHeadersMs.p50ChangePercent, 25);
+  assert.equal(comparison.metrics.totalResponseMs.p95Delta, 2);
+  assert.equal(comparison.metrics.responseBytes.p50Delta, 200);
+  assert.equal(comparison.acceptance.status, "OBSERVATIONAL_ONLY");
+  assert.equal(comparison.acceptance.thresholdDefined, false);
+
+  const markdown = comparisonMarkdown(comparison);
+  assert.match(markdown, /cached PPR/);
+  assert.match(markdown, /nonce dynamic/);
+  assert.match(markdown, /Positive latency deltas mean the candidate was slower/);
+  assert.match(markdown, /not be reported as a performance PASS/);
+
+  assert.throws(() => comparePerformanceReports({ sampleCount: 0 }, candidate), /at least one measured sample/);
+  assert.throws(() => comparePerformanceReports(baseline, { ...candidate, metrics: {} }), /must contain p50 and p95/);
 });
 
 test("baseline validates run counts and timeout limits", async () => {
