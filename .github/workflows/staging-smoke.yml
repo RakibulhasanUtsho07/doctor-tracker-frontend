@@ -99,11 +99,11 @@ jobs:
           CI: "true"
         run: ./.e2e-tools/node_modules/.bin/playwright test --config=e2e/staging-smoke.config.mjs
 
-      - name: Upload redacted staging smoke report and failure screenshots
+      - name: Upload staging smoke report only
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: doctor-tracker-staging-smoke
+          name: doctor-tracker-staging-smoke-report
           path: |
             staging-smoke-report/
             test-results-staging-smoke/
