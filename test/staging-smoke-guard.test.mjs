@@ -134,6 +134,16 @@ test("mutating staging workflow uses a protected environment and only trusted de
   assert.ok(workflow.includes("this run made no staging requests and accessed no staging secrets."));
   assert.ok(workflow.includes("environment:"));
   assert.ok(workflow.includes("name: disposable-staging"));
+  assert.equal(
+    [...workflow.matchAll(/^    runs-on: ubuntu-latest$/gm)].length,
+    2,
+    "both jobs must declare runs-on at the job level"
+  );
+  assert.doesNotMatch(
+    workflow,
+    /^[ \\t]{6,}runs-on:/m,
+    "runs-on must not be accidentally nested inside job configuration"
+  );
   assert.ok(
     !workflow.includes("url: ${{ inputs.frontend_url }}"),
     "unvalidated caller-controlled URLs must not be published as deployment links before environment approval"
