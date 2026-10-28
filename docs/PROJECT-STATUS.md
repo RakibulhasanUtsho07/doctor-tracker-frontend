@@ -21,7 +21,7 @@ Last verified: 2026-10-27
 ## Remaining release gates
 - Manual assistive-technology and screen-reader walkthroughs, exhaustive keyboard-only forms/dialogs and physical desktop/tablet/mobile touch review.
 - Production HTTPS/cookie policy and deployed smoke test, plus performance/security review.
-- Stacked PRs #9–#16 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
+- Stacked PRs #9–#17 remain drafts. CI success is scoped automated evidence; it does not certify production deployment or replace manual acceptance.
 
 ## Next
 Run and record the remaining manual accessibility/responsive checks, then complete production HTTPS/deployed smoke and review the stacked PRs in dependency order. Do not promote any PR directly to `dev` or `main` while its parent acceptance or required manual release gates remain open.
@@ -32,9 +32,9 @@ Run and record the remaining manual accessibility/responsive checks, then comple
 - Real API run: 24/24 HTTP/unit, 4/4 MongoDB integration and 2/2 real-backend Chromium journeys passed on the same tested head.
 - Manual screen-reader/assistive technology, device/touch, production HTTPS/cookie behavior, performance/security and deployed smoke remain open; the release remains PARTIAL and all dependent PRs stay draft.
 
-
-## PR #16 modal focus-containment follow-up — 2026-10-28
-
-Code/test commit `127e6286233c024d28d4407a7a049f00064e888d` adds an explicit focus boundary for confirmation dialogs while destructive actions are pending, including the case where both controls are disabled. The regression moves focus outside the modal, checks Tab/Shift+Tab recapture in the idle state, observes a delayed DELETE request and asserts the pending DOM state atomically. The synthetic response is an intentional delayed failure, and the test verifies the patient remains in the directory after the action fails.
-
-All four workflows passed on the exact code/test head: [Frontend CI #40723317874](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317874), [Synthetic E2E #40723317760](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317760), [Accessibility #40723317798](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317798), [Real API + MongoDB #40723317740](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40723317740). PR #16 stays draft/unmerged: its parent review is still required, and manual screen-reader/device/deployed acceptance remains incomplete. This documentation update creates a new head; re-run all four workflows on that SHA.
+## Patient-detach failure and focus acceptance — 2026-10-27
+- Stacked draft [PR #17](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/17) adds synthetic DELETE behavior and a retryable detach failure to the accessibility suite. Exact tested app/test commit: `51cc8f18e1ae8b74f776641ac18684c47a94f445`.
+- [Frontend CI #262](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243814) passed; [synthetic browser E2E #126](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243720) passed 2/2 journeys.
+- [Accessibility #53](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906) passed 14 tests with 1 expected desktop-only skip; [axe/screenshots/Playwright diagnostics](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243906/artifacts/12743151344).
+- [Real API + MongoDB #74](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822) passed 24/24 HTTP/unit tests, 4/4 MongoDB integration tests and 2/2 real-backend Chromium journeys; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40523243822/artifacts/12740709905).
+- The new synthetic test verifies Escape/Cancel focus restoration, retry after a 503 action failure, the alert message, patient preservation with an Unassigned association, and directory-heading focus after success. These are scoped automated checks only. Manual assistive-technology/device, production HTTPS/cookie, security/performance and deployed-smoke gates remain open; the release remains PARTIAL.
