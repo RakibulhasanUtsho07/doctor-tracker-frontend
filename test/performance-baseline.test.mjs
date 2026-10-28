@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { compareReportFiles } from "../scripts/compare-performance-baselines.mjs";
+
 import {
   comparePerformanceReports,
   comparisonMarkdown,
@@ -174,6 +176,44 @@ test("comparison reports p50/p95 deltas without converting the result into a PAS
 
   assert.throws(() => comparePerformanceReports({ sampleCount: 0 }, candidate), /at least one measured sample/);
   assert.throws(() => comparePerformanceReports(baseline, { ...candidate, metrics: {} }), /must contain p50 and p95/);
+});
+
+test("comparison CLI helper reads two JSON reports without touching the network", async () => {
+  const reports = {
+    "baseline.json": {
+      label: "PPR baseline", targetOrigin: "http://127.0.0.1:3100", measuredAt: "t1", sampleCount: 5,
+      metrics: {
+        responseHeadersMs: { p50: 4, p95: 7 },
+        totalResponseMs: { p50: 8, p95: 12 },
+        responseBytes: { p50: 100, p95: 110 }
+      }
+    },
+    "candidate.json": {
+      label: "nonce candidate", targetOrigin: "http://127.0.0.1:3101", measuredAt: "t2", sampleCount: 5,
+      metrics: {
+        responseHeadersMs: { p50: 5, p95: 8 },
+        totalResponseMs: { p50: 9, p95: 14 },
+        responseBytes: { p50: 120, p95: 130 }
+      }
+    }
+  };
+  const requested = [];
+  const comparison = await compareReportFiles({
+    baselinePath: "baseline.json",
+    candidatePath: "candidate.json",
+    readJson: async (path) => {
+      requested.push(path);
+      return reports[path];
+    }
+  });
+  assert.deepEqual(requested, ["baseline.json", "candidate.json"]);
+  assert.equal(comparison.metrics.responseHeadersMs.p50Delta, 1);
+  assert.equal(comparison.acceptance.status, "OBSERVATIONAL_ONLY");
+
+  await assert.rejects(
+    compareReportFiles({ readJson: async () => { throw new Error("private file path"); } }),
+    /must exist and contain valid JSON/
+  );
 });
 
 test("baseline validates run counts and timeout limits", async () => {
