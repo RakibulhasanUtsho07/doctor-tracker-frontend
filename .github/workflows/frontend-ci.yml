@@ -28,8 +28,12 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: API client unit tests
-        run: pnpm test
+      - name: Unit tests and staging-smoke syntax
+        run: |
+          pnpm test
+          node --check scripts/staging-smoke-guard.mjs
+          node --check e2e/staging-smoke.config.mjs
+          node --check e2e/staging-smoke.spec.mjs
       - name: Source lint
         run: pnpm lint
       - name: Production build (includes TypeScript checks)
