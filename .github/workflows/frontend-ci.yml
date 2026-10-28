@@ -11,10 +11,11 @@ permissions:
 
 jobs:
   validate:
-    name: Lint and production build
+    name: Lint, production build and response baseline comparison
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
+      - name: Checkout candidate
         uses: actions/checkout@v7.0.1
       - name: Setup pnpm
         uses: pnpm/setup@v3.1.2
@@ -26,7 +27,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - name: Install dependencies
+      - name: Install candidate dependencies
         run: pnpm install --frozen-lockfile
       - name: Unit tests and staging-smoke syntax
         run: |
@@ -38,36 +39,76 @@ jobs:
         run: pnpm lint
       - name: Production build (includes TypeScript checks)
         run: pnpm build
-      - name: Start built frontend for observational performance baseline
+      - name: Checkout pre-nonce cached/PPR comparison candidate
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: 9356a765ddcad60baf4964bb8b1db968b40a5184
+          path: ppr-baseline
+          persist-credentials: false
+      - name: Install comparison candidate dependencies
+        working-directory: ppr-baseline
+        run: pnpm install --frozen-lockfile
+      - name: Build pre-nonce cached/PPR comparison candidate
+        working-directory: ppr-baseline
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4000/api/v1
+        run: pnpm build
+      - name: Start pre-nonce cached/PPR candidate
+        working-directory: ppr-baseline
         run: |
-          pnpm start --hostname 127.0.0.1 --port 3100 > /tmp/doctor-tracker-next-start.log 2>&1 &
-          echo $! > /tmp/doctor-tracker-next.pid
+          pnpm start --hostname 127.0.0.1 --port 3100 > /tmp/doctor-tracker-ppr-start.log 2>&1 &
+          echo $! > /tmp/doctor-tracker-ppr.pid
           for attempt in $(seq 1 30); do
             if curl --silent --fail --output /dev/null http://127.0.0.1:3100/; then
               exit 0
             fi
             sleep 1
           done
-          cat /tmp/doctor-tracker-next-start.log
+          cat /tmp/doctor-tracker-ppr-start.log
           exit 1
-      - name: Record root response baseline (no SLA threshold)
+      - name: Start nonce-CSP candidate
+        run: |
+          pnpm start --hostname 127.0.0.1 --port 3101 > /tmp/doctor-tracker-nonce-start.log 2>&1 &
+          echo $! > /tmp/doctor-tracker-nonce.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3101/; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/doctor-tracker-nonce-start.log
+          exit 1
+      - name: Measure pre-nonce cached/PPR candidate
         env:
           PERF_BASE_URL: http://127.0.0.1:3100/
+          PERF_LABEL: pre-nonce cached/PPR baseline at 9356a765
           PERF_RUNS: "30"
           PERF_WARMUP_RUNS: "3"
           PERF_TIMEOUT_MS: "5000"
-        run: node scripts/performance-baseline.mjs | tee performance-baseline.json
-      - name: Upload observational performance report
+        run: node scripts/performance-baseline.mjs | tee performance-baseline-ppr.json
+      - name: Measure per-response nonce-CSP candidate
+        env:
+          PERF_BASE_URL: http://127.0.0.1:3101/
+          PERF_LABEL: per-response nonce-CSP dynamic candidate
+          PERF_RUNS: "30"
+          PERF_WARMUP_RUNS: "3"
+          PERF_TIMEOUT_MS: "5000"
+        run: node scripts/performance-baseline.mjs | tee performance-baseline-nonce.json
+      - name: Upload comparative observational performance reports
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: frontend-performance-baseline
-          path: performance-baseline.json
+          name: frontend-performance-baseline-comparison
+          path: |
+            performance-baseline-ppr.json
+            performance-baseline-nonce.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Stop built frontend
+      - name: Stop benchmark servers
         if: always()
         run: |
-          if [ -f /tmp/doctor-tracker-next.pid ]; then
-            kill "$(cat /tmp/doctor-tracker-next.pid)" 2>/dev/null || true
-          fi
+          for pid_file in /tmp/doctor-tracker-ppr.pid /tmp/doctor-tracker-nonce.pid; do
+            if [ -f "$pid_file" ]; then
+              kill "$(cat "$pid_file")" 2>/dev/null || true
+            fi
+          done
