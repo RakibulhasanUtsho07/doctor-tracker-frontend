@@ -179,3 +179,17 @@ test("frontend CI workflow pins every external action to an immutable commit SHA
   );
 });
 
+test("arms synthetic patient cleanup before the create request can mutate staging", async () => {
+  const smoke = await readFile(
+    new URL("../e2e/staging-smoke.spec.mjs", import.meta.url),
+    "utf8"
+  );
+  const cleanupArm = smoke.indexOf("patientMayExist = true;");
+  const createRequest = smoke.indexOf('getByRole("button", { name: "Create patient" }).click()');
+  assert.ok(
+    cleanupArm >= 0 && createRequest > cleanupArm,
+    "cleanup must be armed before attempting patient creation so an ambiguous request failure cannot silently orphan a synthetic record"
+  );
+  assert.ok(smoke.includes("if (patientMayExist)"), "the failure path must attempt cleanup");
+});
+
