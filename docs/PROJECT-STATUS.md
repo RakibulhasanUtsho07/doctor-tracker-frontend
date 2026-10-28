@@ -2,25 +2,25 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current frontend source/test candidate:** 96564b0c446a363ea453f4f4160e5a13ffe3adf0 on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
+**Current frontend source/test candidate:** 9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-All five required frontend workflows passed on the current source/test candidate 96564b0c446a363ea453f4f4160e5a13ffe3adf0:
+All five required frontend workflows passed on the current source/test candidate 9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #398](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827589) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #262](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827546) |
-| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #190](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827547) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #210](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827533) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #103](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40637827565) |
+| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #406](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456854) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #270](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456915) |
+| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #198](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456989) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #218](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456987) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456871) |
 
-The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
+The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. A separate real-API keyboard test then exposed a genuine focus-recovery defect after a 409 field error; the Doctor editor now focuses the invalid field and the fixed journey passes. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
 
-The real API + MongoDB Chromium suite passes 8/8 browser tests on the source/test candidate, including Doctor edit through the protected `PATCH /doctors/:id` route, CSRF-header verification, and hospital/phone persistence after reload. Both duplicate-email conflict flows are covered: editing with another doctor's email preserves both records; case-insensitive duplicate creation returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without inserting a second record. In each flow, correcting the email clears the field error and a successful retry is confirmed through direct API reads.
+The real API + MongoDB Chromium suite passes 9/9 browser tests on source/test candidate `9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c`, including Doctor edit through protected `PATCH /doctors/:id`, CSRF-header verification, hospital/phone persistence after reload, and duplicate-email recovery. A new keyboard-only real-API journey creates an original Doctor, verifies a mixed-case duplicate returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record, verifies both records through direct API reads, corrects the email using only the keyboard, and confirms the successful retry persists. The journey also asserts that a server-side field error returns focus to the invalid email input so keyboard users can recover without a pointer.
 
 ## Implementation status by repository
 
