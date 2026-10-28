@@ -341,6 +341,8 @@ test("deployment preflight blocks hostname resolutions to non-public IP ranges b
     ["IPv6 loopback", [{ address: "::1", family: 6 }]],
     ["IPv6 unique-local", [{ address: "fc00::1", family: 6 }]],
     ["IPv6 link-local", [{ address: "fe80::1", family: 6 }]],
+    ["IPv6 IANA benchmarking range", [{ address: "2001:2::1", family: 6 }]],
+    ["IPv6 deprecated ORCHID range", [{ address: "2001:10::1", family: 6 }]],
     ["IPv6 documentation range", [{ address: "2001:db8::1", family: 6 }]],
     ["mixed public and private answers", [
       { address: "93.184.216.34", family: 4 },
