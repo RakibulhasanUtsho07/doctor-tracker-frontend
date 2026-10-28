@@ -2,10 +2,10 @@ import type { NextConfig } from "next";
 import { getSecurityHeaders } from "./scripts/security-headers.mjs";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Request nonces and PPR-generated static shells are incompatible. The HTML route
+  // is made request-dynamic in app/page.tsx so Next can nonce every generated script.
   async headers() {
-    return getSecurityHeaders();
+    return getSecurityHeaders({ includeCsp: false });
   },
   turbopack: {
     rules: {
