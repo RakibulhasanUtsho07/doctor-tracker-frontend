@@ -1,10 +1,47 @@
-import { isIP } from "node:net";
+import { BlockList, isIP } from "node:net";
+import { lookup } from "node:dns/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
 const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+const NON_PUBLIC_IPV4 = new BlockList();
+for (const [subnet, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4]
+]) {
+  NON_PUBLIC_IPV4.addSubnet(subnet, prefix, "ipv4");
+}
+
+const GLOBAL_IPV6 = new BlockList();
+GLOBAL_IPV6.addSubnet("2000::", 3, "ipv6");
+const NON_PUBLIC_IPV6 = new BlockList();
+for (const [subnet, prefix] of [
+  ["2001::", 23],
+  ["2001:db8::", 32],
+  ["2002::", 16],
+  ["3fff::", 20],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8]
+]) {
+  NON_PUBLIC_IPV6.addSubnet(subnet, prefix, "ipv6");
+}
 
 export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {}) {
   if (typeof value !== "string" || value.trim() === "") {
@@ -53,6 +90,36 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   return url;
 }
 
+function isPublicIpAddress(address) {
+  const family = isIP(address);
+  if (family === 4) {
+    return !NON_PUBLIC_IPV4.check(address, "ipv4");
+  }
+  if (family === 6) {
+    return GLOBAL_IPV6.check(address, "ipv6") &&
+      !NON_PUBLIC_IPV6.check(address, "ipv6");
+  }
+  return false;
+}
+
+function createPublicHostnameGuard(lookupImpl) {
+  const resolutions = new Map();
+  return async (hostname) => {
+    if (!resolutions.has(hostname)) {
+      resolutions.set(hostname, (async () => {
+        const addresses = await lookupImpl(hostname, { all: true, verbatim: true });
+        if (!Array.isArray(addresses) || addresses.length === 0) {
+          throw new Error("Hostname did not resolve to any IP address.");
+        }
+        if (addresses.some((entry) => !entry || !isPublicIpAddress(entry.address))) {
+          throw new Error("Hostname must resolve only to globally routable IP addresses.");
+        }
+      })());
+    }
+    return resolutions.get(hostname);
+  };
+}
+
 function addResult(results, name, passed, detail) {
   results.push({ name, passed, detail });
 }
@@ -65,7 +132,8 @@ async function responseJson(response) {
   }
 }
 
-async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeoutMs }) {
+async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeoutMs, assertPublicHostname }) {
+  await assertPublicHostname(url.hostname);
   return fetchImpl(url, {
     method,
     headers,
@@ -88,12 +156,17 @@ export async function runDeploymentPreflight({
   frontendUrl,
   apiBaseUrl,
   fetchImpl = globalThis.fetch,
+  lookupImpl = lookup,
   timeoutMs = 10_000
 }) {
   if (typeof fetchImpl !== "function") {
     throw new Error("A fetch implementation is required.");
   }
+  if (typeof lookupImpl !== "function") {
+    throw new Error("A DNS lookup implementation is required.");
+  }
 
+  const assertPublicHostname = createPublicHostnameGuard(lookupImpl);
   const frontend = parsePublicHttpsUrl(frontendUrl, "Frontend URL");
   const apiBase = parsePublicHttpsUrl(apiBaseUrl, "API base URL", { requireApiBase: true });
   const apiBaseWithSlash = new URL(apiBase.href.replace(/\/+$/, "") + "/");
@@ -101,7 +174,7 @@ export async function runDeploymentPreflight({
 
   const frontendResponseUrl = new URL(frontend.href);
   try {
-    const response = await getResponse(fetchImpl, frontendResponseUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, frontendResponseUrl, { timeoutMs, assertPublicHostname });
     const contentType = response.headers.get("content-type") || "";
     const ok = response.status === 200 &&
       contentType.toLowerCase().includes("text/html") &&
@@ -119,7 +192,7 @@ export async function runDeploymentPreflight({
 
   const healthUrl = new URL("health", apiBaseWithSlash);
   try {
-    const response = await getResponse(fetchImpl, healthUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, healthUrl, { timeoutMs, assertPublicHostname });
     const body = await responseJson(response);
     const ok = response.status === 200 &&
       body?.data?.status === "ok" &&
@@ -138,7 +211,7 @@ export async function runDeploymentPreflight({
 
   const readyUrl = new URL("ready", apiBaseWithSlash);
   try {
-    const response = await getResponse(fetchImpl, readyUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, readyUrl, { timeoutMs, assertPublicHostname });
     const body = await responseJson(response);
     const ok = response.status === 200 &&
       body?.data?.status === "ready" &&
@@ -164,7 +237,8 @@ export async function runDeploymentPreflight({
         "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "content-type,x-csrf-token"
       },
-      timeoutMs
+      timeoutMs,
+      assertPublicHostname
     });
     const sameOrigin = stayedOnSameSecureOrigin(corsResponse, corsUrl);
     const preflightAccepted = (corsResponse.status === 200 || corsResponse.status === 204) && sameOrigin;
