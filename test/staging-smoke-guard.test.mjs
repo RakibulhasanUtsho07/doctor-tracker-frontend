@@ -38,13 +38,15 @@ test("rejects a missing disposable-staging confirmation", () => {
 test("rejects hostnames without an explicit staging marker", () => {
   assert.throws(
     () => validateStagingSmokeTarget(validTarget({
-      frontendUrl: "https://doctor-tracker.acme.io"
+      frontendUrl: "https://doctor-tracker.acme.io",
+      expectedFrontendHost: "doctor-tracker.acme.io"
     })),
     /Frontend hostname must include/
   );
   assert.throws(
     () => validateStagingSmokeTarget(validTarget({
-      apiBaseUrl: "https://api.acme.io/api/v1"
+      apiBaseUrl: "https://api.acme.io/api/v1",
+      expectedApiHost: "api.acme.io"
     })),
     /API hostname must include/
   );
