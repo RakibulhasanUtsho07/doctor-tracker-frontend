@@ -65,6 +65,9 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   if (url.protocol !== "https:") {
     throw new Error(label + " must use HTTPS.");
   }
+  if (url.port && url.port !== "443") {
+    throw new Error(label + " must use the default HTTPS port (443).");
+  }
   if (url.username || url.password) {
     throw new Error(label + " must not contain credentials.");
   }
