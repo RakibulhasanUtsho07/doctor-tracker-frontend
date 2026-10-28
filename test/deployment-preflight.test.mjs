@@ -6,8 +6,17 @@ import { createPinnedHttpsFetch, createPinnedLookup, parsePublicHttpsUrl, runDep
 
 const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
 
-test("public deployment URLs require HTTPS and a public DNS hostname", () => {
+test("public deployment URLs require HTTPS on the default port and a public DNS hostname", () => {
   assert.equal(parsePublicHttpsUrl("https://frontend.candidate-host.com", "Frontend URL").origin, "https://frontend.candidate-host.com");
+  assert.equal(parsePublicHttpsUrl("https://frontend.candidate-host.com:443", "Frontend URL").origin, "https://frontend.candidate-host.com");
+  assert.throws(
+    () => parsePublicHttpsUrl("https://frontend.candidate-host.com:8443", "Frontend URL"),
+    /must use the default HTTPS port \(443\)/
+  );
+  assert.throws(
+    () => parsePublicHttpsUrl("https://api.candidate-host.com:444/api/v1", "API base URL", { requireApiBase: true }),
+    /must use the default HTTPS port \(443\)/
+  );
   assert.throws(() => parsePublicHttpsUrl("http://frontend.candidate-host.com", "Frontend URL"), /must use HTTPS/);
   assert.throws(() => parsePublicHttpsUrl("https://localhost:3000", "Frontend URL"), /public DNS hostname/);
   assert.throws(() => parsePublicHttpsUrl("https://127.0.0.1", "Frontend URL"), /public DNS hostname/);
