@@ -258,7 +258,14 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
 }
 
-test("production frontend returns baseline security headers without breaking its loopback API harness", async ({ page }) => {
+test("production frontend applies script integrity and strict CSP without breaking its loopback API harness", async ({ page }) => {
+  const cspErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /content security policy|refused to (execute|load|apply)|subresource integrity|integrity check/i.test(message.text())) {
+      cspErrors.push(message.text());
+    }
+  });
+
   await page.route(`${API}/**`, async (route) => {
     await route.fulfill({
       status: 401,
@@ -281,8 +288,18 @@ test("production frontend returns baseline security headers without breaking its
   expect(headers["permissions-policy"]).toContain("camera=()");
   expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
   expect(headers["content-security-policy"]).toContain("connect-src 'self' http://127.0.0.1:4000");
+  expect(headers["content-security-policy"]).toContain("script-src 'self'");
+  expect(headers["content-security-policy"]).toContain("style-src 'self'");
+  expect(headers["content-security-policy"]).not.toMatch(/unsafe-inline|unsafe-eval/);
   expect(headers["strict-transport-security"]).toBeUndefined();
+
+  const integrityValues = await page.locator('script[src^="/_next/static/"]').evaluateAll((scripts) =>
+    scripts.map((script) => script.getAttribute("integrity"))
+  );
+  expect(integrityValues.length).toBeGreaterThan(0);
+  expect(integrityValues.every((value) => typeof value === "string" && value.startsWith("sha256-"))).toBe(true);
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  expect(cspErrors).toEqual([]);
 });
 
 test("admin can create a doctor and patient, detach without deleting, then explicitly delete another patient", async ({ page }, testInfo) => {
