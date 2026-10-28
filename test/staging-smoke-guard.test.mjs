@@ -152,10 +152,10 @@ test("frontend CI workflow pins every external action to an immutable commit SHA
     new URL("../.github/workflows/frontend-ci.yml", import.meta.url),
     "utf8"
   );
-  const actionReferences = [...workflow.matchAll(/^\\s+uses:\\s+(\\S+)/gm)].map((match) => match[1]);
+  const actionReferences = [...workflow.matchAll(/^\s+uses:\s+(\S+)/gm)].map((match) => match[1]);
   assert.equal(actionReferences.length, 3, "expected the three reviewed frontend CI actions");
   assert.ok(
-    actionReferences.every((reference) => /^[^@]+@[a-f\\d]{40}$/i.test(reference)),
+    actionReferences.every((reference) => /^[^@]+@[a-f\d]{40}$/i.test(reference)),
     "frontend CI external actions must be pinned to immutable full commit SHAs"
   );
 });
