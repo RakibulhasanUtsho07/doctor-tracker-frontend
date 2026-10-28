@@ -30,7 +30,7 @@ concurrency:
 jobs:
   staging-smoke:
     # Do not expose staging credentials from feature/unreviewed refs.
-    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     name: Deployed HTTPS browser smoke (mutating staging data)
     environment:
       name: disposable-staging
