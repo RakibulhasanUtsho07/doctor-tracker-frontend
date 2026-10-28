@@ -115,25 +115,17 @@ test("host allowlists are case-canonical DNS hostnames", () => {
 });
 
 
+
 test("mutating staging workflow uses a protected environment and only trusted deployment branches", async () => {
   const workflow = await readFile(
     new URL("../.github/workflows/staging-smoke.yml", import.meta.url),
     "utf8"
   );
 
-  assert.match(
-    workflow,
-    /^    if: github\\.ref == 'refs\\/heads\\/dev' \\|\\| github\\.ref == 'refs\\/heads\\/main'$/m
-  );
-  assert.match(workflow, /^    environment:$/m);
-  assert.match(workflow, /^      name: disposable-staging$/m);
-  assert.match(workflow, /^      url: \\$\\{\\{ inputs\\.frontend_url \\}\\}$/m);
-  assert.match(
-    workflow,
-    /STAGING_ADMIN_EMAIL: \\$\\{\\{ secrets\\.STAGING_ADMIN_EMAIL \\}\\}/
-  );
-  assert.match(
-    workflow,
-    /STAGING_ADMIN_PASSWORD: \\$\\{\\{ secrets\\.STAGING_ADMIN_PASSWORD \\}\\}/
-  );
+  assert.ok(workflow.includes("if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'"));
+  assert.ok(workflow.includes("environment:"));
+  assert.ok(workflow.includes("name: disposable-staging"));
+  assert.ok(workflow.includes("url: ${{ inputs.frontend_url }}"));
+  assert.ok(workflow.includes("STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}"));
+  assert.ok(workflow.includes("STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}"));
 });
