@@ -33,7 +33,7 @@ function healthyFetch({ invalidCors = false, notReady = false } = {}) {
   const fetchImpl = async (input, init = {}) => {
     const url = new URL(String(input));
     const method = init.method || "GET";
-    requests.push({ url: url.href, method, headers: init.headers || {} });
+    requests.push({ url: url.href, method, headers: init.headers || {}, redirect: init.redirect });
 
     if (url.hostname === "frontend.candidate-host.com") {
       return fakeResponse(200, "<!doctype html>", { "content-type": "text/html; charset=utf-8" });
@@ -73,9 +73,37 @@ test("deployment preflight passes with healthy HTTPS frontend, API, readiness an
   assert.ok(report.checks.every((check) => check.passed));
   assert.deepEqual(requests.map((request) => request.method), ["GET", "GET", "GET", "OPTIONS"]);
   assert.ok(requests.every((request) => ["GET", "OPTIONS"].includes(request.method)));
+  assert.ok(requests.every((request) => request.redirect === "error"), "preflight must reject redirects for every request");
   assert.equal(requests[3].headers.Origin, "https://frontend.candidate-host.com");
   assert.equal(requests[3].headers["Access-Control-Request-Method"], "POST");
   assert.equal(requests[3].headers["Access-Control-Request-Headers"], "content-type,x-csrf-token");
+});
+
+
+test("deployment preflight fails closed when redirect:error rejects a redirected frontend request", async () => {
+  const { fetchImpl: healthyFetchImpl } = healthyFetch();
+  const requests = [];
+  const fetchImpl = async (input, init = {}) => {
+    const url = new URL(String(input));
+    requests.push({ url: url.href, method: init.method || "GET", redirect: init.redirect });
+    if (url.hostname === "frontend.candidate-host.com") {
+      assert.equal(init.redirect, "error");
+      throw new TypeError("fetch rejected a redirect in error mode");
+    }
+    return healthyFetchImpl(input, init);
+  };
+
+  const report = await runDeploymentPreflight({
+    frontendUrl: "https://frontend.candidate-host.com",
+    apiBaseUrl: "https://api.candidate-host.com/api/v1",
+    fetchImpl,
+    timeoutMs: 1_000
+  });
+
+  assert.equal(report.passed, false);
+  assert.equal(report.checks.find((check) => check.name === "Frontend HTTPS page").passed, false);
+  assert.equal(requests.length, 4, "preflight should continue collecting independent read-only API/CORS evidence");
+  assert.ok(requests.every((request) => request.redirect === "error"));
 });
 
 test("deployment preflight fails for a mismatched CORS origin", async () => {
