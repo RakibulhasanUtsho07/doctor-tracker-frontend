@@ -414,9 +414,14 @@ test("confirmation dialog contains escaped focus and stays modal while an action
   await page.keyboard.press("Tab");
   await expect(dialog).toBeFocused();
 
-  await expect(dialog).toBeHidden({ timeout: 5_000 });
-  await expect(page.getByText("Patient record permanently deleted.", { exact: true })).toBeVisible();
-  await expect(patientRow).toHaveCount(0);
+  // This parent-PR synthetic API intentionally has no successful DELETE route;
+  // the delayed 404 keeps the dialog open so the in-flight focus boundary is tested.
+  await expect(dialog.getByRole("alert")).toHaveText("No accessibility-test route matches this request.");
+  await expect(dialog).toBeVisible();
+  await expect(cancel).toBeFocused();
+  await expect(confirm).toBeEnabled();
+  await expect(patientRow).toHaveCount(1);
+  await expect(patientRow).toContainText(PATIENT_RECORD.name);
 });
 
 test("delete confirmation dialog has a keyboard focus loop and restores focus on dismissal", async ({ page }, testInfo) => {
