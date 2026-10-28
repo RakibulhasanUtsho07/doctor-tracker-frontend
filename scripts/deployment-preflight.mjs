@@ -59,7 +59,7 @@ async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeo
   return fetchImpl(url, {
     method,
     headers,
-    redirect: "follow",
+    redirect: "error",
     signal: AbortSignal.timeout(timeoutMs)
   });
 }
