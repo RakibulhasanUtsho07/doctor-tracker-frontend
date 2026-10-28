@@ -52,7 +52,13 @@ export function parseBenchmarkTarget(value) {
   if (url.protocol === "http:" && !LOOPBACK_HOSTS.has(hostname)) {
     throw new Error("PERF_BASE_URL must use HTTPS for non-loopback hosts.");
   }
-  if (url.protocol === "https:" && (LOOPBACK_HOSTS.has(hostname) || isIP(hostname.replace(/^\[|\]$/g, "")) !== 0)) {
+  if (url.protocol === "https:" && (
+    LOOPBACK_HOSTS.has(hostname) ||
+    isIP(hostname.replace(/^\\[|\\]$/g, "")) !== 0 ||
+    !hostname.includes(".") ||
+    RESERVED_HOSTS.has(hostname) ||
+    FORBIDDEN_SUFFIXES.some((suffix) => hostname.endsWith(suffix))
+  )) {
     throw new Error("HTTPS benchmark targets must use a public DNS hostname.");
   }
 
