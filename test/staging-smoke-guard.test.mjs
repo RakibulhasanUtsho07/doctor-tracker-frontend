@@ -90,14 +90,14 @@ test("requires trusted repository host allowlists before staging acceptance", ()
 test("rejects staging-looking attacker-controlled hosts that do not match the trusted allowlist", () => {
   assert.throws(
     () => validateStagingSmokeTarget(validTarget({
-      frontendUrl: "https://staging.attacker.example",
+      frontendUrl: "https://staging.attacker-acme.io",
       expectedFrontendHost: "frontend-staging.acme.io"
     })),
     /must exactly match the configured STAGING_FRONTEND_HOST/
   );
   assert.throws(
     () => validateStagingSmokeTarget(validTarget({
-      apiBaseUrl: "https://api-staging.attacker.example/api/v1",
+      apiBaseUrl: "https://api-staging.attacker-acme.io/api/v1",
       expectedApiHost: "api-preview.acme.io"
     })),
     /must exactly match the configured STAGING_API_HOST/
