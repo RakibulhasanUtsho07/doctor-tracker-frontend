@@ -24,6 +24,8 @@ The real API + MongoDB Chromium suite passes 9/9 browser tests on the current se
 
 The frontend now generates a fresh per-response CSP nonce in `proxy.ts`, forwards that CSP to Next.js for nonce propagation, and sets production `script-src`/`style-src` without `'unsafe-inline'`. Chromium acceptance verifies script nonce matching, nonce rotation on reload, the sign-in screen/hydration, and no CSP-related console errors. Baseline response headers and narrow production `connect-src` remain configured; public HTTP API targets are rejected and API redirects are not automatically followed. To support a per-response nonce safely, the root route uses `connection()` and the previous static/PPR-oriented config was removed. This is an explicit cache/performance trade-off; performance acceptance is still blocked until measured. Live deployed-header verification and an independent security review remain open.
 
+A separate performance candidate is in draft [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22). It adds a safe root-document benchmark and a CI comparison between the pre-nonce cached/PPR build at `9356a765ddcad60baf4964bb8b1db968b40a5184` and the nonce-CSP dynamic build. Each variant uses 3 warm-ups and 30 sequential GETs and reports response-header latency (a TTFB approximation), full response time, and decoded HTML bytes with min/p50/p95/max plus deltas. The comparison is observational only: it measures a local CI server, does not measure real-user Core Web Vitals or backend/database latency, and has no acceptance threshold until a numeric performance target is agreed.
+
 ## Implementation status by repository
 
 ### Backend API — doctor-tracker-api
@@ -37,7 +39,7 @@ The frontend now generates a fresh per-response CSP nonce in `proxy.ts`, forward
 ### Frontend — doctor-tracker-frontend
 
 - Responsive shell, sign-in/session, dashboard, doctor management, patient management and automated acceptance are implemented across stacked feature branches and draft PRs.
-- Current open frontend PRs are [#9–#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; code in these branches is not yet equivalent to delivery on frontend dev or main.
+- Current open frontend PRs are [#9–#22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pulls). They remain **open/draft** and must be reviewed in dependency order; PR #21 adds nonce CSP and PR #22 adds observational comparison tooling, neither promoted to frontend dev/main.
 - Frontend dev is still the earlier documentation baseline; the frontend main README is still the default starter README. Neither branch currently represents the full feature candidate.
 - Do not close functional SRS items solely because an implementation exists in a draft PR. Require exact-head tests, review, required manual evidence and correct promotion.
 
