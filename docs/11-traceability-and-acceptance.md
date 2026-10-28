@@ -70,7 +70,7 @@ The documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also
 - [Real API + MongoDB #40694547456](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547456)
 - [Dependency audit #40694547465](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547465)
 
-This traceability refresh is a later documentation-only change and requires exact-head CI before it is called verified.
+Treat every documentation-only change like a source change: verify all five workflows on the resulting SHA and record the exact run links in PR #24.
 
 These automated/isolated results do not establish live deployment acceptance. Authorized staging verification and independent review remain open.
 
@@ -91,7 +91,7 @@ These checks establish automated coverage only. PR #23 remains draft pending ind
 
 | Gate | Status | Closure evidence |
 |---|---|---|
-| Exact-head automated checks | PASS — source/test SHA `e6ae741fbd78680075f25a7121198c406e7c67e4` and docs-inclusive SHA `b98ad1f29be655f05c2bdf906f45b3d5c7975a21`; later traceability refresh pending its own run | Source/test and first docs-inclusive head each passed all five workflows, linked in the deployment-preflight section. This following documentation change requires a fresh exact-head check. |
+| Exact-head automated checks | PASS — source/test SHA `e6ae741fbd78680075f25a7121198c406e7c67e4` and docs-inclusive baseline `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` | Both documented baselines passed all five workflows. For later commits, exact-head evidence is maintained on PR #24; do not infer PASS from an earlier SHA. |
 | Feature PR dependency review | BLOCKED / NOT MERGED | PRs #9–#24 remain draft; nonce-CSP PR #21 is stacked on #20, observational performance PR #22 is stacked on #21, CSP matcher-boundary PR #23 is stacked on #22, and redirect-safe preflight PR #24 is stacked on #23. `rakibul-hasan` ancestry now includes `dev` through [`743ace4`](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/commit/743ace45411a4399ac56f09fb003503d9b1da463) without source-tree changes; root CI [#409](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640102505) and [#410](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40640107741) passed. Manual acceptance and parent review still block feature merges/promotion. See PROJECT-STATUS.md |
 | Human keyboard and screen-reader audit | NOT STARTED | Dated findings, environment and reviewer details; no secrets/patient data |
 | Actual 200% zoom and physical desktop/tablet/mobile touch review | NOT STARTED | Real browser/device evidence, not emulation alone |
