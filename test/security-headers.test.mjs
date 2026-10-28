@@ -14,7 +14,7 @@ function cspDirectives(value) {
   }));
 }
 
-test("production security headers prevent framing, MIME sniffing and broad browser capabilities", () => {
+test("production security headers deny inline script/style, framing, MIME sniffing and broad browser capabilities", () => {
   const rules = getSecurityHeaders({
     isProduction: true,
     apiBaseUrl: "https://api.candidate-host.com/api/v1"
@@ -36,8 +36,10 @@ test("production security headers prevent framing, MIME sniffing and broad brows
   assert.equal(csp.get("frame-ancestors"), "'none'");
   assert.equal(csp.get("form-action"), "'self'");
   assert.equal(csp.get("connect-src"), "'self' https://api.candidate-host.com");
+  assert.equal(csp.get("script-src"), "'self'");
+  assert.equal(csp.get("style-src"), "'self'");
   assert.equal(csp.has("upgrade-insecure-requests"), true);
-  assert.doesNotMatch(csp.get("script-src"), /unsafe-eval/);
+  assert.doesNotMatch(headers.get("content-security-policy"), /unsafe-inline|unsafe-eval/);
   assert.doesNotMatch(csp.get("connect-src"), /\bhttp:/);
   assert.doesNotMatch(csp.get("connect-src"), /\bhttps:$/);
 });
@@ -57,11 +59,13 @@ test("production-mode loopback acceptance is scoped to the exact local API origi
   }));
   const csp = cspDirectives(headers.get("content-security-policy"));
   assert.equal(csp.get("connect-src"), "'self' http://127.0.0.1:4000");
+  assert.equal(csp.get("script-src"), "'self'");
+  assert.equal(csp.get("style-src"), "'self'");
   assert.equal(csp.has("upgrade-insecure-requests"), false);
   assert.equal(headers.has("strict-transport-security"), false);
 });
 
-test("development headers allow local API and hot-reload protocols without sending HSTS", () => {
+test("development headers allow local API, inline framework styles and hot-reload protocols without HSTS", () => {
   const headers = headerMap(getSecurityHeaders({
     isProduction: false,
     apiBaseUrl: "http://localhost:4000/api/v1"
@@ -70,4 +74,5 @@ test("development headers allow local API and hot-reload protocols without sendi
   assert.equal(csp.get("connect-src"), "'self' http: https: ws: wss:");
   assert.equal(headers.has("strict-transport-security"), false);
   assert.match(csp.get("script-src"), /unsafe-eval/);
+  assert.match(csp.get("style-src"), /unsafe-inline/);
 });
