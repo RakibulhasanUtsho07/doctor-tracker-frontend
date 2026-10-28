@@ -129,10 +129,10 @@ test("mutating staging workflow uses a protected environment and only trusted de
     !workflow.includes("url: ${{ inputs.frontend_url }}"),
     "unvalidated caller-controlled URLs must not be published as deployment links before environment approval"
   );
-  const actionReferences = [...workflow.matchAll(/^\\s+uses:\\s+(\\S+)/gm)].map((match) => match[1]);
+  const actionReferences = [...workflow.matchAll(/^\s+uses:\s+(\S+)/gm)].map((match) => match[1]);
   assert.ok(actionReferences.length > 0, "staging workflow must include its required actions");
   assert.ok(
-    actionReferences.every((reference) => /^[^@]+@[a-f\\d]{40}$/i.test(reference)),
+    actionReferences.every((reference) => /^[^@]+@[a-f\d]{40}$/i.test(reference)),
     "external GitHub Actions must be pinned to immutable full commit SHAs"
   );
   const guardIndex = workflow.indexOf("run: node scripts/staging-smoke-guard.mjs");
