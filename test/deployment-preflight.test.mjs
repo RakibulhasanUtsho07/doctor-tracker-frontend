@@ -3,6 +3,8 @@ import test from "node:test";
 
 import { parsePublicHttpsUrl, runDeploymentPreflight } from "../scripts/deployment-preflight.mjs";
 
+const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
+
 test("public deployment URLs require HTTPS and a public DNS hostname", () => {
   assert.equal(parsePublicHttpsUrl("https://frontend.candidate-host.com", "Frontend URL").origin, "https://frontend.candidate-host.com");
   assert.throws(() => parsePublicHttpsUrl("http://frontend.candidate-host.com", "Frontend URL"), /must use HTTPS/);
@@ -107,6 +109,7 @@ test("deployment preflight passes with healthy HTTPS frontend, API, readiness an
     frontendUrl: "https://frontend.candidate-host.com",
     apiBaseUrl: "https://api.candidate-host.com/api/v1",
     fetchImpl,
+    lookupImpl: publicLookup,
     timeoutMs: 1_000
   });
 
@@ -139,6 +142,7 @@ test("deployment preflight fails closed when redirect:error rejects a redirected
     frontendUrl: "https://frontend.candidate-host.com",
     apiBaseUrl: "https://api.candidate-host.com/api/v1",
     fetchImpl,
+    lookupImpl: publicLookup,
     timeoutMs: 1_000
   });
 
@@ -148,12 +152,89 @@ test("deployment preflight fails closed when redirect:error rejects a redirected
   assert.ok(requests.every((request) => request.redirect === "error"));
 });
 
+
+test("deployment preflight blocks hostname resolutions to non-public IP ranges before fetch", async () => {
+  const cases = [
+    ["IPv4 loopback", [{ address: "127.0.0.1", family: 4 }]],
+    ["IPv4 private", [{ address: "10.20.30.40", family: 4 }]],
+    ["IPv4 link-local", [{ address: "169.254.1.2", family: 4 }]],
+    ["IPv4 shared address space", [{ address: "100.64.0.1", family: 4 }]],
+    ["IPv6 loopback", [{ address: "::1", family: 6 }]],
+    ["IPv6 unique-local", [{ address: "fc00::1", family: 6 }]],
+    ["IPv6 link-local", [{ address: "fe80::1", family: 6 }]],
+    ["IPv6 documentation range", [{ address: "2001:db8::1", family: 6 }]],
+    ["mixed public and private answers", [
+      { address: "93.184.216.34", family: 4 },
+      { address: "192.168.1.10", family: 4 }
+    ]]
+  ];
+
+  for (const [label, frontendAddresses] of cases) {
+    const { fetchImpl, requests } = healthyFetch();
+    const lookups = [];
+    const lookupImpl = async (hostname) => {
+      lookups.push(hostname);
+      return hostname === "frontend.candidate-host.com"
+        ? frontendAddresses
+        : [{ address: "93.184.216.34", family: 4 }];
+    };
+
+    const report = await runDeploymentPreflight({
+      frontendUrl: "https://frontend.candidate-host.com",
+      apiBaseUrl: "https://api.candidate-host.com/api/v1",
+      fetchImpl,
+      lookupImpl,
+      timeoutMs: 1_000
+    });
+
+    assert.equal(report.passed, false, label);
+    assert.equal(
+      report.checks.find((check) => check.name === "Frontend HTTPS page").passed,
+      false,
+      label
+    );
+    assert.equal(
+      report.checks.find((check) => check.name === "API liveness").passed,
+      true,
+      label + ": independent API checks should continue"
+    );
+    assert.equal(requests.length, 3, label + ": do not fetch the non-public frontend hostname");
+    assert.ok(requests.every((request) => new URL(request.url).hostname === "api.candidate-host.com"), label);
+    assert.deepEqual(
+      [...new Set(lookups)].sort(),
+      ["api.candidate-host.com", "frontend.candidate-host.com"],
+      label + ": cache DNS results per hostname during one preflight"
+    );
+  }
+});
+
+test("deployment preflight fails closed when DNS lookup fails or returns no addresses", async () => {
+  for (const lookupImpl of [
+    async () => { throw new Error("DNS unavailable"); },
+    async () => []
+  ]) {
+    const { fetchImpl, requests } = healthyFetch();
+    const report = await runDeploymentPreflight({
+      frontendUrl: "https://frontend.candidate-host.com",
+      apiBaseUrl: "https://api.candidate-host.com/api/v1",
+      fetchImpl,
+      lookupImpl,
+      timeoutMs: 1_000
+    });
+
+    assert.equal(report.passed, false);
+    assert.ok(report.checks.every((check) => !check.passed));
+    assert.equal(requests.length, 0, "do not send requests when DNS cannot be verified");
+  }
+});
+
 test("deployment preflight fails for a mismatched CORS origin", async () => {
   const { fetchImpl } = healthyFetch({ invalidCors: true });
   const report = await runDeploymentPreflight({
     frontendUrl: "https://frontend.candidate-host.com",
     apiBaseUrl: "https://api.candidate-host.com/api/v1",
     fetchImpl,
+    lookupImpl: publicLookup,
     timeoutMs: 1_000
   });
 
@@ -167,6 +248,7 @@ test("deployment preflight fails when API readiness is unavailable", async () =>
     frontendUrl: "https://frontend.candidate-host.com",
     apiBaseUrl: "https://api.candidate-host.com/api/v1",
     fetchImpl,
+    lookupImpl: publicLookup,
     timeoutMs: 1_000
   });
 
