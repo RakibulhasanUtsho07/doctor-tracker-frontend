@@ -55,6 +55,11 @@ export default function PatientManagement({
   const [listReload, setListReload] = useState(0);
 
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [discoveredDoctors, setDiscoveredDoctors] = useState<DoctorOption[]>([]);
+  const [doctorChoiceSearch, setDoctorChoiceSearch] = useState("");
+  const [doctorSearchPending, setDoctorSearchPending] = useState(false);
+  const [doctorSearchError, setDoctorSearchError] = useState("");
+  const [doctorSearchTotal, setDoctorSearchTotal] = useState<number | null>(null);
   const [extraDoctor] = useState<DoctorOption | null>(() => initialRequest?.doctor ?? null);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [doctorReload, setDoctorReload] = useState(0);
@@ -88,7 +93,13 @@ export default function PatientManagement({
   const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const confirmationFallbackFocusRef = useRef(false);
 
-  const doctorChoices = useMemo(() => extraDoctor && !doctors.some((doctor) => doctor.id === extraDoctor.id) ? [extraDoctor, ...doctors] : doctors, [doctors, extraDoctor]);
+  const doctorChoices = useMemo(() => {
+    const unique = new Map<string, DoctorOption>();
+    if (extraDoctor) unique.set(extraDoctor.id, extraDoctor);
+    for (const doctor of doctors) unique.set(doctor.id, doctor);
+    for (const doctor of discoveredDoctors) unique.set(doctor.id, doctor);
+    return [...unique.values()];
+  }, [doctors, discoveredDoctors, extraDoctor]);
   const doctorById = useMemo(() => new Map(doctorChoices.map((doctor) => [doctor.id, doctor])), [doctorChoices]);
 
   useEffect(() => {
@@ -111,6 +122,45 @@ export default function PatientManagement({
       .finally(() => { if (active) setDoctorsLoading(false); });
     return () => { active = false; controller.abort(); };
   }, [onSessionExpired, doctorReload]);
+
+  useEffect(() => {
+    const query = doctorChoiceSearch.trim();
+    if (query.length < 2) return;
+
+    const controller = new AbortController();
+    let active = true;
+    const timeoutId = window.setTimeout(() => {
+      setDoctorSearchPending(true);
+      const params = new URLSearchParams({ search: query, page: "1", limit: "100" });
+      apiRequestWithMeta<{ doctors: DoctorOption[] }>("/doctors?" + params.toString(), { signal: controller.signal })
+        .then(({ data, meta }) => {
+          if (!active) return;
+          setDiscoveredDoctors((previous) => {
+            const unique = new Map(previous.map((doctor) => [doctor.id, doctor]));
+            for (const doctor of data.doctors) unique.set(doctor.id, doctor);
+            return [...unique.values()];
+          });
+          setDoctorSearchTotal(meta?.pagination?.total ?? data.doctors.length);
+          setDoctorSearchError("");
+        })
+        .catch((error: unknown) => {
+          if (!active || (error instanceof Error && error.name === "AbortError")) return;
+          if (error instanceof ApiClientError && error.status === 401) {
+            onSessionExpired();
+            return;
+          }
+          setDoctorSearchTotal(null);
+          setDoctorSearchError(describeError(error, "Doctor search could not be completed."));
+        })
+        .finally(() => { if (active) setDoctorSearchPending(false); });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [doctorChoiceSearch, onSessionExpired]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -407,6 +457,35 @@ export default function PatientManagement({
       {notice && <p className="patient-notice" role="status" aria-live="polite">{notice}</p>}
       {doctorsError && <div className="patient-warning" role="status"><strong>Doctor choices unavailable</strong><span>{doctorsError} Listing patients still works; add or reassign needs an existing doctor identifier.</span><button type="button" className="secondary-button" onClick={() => { setDoctorsLoading(true); setDoctorReload((value) => value + 1); }}>Retry doctors</button></div>}
 
+      <section className="patient-filter-card patient-doctor-lookup" aria-label="Search all doctors">
+        <label className="patient-field">
+          <span>Find doctors (name, specialty, hospital or email prefix)</span>
+          <input
+            type="search"
+            value={doctorChoiceSearch}
+            maxLength={100}
+            autoComplete="off"
+            placeholder="Enter at least 2 characters"
+            onChange={(event) => {
+              const value = event.target.value;
+              setDoctorChoiceSearch(value);
+              setDoctorSearchError("");
+              setDoctorSearchTotal(null);
+              setDoctorSearchPending(value.trim().length >= 2);
+            }}
+          />
+        </label>
+        {doctorChoiceSearch.trim().length < 2
+          ? <p className="patient-doctor-lookup-status">The selectors start with the first 100 doctors. Search with at least 2 characters to find older or less-recently-created doctors; matches are added to both doctor selectors.</p>
+          : doctorSearchPending
+            ? <p className="patient-doctor-lookup-status" role="status">Searching doctor records…</p>
+            : doctorSearchError
+              ? <p className="patient-doctor-lookup-status" role="alert">{doctorSearchError}</p>
+              : <p className="patient-doctor-lookup-status" role="status">{doctorSearchTotal === 0
+                ? "No doctors matched this prefix."
+                : String(doctorSearchTotal ?? 0) + (doctorSearchTotal === 1 ? " doctor match found. The result is available in both doctor selectors." : " doctor matches found. Results are available in both doctor selectors.")}</p>}
+      </section>
+
       {editorMode && (
         <section className="patient-editor" aria-labelledby="patient-editor-heading">
           <div className="patient-editor-heading">
@@ -428,6 +507,7 @@ export default function PatientManagement({
               <span>Doctor association{editorMode === "create" ? <i aria-hidden="true"> *</i> : null}</span>
               <select name="doctorId" value={draft.doctorId} required={editorMode === "create"} aria-invalid={Boolean(fieldErrors.doctorId)} aria-describedby={fieldErrors.doctorId ? "patient-field-error-doctorId" : undefined} onChange={(event) => updateDraft("doctorId", event.target.value)} disabled={savePending || doctorsLoading}>
                 <option value="">{doctorsLoading ? "Loading doctors…" : editorMode === "create" ? "Choose a doctor" : "Keep current association"}</option>
+                {draft.doctorId && !doctorChoices.some((doctor) => doctor.id === draft.doctorId) && <option value={draft.doctorId}>Current doctor · {draft.doctorId.slice(0, 8)}…</option>}
                 {doctorChoices.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name} — {doctor.specialization ?? "Doctor"}</option>)}
               </select>
               {fieldErrors.doctorId && <small id="patient-field-error-doctorId" className="patient-field-error">{fieldErrors.doctorId}</small>}
@@ -461,7 +541,7 @@ export default function PatientManagement({
           </div>
         </form>
         {filterError && <p className="patient-field-error patient-filter-error" role="alert">{filterError}</p>}
-        <p className="patient-filter-note">Search uses a case-insensitive literal prefix. Date bounds include complete UTC calendar days. The doctor selector is limited to the API&apos;s first 100 doctor records; use “Add patient” from a doctor profile for another doctor.</p>
+        <p className="patient-filter-note">Search uses a case-insensitive literal prefix. Date bounds include complete UTC calendar days. Doctor selectors start with the 100 most-recent records; use the doctor search above to load matches beyond that first page before selecting a doctor.</p>
       </section>
 
       {(detailLoading || detailError || selectedPatient) && (

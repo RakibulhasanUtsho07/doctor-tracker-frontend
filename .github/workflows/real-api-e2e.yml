@@ -38,23 +38,24 @@ jobs:
 
     steps:
       - name: Checkout frontend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Checkout pinned API snapshot
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           repository: RakibulhasanUtsho07/doctor-tracker-api
-          ref: fd9f133b42914a51d3a4d0460e178a66888a0327
+          ref: efd1fd0f016d98da1fe91bdea52bc48f6295217f
           path: backend
           persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/setup@v3.1.2
         with:
           version: 11.21.0
+          install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -119,7 +120,7 @@ jobs:
         run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1
 
       - name: Cache Playwright browser binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -138,7 +139,7 @@ jobs:
 
       - name: Upload real API report, screenshots and server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: doctor-tracker-real-api-e2e
           path: |

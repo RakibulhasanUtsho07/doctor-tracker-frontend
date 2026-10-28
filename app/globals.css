@@ -695,7 +695,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .doctor-total-count { display: inline-flex; min-width: 24px; height: 24px; align-items: center; justify-content: center; padding: 0 7px; border-radius: 8px; background: #eff5ec; color: #4e795e; font-size: 10px; font-weight: 850; }
 .doctor-refresh-button { min-height: 35px; flex: 0 0 auto; font-size: 9px; }
 .doctor-list-error { margin: 0 19px 12px; }
-.doctor-table-wrap { width: 100%; overflow-x: auto; border-top: 1px solid #edf1eb; overscroll-behavior-inline: contain; }
+.doctor-table-wrap { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; border-top: 1px solid #edf1eb; overscroll-behavior-inline: contain; }
 .doctor-table { width: 100%; min-width: 830px; border-collapse: collapse; text-align: left; }
 .doctor-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 .doctor-table thead { background: #f8faf6; }
@@ -824,6 +824,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-filter-actions { display: flex; align-items: center; gap: 7px; }
 .patient-filter-actions .primary-button, .patient-filter-actions .secondary-button { min-height: 39px; padding: 0 11px; font-size: 9px; white-space: nowrap; }
 .patient-filter-note { margin: 12px 0 0; color: #53665a; font-size: 9px; line-height: 1.65; }
+.patient-doctor-lookup { display: grid; gap: 8px; }
+.patient-doctor-lookup > .patient-field { max-width: 620px; }
+.patient-doctor-lookup-status { margin: 0; color: #53665a; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+.patient-doctor-lookup-status[role="alert"] { color: #a1443c; }
 .patient-filter-error { margin: 11px 0 0; }
 .patient-editor { margin: 0 0 16px; border-color: #d9e7d9; background: linear-gradient(145deg, #fff, #fbfdf9); }
 .patient-editor-heading { align-items: center; margin-bottom: 17px; }
@@ -879,7 +883,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-total-count { display: inline-flex; min-width: 24px; height: 24px; align-items: center; justify-content: center; padding: 0 7px; border-radius: 8px; background: #eff5ec; color: #4e795e; font-size: 10px; font-weight: 850; }
 .patient-refresh-button { min-height: 35px; flex: 0 0 auto; font-size: 9px; }
 .patient-list-error { margin: 0 19px 12px; }
-.patient-table-wrap { width: 100%; overflow-x: auto; border-top: 1px solid #edf1eb; overscroll-behavior-inline: contain; }
+.patient-table-wrap { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; border-top: 1px solid #edf1eb; overscroll-behavior-inline: contain; }
 .patient-table { width: 100%; min-width: 780px; border-collapse: collapse; text-align: left; }
 .patient-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 .patient-table thead { background: #f8faf6; }

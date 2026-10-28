@@ -498,6 +498,40 @@ export default function AdminShell() {
     };
   }, [sessionCheckKey]);
 
+  // Remove protected workspace state when the server-issued session deadline is reached,
+  // even if the user has left the tab idle and has not made another API request.
+  useEffect(() => {
+    if (authStatus !== "signed-in" || !session) return;
+
+    const expiresAt = Date.parse(session.expiresAt);
+    let timerId: number | undefined;
+
+    const checkSessionDeadline = () => {
+      if (timerId !== undefined) window.clearTimeout(timerId);
+      const remainingMs = expiresAt - Date.now();
+
+      if (!Number.isFinite(expiresAt) || remainingMs <= 0) {
+        handleSessionExpired();
+        return;
+      }
+
+      // Browsers clamp very long timeouts; re-check instead of assuming one timer can cover all TTLs.
+      timerId = window.setTimeout(checkSessionDeadline, Math.min(remainingMs, 2_147_000_000));
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkSessionDeadline();
+    };
+
+    checkSessionDeadline();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timerId !== undefined) window.clearTimeout(timerId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [authStatus, session?.expiresAt, handleSessionExpired]);
+
   useEffect(() => {
     if (authStatus !== "signed-in") return;
 

@@ -1,0 +1,59 @@
+name: Frontend dependency security audit
+
+on:
+  pull_request:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+  push:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    name: Audit locked frontend dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v3.1.2
+        with:
+          version: 11.21.0
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install exact locked dependency graph without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Audit locked dependencies (fail on high or critical findings)
+        shell: bash
+        run: |
+          if pnpm audit --audit-level=high --json > dependency-audit.json; then
+            echo "No high/critical dependency audit findings."
+          else
+            audit_status=$?
+            echo "Dependency audit failed (exit code: ${audit_status}). Raw report follows:"
+            cat dependency-audit.json
+            exit "${audit_status}"
+          fi
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: frontend-dependency-audit
+          path: dependency-audit.json
+          if-no-files-found: warn
+          retention-days: 14
