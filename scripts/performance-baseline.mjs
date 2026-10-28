@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const RESERVED_HOSTS = new Set(["example.com", "example.net", "example.org"]);
+const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
 
 function parseInteger(value, fallback, label, { min, max }) {
   if (value === undefined || value === null || value === "") return fallback;
