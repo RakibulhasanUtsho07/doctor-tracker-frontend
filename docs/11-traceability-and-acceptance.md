@@ -54,7 +54,7 @@ The documentation-inclusive candidate `e2c15857438195dd83bbae0b68a4acf002fbc797`
 - [Real API + MongoDB #40650964392](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964392)
 - [Dependency audit #40650964434](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40650964434)
 
-These checks establish automated coverage only. PR #23 remains draft pending human review and exact-head verification after this documentation refresh; live deployed-header verification and manual accessibility/device acceptance remain open.
+These checks establish automated coverage only. PR #23 remains draft pending independent human review; live deployed-header verification, independent security review and manual accessibility/device acceptance remain open release gates.
 
 ## Release gate register
 
