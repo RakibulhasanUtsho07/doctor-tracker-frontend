@@ -285,6 +285,22 @@ test("pinned HTTPS fetch refuses missing DNS pins, HTTP URLs and redirect-follow
     fetchImpl("https://api.candidate-host.com/api/v1/health", { redirect: "follow", pinnedAddresses: [{ address: "93.184.216.34", family: 4 }] }),
     /requires redirect: error/
   );
+  await assert.rejects(
+    fetchImpl("https://api.candidate-host.com/api/v1/health", { redirect: "error", pinnedAddresses: [{ address: "127.0.0.1", family: 4 }] }),
+    /Pinned addresses must be public IPs/
+  );
+  await assert.rejects(
+    fetchImpl("https://api.candidate-host.com/api/v1/health", { redirect: "error", pinnedAddresses: [{ address: "93.184.216.34", family: 6 }] }),
+    /Pinned addresses must be public IPs/
+  );
+  await assert.rejects(
+    fetchImpl("https://127.0.0.1/api/v1/health", { redirect: "error", pinnedAddresses: [{ address: "93.184.216.34", family: 4 }] }),
+    /must use a public DNS hostname/
+  );
+  await assert.rejects(
+    fetchImpl("https://api.candidate-host.com:8443/api/v1/health", { redirect: "error", pinnedAddresses: [{ address: "93.184.216.34", family: 4 }] }),
+    /must use the default HTTPS port \(443\)/
+  );
   assert.equal(requestCount, 0, "invalid transport configuration must fail before opening a socket");
 });
 
