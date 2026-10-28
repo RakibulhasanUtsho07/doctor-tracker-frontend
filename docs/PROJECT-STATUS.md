@@ -90,13 +90,12 @@ Do not invent staging URLs, credentials, screenshots, performance SLAs or manual
 
 ## Next execution order
 
-1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; core source/test candidate passes the 9/9 real-API browser suite.
-2. Completed in draft PR #21: per-response nonce CSP without production `unsafe-inline`; latest code tests and all five workflows passed on docs-inclusive verification SHA `75f70bce3d4223dd5a71005270b92730d5ec7676`.
-3. Next: review the nonce CSP implementation and dynamic-rendering/cache impact; measure a documented performance baseline before promoting this security trade-off.
-2. Review the stacked frontend PR dependency chain and the remaining domain edge cases not exhaustively covered; use the latest exact-head workflow results, not older run numbers.
-3. Complete human accessibility/device checks and an independent security review.
-4. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that staging environment.
-5. Capture approved-target performance measurements and synthetic desktop/mobile screenshots.
-6. Promote the validated feature stack to frontend dev, then validate and promote to main. Separately reconcile API dev → API main; confirm post-merge CI against each resulting SHA.
+1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; the real API + MongoDB browser suite passes 9/9 within its disposable CI scope.
+2. Completed in draft PR #21: per-response nonce CSP without production `unsafe-inline`; frontend CI, synthetic E2E, accessibility acceptance, real API acceptance and dependency audit all pass on docs-inclusive verification SHA `75f70bce3d4223dd5a71005270b92730d5ec7676`.
+3. Next: measure and compare the performance impact of request-time rendering against the prior cached/PPR candidate; agree a numeric target before any performance PASS.
+4. Review the stacked frontend PR dependency chain and remaining domain edge cases using exact-head workflow results.
+5. Complete human accessibility/device checks and an independent security review.
+6. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that environment.
+7. Capture approved-target performance measurements and synthetic desktop/mobile screenshots; promote the validated feature stack to frontend `dev`, then validate and promote to `main` only after release gates pass. Separately reconcile API `dev` → API `main`; confirm post-merge CI on resulting SHAs.
 
 The project is not fully complete until the required SRS items have implementation and acceptance evidence and the release gates above are resolved.
