@@ -138,7 +138,8 @@ export async function runPerformanceBaseline({
   timeoutMs = 5_000,
   fetchImpl = globalThis.fetch,
   now = () => performance.now(),
-  measuredAt = () => new Date().toISOString()
+  measuredAt = () => new Date().toISOString(),
+  label = "frontend root response"
 } = {}) {
   const url = targetUrl instanceof URL ? targetUrl : parseBenchmarkTarget(targetUrl);
   if (!Number.isInteger(runs) || runs < 5 || runs > 200) {
@@ -164,6 +165,7 @@ export async function runPerformanceBaseline({
     schemaVersion: 1,
     measuredAt: measuredAt(),
     targetOrigin: url.origin,
+    label,
     request: {
       method: "GET",
       path: "/",
@@ -193,7 +195,7 @@ export function reportMarkdown(report) {
     "| " + name + " | " + values.min + " " + unit + " | " + values.p50 + " " + unit +
     " | " + values.p95 + " " + unit + " | " + values.max + " " + unit + " |";
   return [
-    "## Frontend document response baseline (observational)",
+    "## Frontend document response baseline: " + report.label + " (observational)",
     "",
     "- Target origin: " + report.targetOrigin,
     "- Measured at: " + report.measuredAt,
@@ -214,6 +216,7 @@ export function reportMarkdown(report) {
 function configFromEnvironment(env = process.env) {
   return {
     targetUrl: env.PERF_BASE_URL ?? "http://127.0.0.1:3000/",
+    label: env.PERF_LABEL ?? "frontend root response",
     runs: parseInteger(env.PERF_RUNS, 25, "PERF_RUNS", { min: 5, max: 200 }),
     warmupRuns: parseInteger(env.PERF_WARMUP_RUNS, 3, "PERF_WARMUP_RUNS", { min: 0, max: 20 }),
     timeoutMs: parseInteger(env.PERF_TIMEOUT_MS, 5_000, "PERF_TIMEOUT_MS", { min: 500, max: 30_000 })
