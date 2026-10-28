@@ -44,7 +44,7 @@ The documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also
 - [Real API + MongoDB #40694547456](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547456)
 - [Dependency audit #40694547465](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547465)
 
-This project-status refresh is a subsequent documentation-only commit; verify all required workflows again on its exact resulting head.
+Every documentation-only commit is subject to the same exact-resulting-head workflow checks as a source commit. Record the latest SHA and workflow links on PR #24 before treating that snapshot as verified.
 
 **Remaining release gates:** authorized live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and pinned transport, and parent-PR review. Automated CI does not establish production acceptance.
 
