@@ -1,5 +1,5 @@
 # Project Status
-Last verified: 2026-10-27
+Last verified: 2026-10-28
 
 ## Foundation
 - Frontend documentation baseline merged to dev via [PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
@@ -104,3 +104,19 @@ All five workflows passed on that exact source/test SHA:
 - [Dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024) — no high/critical published package advisories.
 
 Manual actual-200%-zoom verification, screen reader and physical-device/touch checks remain NOT STARTED; live HTTPS preflight/deployed smoke, independent security sign-off and approved-target performance measurements remain BLOCKED/PARTIAL. This automation is not a release approval and does not change PR #18's draft/stacked status.
+
+
+## Proactive session expiry and revocation UI teardown — 2026-10-28
+
+The authenticated shell observes the server-issued `expiresAt`, schedules a deadline check, and rechecks when the user returns to the tab. On expiry, the shared session-expired handler clears in-memory session and dashboard data, unmounts protected doctor/patient views, and shows a sign-in-required notice. Server authorization remains authoritative.
+
+Acceptance is covered by a 5-second synthetic session that expires without another API request and by a real API/MongoDB test that revokes the session out-of-band before forcing the next protected request to return 401. Both assert protected patient data/authenticated badges disappear and localStorage/sessionStorage remain empty. The real-API test was moved to the end of the serial suite after the initial run exposed interference with count-sensitive baseline records.
+
+- [Frontend CI #40625551643](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551643) — 13/13 unit tests, lint/build.
+- [Synthetic E2E #40625551681](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551681) — 2/2 journeys, short-TTL expiry included.
+- [Accessibility #40625551648](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551648) — accessibility workflow passed with the expiry test.
+- [Dependency audit #40625551666](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551666) — no high/critical published frontend dependency advisories.
+- [Real API + MongoDB #40625887617](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887617) on `b93921b806e9a9a506fc7873034bb76025442133` — 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 6/6 real-backend Chromium journeys.
+- [Frontend CI #40625887608](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887608) and [Synthetic E2E #40625887630](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887630) passed again after the real-API test ordering fix.
+
+Automated session-expiry handling is PASS in the tested scope. Live deployed HTTPS cookie/session verification, human screen-reader/physical-device acceptance, independent security sign-off and performance target approval remain open; overall release stays BLOCKED, and PR #18 remains draft/stacked.

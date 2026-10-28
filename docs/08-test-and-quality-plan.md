@@ -107,3 +107,27 @@ On the exact source/test SHA above all five automated workflows passed:
 - [Frontend dependency audit #40624554024](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40624554024) — passed with no high/critical published package advisories for the locked frontend dependency graph.
 
 The 720px viewport is an automated reflow-equivalent, not a browser's actual 200%-zoom control. Manual 200% zoom, a real screen reader, touch and physical-device review remain separate human acceptance items in `docs/14-manual-release-acceptance.md`; this automated sweep does not close those gates or prove the deployment's actual cookie/session behavior.
+
+
+## Proactive session-expiry and revoked-session acceptance — 2026-10-28
+
+**Frontend implementation + short-TTL browser test SHA:** `bf936e040d57555354c72632a5bc139e038fa186`  
+**Real-API test-fixture ordering SHA:** `b93921b806e9a9a506fc7873034bb76025442133`  
+**Pinned backend API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`
+
+The client now treats the API-provided `expiresAt` from login/`GET /auth/me` as a session deadline. While signed in, a lifecycle effect schedules expiry, rechecks when the tab becomes visible (to account for background timer throttling), and routes through the common session-expired handler when the deadline passes or cannot be parsed. That handler clears the in-memory session/CSRF-bearing auth object and dashboard data, unmounts protected workspace views, and announces “Your administrator session expired. Sign in again to continue.” Server authorization remains authoritative; the UI timer is a presentation/state-clearing control, not an authorization boundary.
+
+Two separate acceptance paths cover both normal expiry and server-side invalidation:
+- Synthetic Playwright test uses a 5-second session TTL, shows a synthetic patient row, sends no follow-up API request, and asserts that the screen returns to sign-in at the deadline with the expired-session status and without the patient row, authenticated badge, localStorage or sessionStorage entries.
+- Real API/MongoDB test creates a uniquely named synthetic doctor and patient, displays the patient in the live API-backed directory, revokes the current server session out-of-band through CSRF-protected logout without updating the React shell, then clicks Refresh. The ensuing protected-request 401 must return the UI to sign-in, clear the patient row and authenticated badge, and leave both browser storages empty.
+
+The first real-API run exposed test-fixture interference: the new scenario created an additional doctor/patient before a count-sensitive dashboard journey. The scenario was moved to the end of the serial real-API test file so prior fixtures retain their documented baseline; the subsequent real-API run passed all six browser journeys. Test records are synthetic and held in the disposable CI database.
+
+Implementation/test evidence:
+- [Frontend CI #40625551643](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551643) — 13/13 API-client/preflight unit tests, lint and production build passed on `bf936e040d57555354c72632a5bc139e038fa186`.
+- [Synthetic E2E #40625551681](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551681) — 2/2 journeys passed, including the short-TTL expiry check.
+- [Accessibility #40625551648](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551648) — accessibility/keyboard/reduced-motion suite passed with the expiry scenario included.
+- [Dependency audit #40625551666](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551666) — passed; no high/critical published frontend dependency advisories.
+- On the real-test-ordering SHA `b93921b806e9a9a506fc7873034bb76025442133`, [Frontend CI #40625887608](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887608), [synthetic E2E #40625887630](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887630) and [real API + MongoDB #40625887617](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887617) all passed. The real API run passed 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 6/6 real-backend Chromium journeys.
+
+This closes the **automated client session-deadline and revoked-session UI handling** gap within the tested scope. It does not replace the actual browser 200% zoom, human assistive-technology/physical-device review, deployed HTTPS cookie/session validation or independent security review.

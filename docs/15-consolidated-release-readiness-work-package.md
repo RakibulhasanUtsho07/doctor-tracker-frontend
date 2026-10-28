@@ -3,8 +3,8 @@
 **Date:** 2026-10-27  
 **Repository:** RakibulhasanUtsho07/doctor-tracker-frontend  
 **Working branch:** feat/patient-delete-failure-e2e  
-**Status:** FUNCTIONAL WORKSTREAMS A1–A3 AND RESPONSIVE AUTOMATED WORKSTREAM G1 IMPLEMENTED/VERIFIED; OVERALL RELEASE BLOCKED ON LIVE/MANUAL GATES  
-**Tested frontend code/test SHA:** `f79fa6708364eb04d8bb73405c64a2d61ff351ca`  
+**Status:** FUNCTIONAL A1–A3, RESPONSIVE G1 AND AUTOMATED SESSION-EXPIRY G2 IMPLEMENTED/VERIFIED; OVERALL RELEASE BLOCKED ON LIVE/MANUAL GATES  
+**Latest session-expiry code/test SHA:** `b93921b806e9a9a506fc7873034bb76025442133`  
 **Pinned API SHA:** `efd1fd0f016d98da1fe91bdea52bc48f6295217f`  
 **Exact code-head evidence:** [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135613), [real API + MongoDB](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135446), [synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135915), [accessibility](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135438), and [dependency audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557135471) all passed on that exact SHA. The documentation-inclusive commit `ee6a198fad1ba355a7bc2f0bc836c205e7ae7cf4` was also independently revalidated: [Frontend CI](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813963), [real API + MongoDB](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813684), [synthetic browser E2E](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813858), [accessibility](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557804839), and [dependency audit](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40557813681) passed on that exact docs-inclusive SHA. Any later documentation-only commit must also be verified at its exact SHA. Live staging/manual release acceptance is not implied by these CI runs.
 
@@ -107,6 +107,15 @@ Promotion rules:
 
 The 720px CSS viewport is an automated reflow-equivalent to 200% zoom from 1440 CSS pixels, not a real browser zoom action. Actual 200% zoom, manual screen reader, physical touch/device acceptance and live deployment verification remain open human/environment gates.
 
+## Workstream G2 — Session deadline and server-side revocation UI teardown
+
+**Status: PASS within automated scope.** The client now observes the API-issued `expiresAt`, schedules a deadline check, rechecks upon returning to a visible tab, clears the in-memory auth/session and dashboard state, unmounts protected records views, and announces that re-authentication is required. The backend still authoritatively rejects expired/revoked sessions.
+
+- Synthetic browser test: 5-second session TTL; no further API request is sent; protected patient row and authenticated badge disappear at the deadline and browser storage remains empty. [Synthetic E2E #40625551681](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625551681).
+- Real API test: CSRF-protected server-side logout is initiated out-of-band, then the still-visible patient directory refresh receives 401; sign-in and expiry notice return, protected content is absent, browser storage is empty. [Real API + MongoDB #40625887617](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887617). Latest test-ordering commit: `b93921b806e9a9a506fc7873034bb76025442133`.
+
+The first run demonstrated that the new fixture must not alter count-sensitive tests. The revocation scenario is now the final serial real-API journey and the complete run passes 6/6 journeys. This PASS is not deployment acceptance: production cookie/session behavior and external/manual release gates remain open.
+
 ## Current status board
 
 | Work item | Current status | Completion evidence / remaining blocker |
@@ -116,6 +125,7 @@ The 720px CSS viewport is an automated reflow-equivalent to 200% zoom from 1440 
 | A2 — Optional-condition contract decision | PASS — decision and UI behavior | SRS/API contract does not require clearing through PATCH; empty value is rejected by the UI and tested; API contract unchanged |
 | A3 — Pagination/filter edge coverage | PASS — automated scope | Empty-page metadata, 10/50 row limits, ordered page 2, filter reset to page 1 and persisted reassignment tested |
 | G1 — Responsive layout/reflow coverage | PASS — automated scope | 320/390/720/768/1440 CSS-pixel sweep, overflow checks across auth/dashboard/doctor/patient forms and delete dialog; corrected off-screen table header overflow; exact-head five-workflow evidence linked above |
+| G2 — Session deadline/revocation UI teardown | PASS — automated scope | Short-TTL synthetic session expires without a triggering request; real API session revoked out-of-band then next protected 401 clears patient workspace, dashboard/session badge and keeps local/session storage empty; evidence in AUTH-02/NFR Security trace section |
 | B — Candidate/configuration lock | PARTIAL | Full frontend code/test SHA and pinned API SHA recorded; deployment environment/configuration inventory and stacked-parent review still require owners/evidence |
 | C — Live HTTPS preflight | BLOCKED | No approved public staging frontend/API URLs or deployed SHAs are recorded |
 | D — Deployed synthetic smoke | BLOCKED on C | CI-only browser journey passes, but it is not deployed-endpoint acceptance |
@@ -126,7 +136,7 @@ The 720px CSS viewport is an automated reflow-equivalent to 200% zoom from 1440 
 
 ## Release decision
 
-**Functional workstreams A1–A3 and responsive automated workstream G1: PASS within the exact automated scope above. Overall release acceptance: BLOCKED.** No public deployment URL/deployed SHA, dated manual accessibility/device review, independent security sign-off or approved performance target is available in the repository evidence. Do not merge or promote this stacked draft PR to `dev` or `main` until those gates and parent reviews are completed.
+**Functional workstreams A1–A3, responsive G1 and session-expiry G2: PASS within the exact automated scope above. Overall release acceptance: BLOCKED.** No public deployment URL/deployed SHA, dated manual accessibility/device review, independent security sign-off or approved performance target is available in the repository evidence. Do not merge or promote this stacked draft PR to `dev` or `main` until those gates and parent reviews are completed.
 
 ## Required deliverables
 
