@@ -33,8 +33,12 @@ for (const [subnet, prefix] of [
 const GLOBAL_IPV6 = new BlockList();
 GLOBAL_IPV6.addSubnet("2000::", 3, "ipv6");
 const NON_PUBLIC_IPV6 = new BlockList();
+// IANA's IPv6 Special-Purpose registry marks benchmarking as not globally reachable;
+// the deprecated former ORCHID block is rejected conservatively as well.
 for (const [subnet, prefix] of [
   ["2001::", 23],
+  ["2001:2::", 48],
+  ["2001:10::", 28],
   ["2001:db8::", 32],
   ["2002::", 16],
   ["3fff::", 20],
