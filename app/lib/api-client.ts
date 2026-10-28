@@ -63,6 +63,18 @@ export async function apiRequestWithMeta<T>(
     );
   }
 
+  if (process.env.NODE_ENV === "production") {
+    let protocol: string;
+    try {
+      protocol = new URL(baseUrl).protocol;
+    } catch {
+      throw new ApiClientError(0, "INVALID_API_URL", "The configured API URL is invalid.");
+    }
+    if (protocol !== "https:") {
+      throw new ApiClientError(0, "INSECURE_API_URL", "The API URL must use HTTPS in production.");
+    }
+  }
+
   const { body, csrfToken, headers: suppliedHeaders, ...requestOptions } = options;
   const headers = new Headers(suppliedHeaders);
   headers.set("Accept", "application/json");
@@ -76,6 +88,7 @@ export async function apiRequestWithMeta<T>(
       headers,
       credentials: "include",
       cache: "no-store",
+      redirect: "error",
       body: body === undefined ? undefined : JSON.stringify(body)
     });
   } catch (error) {
