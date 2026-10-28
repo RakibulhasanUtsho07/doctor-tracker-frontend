@@ -2,7 +2,7 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`, latest source/test head `e6ae741fbd78680075f25a7121198c406e7c67e4`, on draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24) stacked on PRs #23–#21. Five required workflows pass on this exact head; run links are recorded in the deployment-preflight section below. Live staging and independent review remain separate release gates.
+**Current preflight-hardening candidate:** outbound HTTPS preflight hardening on `feat/preflight-no-redirects`; source/test head `e6ae741fbd78680075f25a7121198c406e7c67e4` passed all five required workflows. Documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also passed all five workflows, listed in the deployment-preflight section below. This subsequent status refresh requires its own exact-head CI. Live staging and independent review remain separate release gates.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
@@ -36,6 +36,15 @@ Latest source/test head: `e6ae741fbd78680075f25a7121198c406e7c67e4`. All five re
 - [Accessibility #40693915201](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693915201) — automated browser scope only.
 - [Real API + MongoDB #40693915463](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693915463) — isolated acceptance scope only.
 - [Dependency audit #40693923674](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40693923674).
+
+The documentation-inclusive head `b98ad1f29be655f05c2bdf906f45b3d5c7975a21` also passed all five workflows after the timeout documentation and PR-summary update:
+- [Frontend CI #40694547447](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547447)
+- [Synthetic browser E2E #40694547480](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547480)
+- [Accessibility #40694547442](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547442)
+- [Real API + MongoDB #40694547456](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547456)
+- [Dependency audit #40694547465](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40694547465)
+
+This project-status refresh is a subsequent documentation-only commit; verify all required workflows again on its exact resulting head.
 
 **Remaining release gates:** authorized live staging HTTPS/CORS/session/CSRF acceptance, independent security review of the IP-range policy and pinned transport, and parent-PR review. Automated CI does not establish production acceptance.
 
