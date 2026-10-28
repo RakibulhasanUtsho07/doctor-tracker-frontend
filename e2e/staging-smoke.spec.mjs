@@ -142,9 +142,10 @@ test("deployed staging supports secure session, CSRF rejection, patient persiste
     const createResponsePromise = page.waitForResponse((response) =>
       apiResponse(response, "/patients", "POST")
     );
+    // Arm cleanup before the request: a timeout/5xx can still follow a committed insert.
+    patientMayExist = true;
     await page.getByRole("button", { name: "Create patient" }).click();
     const createResponse = await createResponsePromise;
-    patientMayExist = createResponse.ok();
     expect(createResponse.status()).toBe(201);
     await expect(page.getByRole("heading", { name: patientName })).toBeVisible();
 
