@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
+const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {}) {
   if (typeof value !== "string" || value.trim() === "") {
@@ -31,10 +32,15 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   if (url.search || url.hash) {
     throw new Error(label + " must not contain a query string or fragment.");
   }
+  const labels = hostname.split(".");
+  const invalidDnsName = hostname.length > 253 ||
+    labels.some((label) => label.length > 63 || !DNS_LABEL_PATTERN.test(label));
+
   if (
     RESERVED_HOSTS.has(hostname) ||
     FORBIDDEN_SUFFIXES.some((suffix) => hostname.endsWith(suffix)) ||
     !hostname.includes(".") ||
+    invalidDnsName ||
     isIP(hostname) !== 0
   ) {
     throw new Error(label + " must use a public DNS hostname, not a local, reserved, or IP-literal host.");
