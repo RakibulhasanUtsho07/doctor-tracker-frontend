@@ -23,6 +23,8 @@ Record before testing:
 
 Use only synthetic administrator/doctor/patient records. Never put real patient data, passwords, session cookies, CSRF tokens or secrets in screenshots, issue comments, test reports or logs. Do not run destructive, load or fault-injection tests against production unless explicitly authorized; do them in a disposable staging environment.
 
+For the mutating GitHub Actions staging smoke, configure repository variables `STAGING_FRONTEND_HOST` and `STAGING_API_HOST` out-of-band before dispatch. Each value must be the exact approved lowercase DNS hostname only—no scheme, port, path or trailing dot. The workflow rejects a URL unless its hostname exactly matches the corresponding trusted variable; merely including a label such as `staging` or `preview` is not sufficient ownership evidence. If either variable is absent or mismatched, stop before network requests and do not configure staging credentials until the approved host is confirmed. The workflow also requires the separate `STAGING_ADMIN_EMAIL` and `STAGING_ADMIN_PASSWORD` staging-only secrets, an existing synthetic doctor fixture and the explicit disposable-staging confirmation.
+
 ## 2. Manual accessibility and keyboard gate
 
 Run the flow without a mouse first on desktop. Use at least one desktop screen reader available to the reviewer (for example NVDA with Firefox/Chrome on Windows or VoiceOver with Safari on macOS). For mobile, test a physical iOS/VoiceOver/Safari or Android/TalkBack/Chrome device when available. Record unavailable combinations as `BLOCKED` or `NOT TESTED`, not PASS.
