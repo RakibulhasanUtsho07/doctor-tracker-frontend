@@ -2,25 +2,27 @@
 
 **Verified:** 2026-10-28  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Current frontend source/test candidate:** 9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
+**Current frontend source/test candidate:** 2bf651c47313a3e67ef8fdb89c2de081007abcd6 on feat/320px-reflow-acceptance (draft PR [#20](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/20)); the status synchronization below is documentation-only.
 
 This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
 
 ## Current verified results
 
-All five required frontend workflows passed on the current source/test candidate 9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c:
+All five required frontend workflows passed on the current source/test candidate 2bf651c47313a3e67ef8fdb89c2de081007abcd6:
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #406](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456854) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #270](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456915) |
-| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #198](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456989) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #218](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456987) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #111](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40639456871) |
+| Frontend unit tests, lint, TypeScript and production build | PASS | [Frontend CI #415](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40642438873) |
+| Synthetic browser journeys | PASS | [Synthetic browser E2E #277](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40642438824) |
+| Accessibility browser checks, including the new 320 CSS-pixel reflow journey | PASS — automated scope only | [Accessibility #205](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40642438808) |
+| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #225](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40642438861) |
+| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #118](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40642438897) |
 
 The first 320px accessibility run exposed incorrect test selectors for Doctor and Patient Cancel buttons, not a demonstrated layout regression. Both selectors now target the editor containers, and the current-head accessibility workflow passed. A separate real-API keyboard test then exposed a genuine focus-recovery defect after a 409 field error; the Doctor editor now focuses the invalid field and the fixed journey passes. The 320 CSS-pixel browser check is not evidence of real browser 200% zoom or physical-device acceptance.
 
-The real API + MongoDB Chromium suite passes 9/9 browser tests on source/test candidate `9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c`, including Doctor edit through protected `PATCH /doctors/:id`, CSRF-header verification, hospital/phone persistence after reload, and duplicate-email recovery. A new keyboard-only real-API journey creates an original Doctor, verifies a mixed-case duplicate returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record, verifies both records through direct API reads, corrects the email using only the keyboard, and confirms the successful retry persists. The journey also asserts that a server-side field error returns focus to the invalid email input so keyboard users can recover without a pointer.
+The real API + MongoDB Chromium suite passes 9/9 browser tests on source/test candidate `2bf651c47313a3e67ef8fdb89c2de081007abcd6`, including Doctor edit through protected `PATCH /doctors/:id`, CSRF-header verification, hospital/phone persistence after reload, and duplicate-email recovery. A new keyboard-only real-API journey creates an original Doctor, verifies a mixed-case duplicate returns HTTP 409 / `DOCTOR_EMAIL_EXISTS` without persisting the rejected record, verifies both records through direct API reads, corrects the email using only the keyboard, and confirms the successful retry persists. The journey also asserts that a server-side field error returns focus to the invalid email input so keyboard users can recover without a pointer.
+
+The security configuration review adds response hardening to the frontend: Content-Security-Policy with the configured API origin as the only production cross-origin connect target, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive Referrer-Policy and Permissions-Policy, plus production HSTS where the local HTTP test harness is not in use. The API client rejects a public non-HTTPS endpoint before sending a request and uses `redirect: "error"` to avoid silently following API redirects. An isolated local loopback HTTP exception is retained for production-mode CI browser tests only. Unit/config tests and the synthetic browser suite verify this behaviour. CSP currently requires `'unsafe-inline'` for Next hydration; nonce-based strict CSP and independent security review remain open.
 
 ## Implementation status by repository
 
@@ -78,7 +80,7 @@ No frontend feature PR was merged or promoted by this audit. Live deployment, ma
 | Real deployed frontend/API preflight and browser smoke | **BLOCKED** | Actual public HTTPS staging URLs, exact deployed SHAs, a disposable staging administrator, a synthetic doctor fixture and staging-only secrets; then pass the guarded manual workflows |
 | Manual accessibility | **NOT STARTED** | Human keyboard-only and screen-reader walkthroughs; record browser/OS and outcomes |
 | Real responsive/device review | **NOT STARTED** | Actual 200% browser zoom, desktop/tablet/mobile and physical touch-device checks; emulation alone is insufficient |
-| Independent application/configuration security review | **NOT STARTED** | Review authorization, CSRF/CORS, cookies, session handling, validation, secrets and redacted logging; document any accepted risk |
+| Independent application/configuration security review | **NOT STARTED** | Focused frontend hardening and automated tests are complete on `2bf651c47313a3e67ef8fdb89c2de081007abcd6`; still require independent review of authorization, CSRF/CORS, cookies, CSP inline-script exception, session handling, validation, secrets and redacted logging, plus live deployed-header verification |
 | Performance acceptance | **BLOCKED / PARTIAL** | Agreed numeric target plus repeatable synthetic-data p50/p95, error rate, payload and query-plan evidence |
 | README submission requirements | **PARTIAL** | Current setup/architecture/decisions must remain accurate; synthetic desktop/mobile screenshots and live deployment links are still not evidenced |
 | PR review and branch promotion | **NOT STARTED** | Review parent PRs in dependency order; merge only after required acceptance; rerun CI on resulting dev and main SHAs |
@@ -87,7 +89,7 @@ Do not invent staging URLs, credentials, screenshots, performance SLAs or manual
 
 ## Next execution order
 
-1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; source/test SHA `9945f0a2d9bc5111a31b23cde6cf9bbc457bbc9c` passes five workflows and 9/9 real API browser tests.
+1. Completed: add and verify the keyboard-only real-API duplicate-email recovery path; source/test SHA `2bf651c47313a3e67ef8fdb89c2de081007abcd6` passes five workflows and 9/9 real API browser tests.
 2. Review the stacked frontend PR dependency chain and the remaining domain edge cases not exhaustively covered; use the latest exact-head workflow results, not older run numbers.
 3. Complete human accessibility/device checks and an independent security review.
 4. Provision an authorized disposable staging environment, run read-only HTTPS/API preflight, then run the guarded mutating smoke only against that staging environment.
