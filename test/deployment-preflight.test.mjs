@@ -293,6 +293,77 @@ test("pinned HTTPS fetch aborts and rejects a response body larger than the safe
   assert.equal(destroyed, true, "oversized response should destroy the HTTPS request");
 });
 
+test("pinned HTTPS transport allows only read-only methods and credential-free preflight headers", async () => {
+  let requestCount = 0;
+  let capturedOptions;
+  const requestImpl = (_url, options) => {
+    requestCount += 1;
+    capturedOptions = options;
+    const request = new EventEmitter();
+    request.end = () => {
+      const response = new EventEmitter();
+      response.statusCode = 204;
+      response.statusMessage = "No Content";
+      response.headers = {};
+      process.nextTick(() => {
+        request.emit("response", response);
+        response.emit("end");
+      });
+    };
+    return request;
+  };
+  const fetchImpl = createPinnedHttpsFetch(requestImpl);
+  const url = "https://api.candidate-host.com/api/v1/health";
+  const validPins = [{ address: "93.184.216.34", family: 4 }];
+  const baseInit = { redirect: "error", pinnedAddresses: validPins };
+
+  for (const method of ["POST", "PATCH", "PUT", "DELETE", "TRACE", "CONNECT"]) {
+    await assert.rejects(
+      fetchImpl(url, { ...baseInit, method }),
+      /only permits GET and OPTIONS requests/,
+      method
+    );
+  }
+  await assert.rejects(
+    fetchImpl(url, { ...baseInit, method: "GET", body: "mutation payload" }),
+    /does not permit request bodies/
+  );
+  for (const headers of [
+    { authorization: "Bearer synthetic-token" },
+    { cookie: "session=synthetic-cookie" },
+    { "proxy-authorization": "Basic synthetic-token" },
+    { "x-api-key": "synthetic-key" },
+    { "x-custom-header": "unreviewed-value" }
+  ]) {
+    await assert.rejects(
+      fetchImpl(url, { ...baseInit, method: "GET", headers }),
+      /only permits credential-free preflight headers/
+    );
+  }
+  await assert.rejects(
+    fetchImpl(url, { ...baseInit, headers: { "accept-encoding": "gzip" } }),
+    /only permits identity response encoding/
+  );
+  assert.equal(requestCount, 0, "rejected calls must not create an HTTPS request");
+
+  const response = await fetchImpl(url, {
+    ...baseInit,
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://frontend.candidate-host.com",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type,x-csrf-token"
+    }
+  });
+  assert.equal(response.status, 204);
+  assert.equal(requestCount, 1, "a valid credential-free OPTIONS preflight is allowed");
+  assert.equal(capturedOptions.method, "OPTIONS");
+  assert.equal(capturedOptions.headers.origin, "https://frontend.candidate-host.com");
+  assert.equal(capturedOptions.headers["access-control-request-method"], "POST");
+  assert.equal(capturedOptions.headers["access-control-request-headers"], "content-type,x-csrf-token");
+  assert.equal(capturedOptions.headers["accept-encoding"], "identity");
+});
+
 test("pinned HTTPS fetch refuses missing DNS pins, HTTP URLs and redirect-follow mode", async () => {
   let requestCount = 0;
   const requestImpl = () => {

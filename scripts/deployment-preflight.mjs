@@ -207,9 +207,35 @@ export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
     }
 
     const lookupPinned = createPinnedLookup(url.hostname, init.pinnedAddresses);
-    const method = init.method || "GET";
+    const method = typeof init.method === "string"
+      ? init.method.toUpperCase()
+      : init.method === undefined
+        ? "GET"
+        : "";
+    if (method !== "GET" && method !== "OPTIONS") {
+      throw new Error("Pinned preflight transport only permits GET and OPTIONS requests.");
+    }
+    if (init.body !== undefined && init.body !== null) {
+      throw new Error("Pinned preflight transport does not permit request bodies.");
+    }
+
     const headers = new Headers(init.headers || {});
-    if (!headers.has("accept-encoding")) headers.set("accept-encoding", "identity");
+    const allowedHeaders = new Set([
+      "accept-encoding",
+      "origin",
+      "access-control-request-method",
+      "access-control-request-headers"
+    ]);
+    for (const name of headers.keys()) {
+      if (!allowedHeaders.has(name)) {
+        throw new Error("Pinned preflight transport only permits credential-free preflight headers.");
+      }
+    }
+    const requestedEncoding = headers.get("accept-encoding");
+    if (requestedEncoding && requestedEncoding.toLowerCase() !== "identity") {
+      throw new Error("Pinned preflight transport only permits identity response encoding.");
+    }
+    headers.set("accept-encoding", "identity");
 
     return new Promise((resolve, reject) => {
       let settled = false;

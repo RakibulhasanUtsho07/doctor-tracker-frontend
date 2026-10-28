@@ -118,3 +118,10 @@ The pull-request merge candidate had two failed unit assertions because test fix
 Security traceability note: the IANA registry marks `2001:2::/48` as benchmarking/non-globally-reachable and `2001:10::/28` as deprecated former ORCHID ([source](https://www.iana.org/assignments/iana-ipv6-special-registry)). Both already fall within the current `2001::/23` deny rule, so exact entries/tests strengthen explicit documentation/regression coverage but are redundant to current behavior. The broad enclosing rule intentionally errs on the side of rejection; independent review should acknowledge that it also blocks more-specific allocations individually marked globally reachable by IANA.
 
 Acceptance status remains PARTIAL / BLOCKED overall: PRs #16–#24 are open drafts with no recorded review, and live staging, manual accessibility/device checks, independent security review, and agreed-target performance evidence are still outstanding. After this documentation change, verify the five workflows on the resulting documentation-inclusive head; record its final run URLs in the PR thread rather than treating the earlier source/test SHA as the latest documentation-head acceptance.
+
+
+## Direct-call read-only transport guard — 2026-10-28
+
+The normal deployment preflight wrapper already uses only GET and CORS OPTIONS and does not supply credentials; a final review found that direct callers of the exported `createPinnedHttpsFetch` were not independently constrained to that same contract. The transport is now being hardened to reject other methods, request bodies, credential/custom headers and any response encoding except identity. New direct-call regressions also prove that supported credential-free OPTIONS headers remain permitted. This is additional defense-in-depth, not evidence of a demonstrated external bypass.
+
+**Acceptance status for this follow-up:** pending until all five workflows pass on the exact resulting code/test/documentation-inclusive head. The earlier five-workflow PASS applies only to `a66e01a`. The final head and exact run URLs must be recorded in the PR #24 timeline. No merge/promotion is authorized by automated checks alone.

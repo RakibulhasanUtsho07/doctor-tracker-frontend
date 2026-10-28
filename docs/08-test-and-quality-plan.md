@@ -131,3 +131,8 @@ Implementation/test evidence:
 - On the real-test-ordering SHA `b93921b806e9a9a506fc7873034bb76025442133`, [Frontend CI #40625887608](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887608), [synthetic E2E #40625887630](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887630) and [real API + MongoDB #40625887617](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40625887617) all passed. The real API run passed 26/26 HTTP/unit tests, 4/4 MongoDB integration tests and 6/6 real-backend Chromium journeys.
 
 This closes the **automated client session-deadline and revoked-session UI handling** gap within the tested scope. It does not replace the actual browser 200% zoom, human assistive-technology/physical-device review, deployed HTTPS cookie/session validation or independent security review.
+
+
+## Direct-call transport safety regressions — 2026-10-28
+
+The deployment preflight transport tests now cover its own read-only boundary, not just wrapper call paths: GET/OPTIONS are the only accepted methods, request bodies are rejected, sensitive/unknown header names are refused, and `Accept-Encoding` must be `identity`. Negative cases assert that no HTTPS request object is created, and a credential-free CORS OPTIONS case confirms the supported path remains functional. Treat this follow-up as **pending acceptance** until the five required workflows pass on the exact current PR head.

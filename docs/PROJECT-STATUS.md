@@ -175,3 +175,12 @@ IANA lists `2001:2::/48` as benchmarking with Globally Reachable set to False, a
 ### Release decision
 
 Automated source/test acceptance is PASS for commit `a66e01a` only. PR #24 is still draft and unmerged, and reviews remain absent on PRs #16–#24. This does not establish live staging/deployed-header acceptance, manual screen-reader/keyboard/200%-zoom/physical-device acceptance, independent security sign-off, or performance acceptance against an agreed target. Keep the whole stack unmerged and do not promote to `dev` or `main` until those gates are evidenced.
+
+
+## Direct-call read-only transport guard — 2026-10-28
+
+Final review of PR #24's exported `createPinnedHttpsFetch` found that, although the normal preflight wrapper only sends GET and CORS OPTIONS, direct callers could choose other methods and supply arbitrary headers/body. This was not a demonstrated remote bypass of the wrapper, but it weakened the transport's own security contract. The follow-up now enforces the contract inside the transport: only GET/OPTIONS; no request body; only the reviewed preflight header set; credential/custom headers rejected; and `Accept-Encoding` must be `identity` so streamed response-size limits remain predictable.
+
+Regression tests reject POST/PATCH/PUT/DELETE/TRACE/CONNECT, bodies, Authorization/Cookie/Proxy-Authorization/API-key/custom headers and compressed-response requests before any socket is created, while proving a credential-free OPTIONS preflight still works. These changes are in the current PR #24 head; the five required workflows must pass on this resulting head before this hardening is accepted. Previous PASS results on commit `a66e01a` do not certify this newer code/test head.
+
+PR #24 remains draft. This added adapter hardening does not close independent security review, real deployed staging verification, manual keyboard/screen-reader/200%-zoom/device checks, or agreed-target performance acceptance.
