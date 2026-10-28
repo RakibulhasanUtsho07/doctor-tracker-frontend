@@ -190,6 +190,86 @@ export async function runPerformanceBaseline({
   };
 }
 
+export function comparePerformanceReports(baseline, candidate) {
+  const metricNames = ["responseHeadersMs", "totalResponseMs", "responseBytes"];
+  if (!baseline || !candidate || !Number.isInteger(baseline.sampleCount) || !Number.isInteger(candidate.sampleCount) ||
+      baseline.sampleCount < 1 || candidate.sampleCount < 1) {
+    throw new Error("Both benchmark reports must contain at least one measured sample.");
+  }
+
+  const metrics = {};
+  for (const name of metricNames) {
+    const before = baseline.metrics?.[name];
+    const after = candidate.metrics?.[name];
+    if (!before || !after || !Number.isFinite(before.p50) || !Number.isFinite(before.p95) ||
+        !Number.isFinite(after.p50) || !Number.isFinite(after.p95)) {
+      throw new Error("Both benchmark reports must contain p50 and p95 for " + name + ".");
+    }
+    const p50Delta = round(after.p50 - before.p50);
+    const p95Delta = round(after.p95 - before.p95);
+    metrics[name] = {
+      baselineP50: before.p50,
+      candidateP50: after.p50,
+      p50Delta: p50Delta,
+      p50ChangePercent: before.p50 === 0 ? null : round((p50Delta / before.p50) * 100),
+      baselineP95: before.p95,
+      candidateP95: after.p95,
+      p95Delta: p95Delta,
+      p95ChangePercent: before.p95 === 0 ? null : round((p95Delta / before.p95) * 100)
+    };
+  }
+
+  return {
+    schemaVersion: 1,
+    measuredAt: new Date().toISOString(),
+    baseline: {
+      label: baseline.label ?? "baseline",
+      targetOrigin: baseline.targetOrigin,
+      measuredAt: baseline.measuredAt,
+      sampleCount: baseline.sampleCount
+    },
+    candidate: {
+      label: candidate.label ?? "candidate",
+      targetOrigin: candidate.targetOrigin,
+      measuredAt: candidate.measuredAt,
+      sampleCount: candidate.sampleCount
+    },
+    metrics,
+    acceptance: {
+      status: "OBSERVATIONAL_ONLY",
+      thresholdDefined: false,
+      note: "Positive latency deltas mean the candidate was slower in this CI sample; no numeric SRS threshold is configured, so this comparison is not a performance acceptance PASS."
+    }
+  };
+}
+
+export function comparisonMarkdown(report) {
+  const signed = (value) => value > 0 ? "+" + value : String(value);
+  const change = (value) => value === null ? "n/a" : signed(value) + "%";
+  const row = (label, metric, unit) => {
+    const m = report.metrics[metric];
+    return "| " + label + " | " + m.baselineP50 + " " + unit + " | " + m.candidateP50 + " " + unit +
+      " | " + signed(m.p50Delta) + " " + unit + " (" + change(m.p50ChangePercent) + ") | " +
+      m.baselineP95 + " " + unit + " | " + m.candidateP95 + " " + unit + " | " +
+      signed(m.p95Delta) + " " + unit + " (" + change(m.p95ChangePercent) + ") |";
+  };
+  return [
+    "## Frontend performance comparison (observational only)",
+    "",
+    "- Baseline: " + report.baseline.label + " (" + report.baseline.targetOrigin + "; n=" + report.baseline.sampleCount + ")",
+    "- Candidate: " + report.candidate.label + " (" + report.candidate.targetOrigin + "; n=" + report.candidate.sampleCount + ")",
+    "- Positive latency deltas mean the candidate was slower in this local CI sample; results are not adjusted for runner noise.",
+    "",
+    "| Metric | Baseline p50 | Candidate p50 | p50 delta | Baseline p95 | Candidate p95 | p95 delta |",
+    "|---|---:|---:|---:|---:|---:|---:|",
+    row("Response headers (TTFB approximation)", "responseHeadersMs", "ms"),
+    row("Full response", "totalResponseMs", "ms"),
+    row("Decoded HTML body size", "responseBytes", "bytes"),
+    "",
+    "**Acceptance status: OBSERVATIONAL_ONLY.** No numeric SRS performance threshold is defined; this comparison must not be reported as a performance PASS."
+  ].join("\n");
+}
+
 export function reportMarkdown(report) {
   const metricRow = (name, values, unit) =>
     "| " + name + " | " + values.min + " " + unit + " | " + values.p50 + " " + unit +
