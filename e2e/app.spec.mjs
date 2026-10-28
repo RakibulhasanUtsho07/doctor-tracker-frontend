@@ -296,13 +296,13 @@ test("production frontend applies a fresh nonce CSP and hydrates correctly after
     expect(headers["content-security-policy"]).not.toMatch(/unsafe-inline|unsafe-eval/);
 
     const scriptNonces = await page.locator("script").evaluateAll((scripts) =>
-      scripts.map((script) => script.getAttribute("nonce"))
+      scripts.map((script) => script.nonce)
     );
     expect(scriptNonces.length).toBeGreaterThan(0);
     expect(scriptNonces.every((value) => value === nonce)).toBe(true);
 
     const styleNonces = await page.locator("style[nonce]").evaluateAll((styles) =>
-      styles.map((style) => style.getAttribute("nonce"))
+      styles.map((style) => style.nonce)
     );
     expect(styleNonces.every((value) => value === nonce)).toBe(true);
     await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
