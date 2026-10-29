@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
 
-type RegistrationState = "checking" | "open" | "closed" | "unavailable";
+type RegistrationState = "checking" | "open" | "closed" | "disabled" | "unavailable";
 type AuthSession = { user: { id: string; email: string; role: string }; csrfToken: string; expiresAt: string };
 
 function ShieldIcon() {
@@ -30,6 +30,8 @@ export default function SignupPage() {
   const [registrationState, setRegistrationState] = useState<RegistrationState>("checking");
   const [statusError, setStatusError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+  const [setupCodeRequired, setSetupCodeRequired] = useState(false);
+  const [setupCode, setSetupCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,10 +43,11 @@ export default function SignupPage() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    apiRequest<{ registrationOpen: boolean }>("/auth/registration-status", { signal: controller.signal })
+    apiRequest<{ registrationOpen: boolean; setupCodeRequired?: boolean; setupDisabled?: boolean }>("/auth/registration-status", { signal: controller.signal })
       .then((result) => {
         if (!active) return;
-        setRegistrationState(result.registrationOpen ? "open" : "closed");
+        setSetupCodeRequired(Boolean(result.setupCodeRequired));
+        setRegistrationState(result.setupDisabled ? "disabled" : result.registrationOpen ? "open" : "closed");
       })
       .catch((cause: unknown) => {
         if (!active || (cause instanceof Error && cause.name === "AbortError")) return;
@@ -76,17 +79,23 @@ export default function SignupPage() {
     try {
       await apiRequest<AuthSession>("/auth/register", {
         method: "POST",
-        body: { email: email.trim(), password }
+        body: { email: email.trim(), password, ...(setupCodeRequired ? { setupToken: setupCode.trim() } : {}) }
       });
       setSuccess("Administrator account created. Opening your secure workspace…");
       setPassword("");
       setConfirmPassword("");
+      setSetupCode("");
       router.replace("/");
       router.refresh();
     } catch (cause) {
       if (cause instanceof ApiClientError && cause.status === 409) {
         setRegistrationState("closed");
         setError("Initial setup has already been completed. Sign in with your existing administrator account.");
+      } else if (cause instanceof ApiClientError && cause.status === 403) {
+        setError("The one-time setup code is invalid. Check it with the system operator and try again.");
+      } else if (cause instanceof ApiClientError && cause.status === 503) {
+        setStatusError("The system operator has not enabled secure initial setup. Ask them to configure the one-time setup code on the API.");
+        setRegistrationState("disabled");
       } else if (cause instanceof ApiClientError && cause.status === 429) {
         setError("Too many setup attempts. Wait for the limit to reset before trying again.");
       } else if (cause instanceof ApiClientError && cause.status === 400) {
@@ -128,6 +137,15 @@ export default function SignupPage() {
             <Link className="auth-submit auth-submit-link" href="/">Return to sign in <ArrowIcon /></Link>
             <p className="auth-status-foot">If you are locked out, contact the system operator to recover access securely.</p>
           </div>
+        ) : registrationState === "disabled" ? (
+          <div className="auth-status-card" aria-labelledby="signup-heading">
+            <span className="auth-symbol"><ShieldIcon /></span>
+            <p className="section-kicker">SECURE SETUP REQUIRED</p>
+            <h1 id="signup-heading">Initial setup is not enabled.</h1>
+            <p>The system operator must enable first-administrator setup with a one-time secret configured on the API. No account can be claimed until that secure setup is enabled.</p>
+            <button type="button" className="auth-submit" onClick={() => { setStatusError(""); setRegistrationState("checking"); setRetryCount((count) => count + 1); }}>Check again <ArrowIcon /></button>
+            <p className="auth-status-foot"><Link href="/">Return to sign in</Link></p>
+          </div>
         ) : isUnavailable ? (
           <div className="auth-status-card" aria-labelledby="signup-heading">
             <span className="auth-symbol"><ShieldIcon /></span>
@@ -149,6 +167,25 @@ export default function SignupPage() {
             {success && <p className="auth-notice" role="status">{success}</p>}
 
             <form id="signup-form" className="auth-form signup-form" onSubmit={handleSubmit}>
+              {setupCodeRequired && (
+                <>
+                  <label htmlFor="signup-setup-code">One-time setup code</label>
+                  <input
+                    id="signup-setup-code"
+                    name="setupCode"
+                    type="password"
+                    autoComplete="off"
+                    maxLength={512}
+                    required
+                    value={setupCode}
+                    onChange={(event) => setSetupCode(event.target.value)}
+                    placeholder="Enter the code from your system operator"
+                    disabled={pending}
+                  />
+                  <p className="signup-password-note">This code is provided out of band by the system operator. It is sent only to the API and is never saved in browser storage.</p>
+                </>
+              )}
+
               <label htmlFor="signup-email">Administrator email</label>
               <input
                 id="signup-email"
@@ -204,7 +241,7 @@ export default function SignupPage() {
 
               <p className="signup-password-note">Use a unique passphrase of at least 14 characters. The API stores a salted password hash, never your plain-text password.</p>
 
-              <button type="submit" className="auth-submit" disabled={pending || !email.trim() || password.length < 14 || !confirmPassword || password !== confirmPassword}>
+              <button type="submit" className="auth-submit" disabled={pending || !email.trim() || password.length < 14 || !confirmPassword || password !== confirmPassword || (setupCodeRequired && !setupCode.trim())}>
                 {pending ? <><span className="button-spinner" aria-hidden="true" /> Creating account…</> : <>Create administrator <ArrowIcon /></>}
               </button>
             </form>
