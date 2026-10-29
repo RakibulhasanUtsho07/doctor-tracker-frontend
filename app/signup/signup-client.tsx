@@ -107,7 +107,7 @@ export default function SignupPage() {
       <div className="auth-backdrop auth-backdrop--one" aria-hidden="true" />
       <div className="auth-backdrop auth-backdrop--two" aria-hidden="true" />
       <section className="auth-shell signup-shell" aria-labelledby="signup-heading">
-        <Link className="auth-brand" href="/" aria-label="Doctor Tracker sign in">
+        <Link className="auth-brand" href="/">
           <span className="brand-mark" aria-hidden="true"><span /></span>
           <span className="brand-copy"><strong>doctor<span>tracker</span></strong><small>CARE OPERATIONS</small></span>
         </Link>
