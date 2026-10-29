@@ -66,6 +66,13 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build production frontend for real API acceptance
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4000/api/v1
+          NODE_ENV: production
+          PORT: "3000"
+
       - name: Install API dependencies
         run: pnpm install --frozen-lockfile
         working-directory: backend
