@@ -77,4 +77,4 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 - Older first-admin signup delivery and setup-code sections above are historical implementation records only; they are not current product requirements and must not be interpreted as live routes.
 - Production release acceptance, manual accessibility/device review and independent security review remain separate release gates.
 
-- Dashboard hero refreshed with a white surface, clearer typography, more spacing and responsive dashboard illustration; the page canvas is pure white (`#ffffff`). Exact-head CI is required before acceptance.
+- Dashboard hero refreshed with a white surface, clearer typography, more spacing and responsive dashboard illustration; the page canvas is pure white (`#ffffff`). PR #33 source head `e01ee0da678d787c5e81412a9eb9cf64f4ec9b59` passed all five automated workflows and merged to `dev` as `f8c37b9723cabc54b5555b49dfc6117a4b8a0704`. Live HTTPS/staging and manual accessibility/device gates remain open.

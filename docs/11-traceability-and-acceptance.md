@@ -6,8 +6,8 @@ Public signup is not part of the current product. The previous `/signup` page, `
 
 | Requirement | Current implementation / evidence | Status |
 |---|---|---|
-| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite and serializes competing bootstrap attempts with the durable setup marker. API PR #23 removes `GET /auth/registration-status` and `POST /auth/register`; frontend PR #33 removes `/signup` and signup browser journeys. | API removal CI PASS; frontend exact-head release checks pending |
-| Login/session, doctor/patient/dashboard screens | Existing credentialed login, server-side session, CSRF-protected mutations and data screens remain unchanged by this removal. | Existing baseline; rerun required workflows on removal PR heads |
+| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite and serializes competing bootstrap attempts with the durable setup marker. API PR #23 removes the public registration endpoints; frontend PR #33 removes `/signup` and signup browser journeys. | API removal CI PASS; frontend five exact-head workflows PASS on `e01ee0da`; merged to `dev` as `f8c37b9` |
+| Login/session, doctor/patient/dashboard screens | Credentialed login, server-side sessions, CSRF-protected mutations and existing data actions are preserved; PR #33 real API + MongoDB browser acceptance passed. | Automated candidate PASS; deployed HTTPS cookie/CORS/session behaviour remains NOT STARTED |
 
 
 **Snapshot date:** 2026-10-28  
@@ -172,24 +172,24 @@ This section supersedes older dated branch-status statements for the first-admin
 | Signup UI follows setup-code status, does not persist code, and blocks disabled production setup | Frontend [PR #29](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29) merged to frontend `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9` passed all five workflows: [CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259), [synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324), [accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377), [real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) against API `dev` `7334b8783def285e5316c8d9dcf1b594c1a5afea`, and [dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216). | **PASS — automated candidate scope** |
 | Live production operation and manual acceptance | Operator-provisioned 32+ byte secret, out-of-band delivery, removal from API runtime after setup, deployed HTTPS/session/cookie verification, human screen-reader/keyboard/device review. | **NOT STARTED / BLOCKED** — no deployed URL or manual evidence recorded. |
 
-This supersedes older dated branch-state statements for current scope. API PR #23 removed the public registration endpoints; frontend PR #33 removes the browser signup page and journeys. `main` was not changed. Overall product release remains PARTIAL / BLOCKED pending exact-head frontend CI and live/manual acceptance.
+This supersedes older dated branch-state statements for current scope. API PR #23 removed public registration endpoints; frontend PR #33 removed the browser signup page and journeys and merged to `dev` as `f8c37b9` after all five exact-source-head workflows passed. `main` was not changed. Overall product release remains PARTIAL / BLOCKED pending live HTTPS/staging acceptance and manual release gates.
 
 
 ## Dashboard visual system update — 2026-10-29
 
 | Requirement | Implementation / evidence | Status |
 |---|---|---|
-| UI-CANVAS-01 — full-white project canvas | Global `--canvas`, `html`, `body`, application frame, main shell and sidebar use `#ffffff`; cards retain semantic accents and borders. | IMPLEMENTED IN CANDIDATE — exact-head CI and visual regression required |
-| UI-HERO-01 — clearer responsive dashboard hero | White elevated panel, pill-style kicker, stronger heading hierarchy, improved spacing, refined floating workspace illustration and reduced rotation; existing responsive breakpoints and reduced-motion rules remain. | IMPLEMENTED IN CANDIDATE — exact-head CI and browser screenshot review required |
+| UI-CANVAS-01 — full-white project canvas | Global `--canvas`, `html`, `body`, application frame, main shell and sidebar use `#ffffff`; cards retain semantic accents and borders. | PASS in PR #33 source head; merged to `dev` as `f8c37b9`; production visual review remains open |
+| UI-HERO-01 — clearer responsive dashboard hero | White elevated panel, pill-style kicker, stronger heading hierarchy, improved spacing, refined floating workspace illustration and reduced rotation; responsive breakpoints and reduced-motion rules remain. | Automated PASS in PR #33 source head; manual deployed screenshot review remains open |
 
 
 ## Patient directory UI refinement — 2026-10-29
 
 | Requirement | Candidate change | Status |
 |---|---|---|
-| PAT-UX-01 — clear doctor lookup hierarchy | Added a dedicated lookup heading, search icon, concise helper text, full-width labelled search input and clear loading/empty/error status presentation. Search threshold and doctor-selector behaviour are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
-| PAT-UX-02 — discoverable patient filters | Added a filter-workspace title and description, refined control spacing/focus styles and a separate note explaining prefix search/UTC date bounds. Filter fields and request semantics are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
-| PAT-UX-03 — readable persisted records | Added an at-a-glance records heading/icon/count, clearer table-header contrast, more readable row spacing, restrained row-hover state, distinct View/Detach/Delete controls and a refined pagination footer. API records and confirmed detach/delete flows are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
-| PAT-UX-04 — responsive and reduced-motion support | Added responsive layouts for tablet/mobile and reduced-motion transition overrides. | SOURCE CHECKED — browser and accessibility acceptance pending |
+| PAT-UX-01 — clear doctor lookup hierarchy | Dedicated lookup heading/icon, labelled search input and clear loading/empty/error status are tested without changing search semantics. | PASS — PR #33 browser E2E, accessibility and real API acceptance |
+| PAT-UX-02 — discoverable patient filters | Filter-workspace heading/description, control spacing/focus styling and prefix-search/UTC-date guidance are tested without changing request semantics. | PASS — PR #33 exact-head workflows; live visual acceptance remains open |
+| PAT-UX-03 — readable persisted records | Count/header, table rows, View/Detach/Delete controls and pagination are refined; persisted CRUD/reassignment/session revocation passed real API + MongoDB acceptance. | PASS — PR #33 exact-head real API browser acceptance |
+| PAT-UX-04 — responsive and reduced-motion support | Responsive tablet/mobile layouts and reduced-motion overrides are in the candidate. | PASS within automated accessibility scope; human device/assistive-technology review remains open |
 
 The visual changes do not replace manual keyboard/screen-reader, 200% zoom or physical-device review. Do not mark the PR fully accepted or promote it based on source inspection alone.
