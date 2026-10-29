@@ -181,3 +181,15 @@ This supersedes older dated branch-state statements for current frontend scope. 
 |---|---|---|
 | UI-CANVAS-01 — full-white project canvas | Global `--canvas`, `html`, `body`, application frame, main shell and sidebar use `#ffffff`; cards retain semantic accents and borders. | IMPLEMENTED IN CANDIDATE — exact-head CI and visual regression required |
 | UI-HERO-01 — clearer responsive dashboard hero | White elevated panel, pill-style kicker, stronger heading hierarchy, improved spacing, refined floating workspace illustration and reduced rotation; existing responsive breakpoints and reduced-motion rules remain. | IMPLEMENTED IN CANDIDATE — exact-head CI and browser screenshot review required |
+
+
+## Patient directory UI refinement — 2026-10-29
+
+| Requirement | Candidate change | Status |
+|---|---|---|
+| PAT-UX-01 — clear doctor lookup hierarchy | Added a dedicated lookup heading, search icon, concise helper text, full-width labelled search input and clear loading/empty/error status presentation. Search threshold and doctor-selector behaviour are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
+| PAT-UX-02 — discoverable patient filters | Added a filter-workspace title and description, refined control spacing/focus styles and a separate note explaining prefix search/UTC date bounds. Filter fields and request semantics are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
+| PAT-UX-03 — readable persisted records | Added an at-a-glance records heading/icon/count, clearer table-header contrast, more readable row spacing, restrained row-hover state, distinct View/Detach/Delete controls and a refined pagination footer. API records and confirmed detach/delete flows are unchanged. | IMPLEMENTED IN CANDIDATE — exact-head browser CI required |
+| PAT-UX-04 — responsive and reduced-motion support | Added responsive layouts for tablet/mobile and reduced-motion transition overrides. | SOURCE CHECKED — browser and accessibility acceptance pending |
+
+The visual changes do not replace manual keyboard/screen-reader, 200% zoom or physical-device review. Do not mark the PR fully accepted or promote it based on source inspection alone.
