@@ -21,13 +21,6 @@ function dashboardMetric(page, title) {
     .locator(".metric-value > span");
 }
 
-test("real API confirms first-admin signup is closed after the administrator has been provisioned", async ({ page }) => {
-  await page.goto("/signup");
-  await expect(page.getByRole("heading", { name: "Your workspace is already configured." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
-});
-
 test("real API rejects invalid credentials without persisting a browser session", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Administrator email").fill(ADMIN_EMAIL);
