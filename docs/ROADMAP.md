@@ -71,8 +71,10 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 
 ## Scope decision — public signup removed (2026-10-29)
 
-- Public /signup UI and unauthenticated registration endpoints are no longer required and are being removed from current dev scope.
+- Public `/signup` UI is out of product scope and removed from the frontend candidate. This UI change does not remove backend registration endpoints; they are not wired to this frontend and must retain setup-code controls unless a separate API PR removes them.
 - Initial administrator provisioning remains supported through the operator-only backend CLI command pnpm bootstrap:admin, guarded by the durable singleton setup marker and existing-user checks.
 - Login/session, doctor, patient and dashboard workflows are unchanged.
 - Older first-admin signup delivery and setup-code sections above are historical implementation records only; they are not current product requirements and must not be interpreted as live routes.
 - Production release acceptance, manual accessibility/device review and independent security review remain separate release gates.
+
+- Dashboard hero refreshed with a white surface, clearer typography, more spacing and responsive dashboard illustration; the page canvas is pure white (`#ffffff`). Exact-head CI is required before acceptance.
