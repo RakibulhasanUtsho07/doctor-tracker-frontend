@@ -1,22 +1,24 @@
 # Doctor Tracker — Current Project Status
 
-**Verified:** 2026-10-28  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**  
-**Latest verified preflight-hardening baseline before this status refresh:** `84450c298757a462adc856fdae60b926aa4c5df7` on draft PR #24. All five workflows passed on that exact head: [Frontend CI #40727138375](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138375), [synthetic E2E #40727138214](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138214), [accessibility #40727138792](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138792), [real API + MongoDB #40727138193](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138193), and [dependency audit #40727137801](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727137801). This refresh creates a new documentation commit, which must pass its own exact-head checks. These runs used synthetic/isolated CI; no live deployment was contacted. Manual accessibility/device acceptance, independent security review, and live staging remain separate release gates.
+**Current snapshot:** 2026-10-29  
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. Automated acceptance for the first-administrator signup feature is green; live deployment, manual device/accessibility acceptance, independent security review and performance acceptance remain separate release gates.
 
-This file is the concise current snapshot. Historical work-package evidence remains in [Traceability and Acceptance](11-traceability-and-acceptance.md). A green CI run proves only the tested scope and commit; it does not mean that the project is deployed or that manual release gates passed.
+## First-administrator signup — merged to dev
 
-## Current verified results
+The signup feature is implemented end-to-end and merged into the two `dev` branches. Older dated notes further below are historical snapshots and must not be read as the current branch state.
 
-The last verified PR #24 baseline before this status refresh is documentation-inclusive head `84450c298757a462adc856fdae60b926aa4c5df7`; its five exact-head workflow URLs are recorded above and in the latest PR #24 evidence section below. Performance comparison remains observational only, not an SLA gate:
+- **API PR #21 — merged:** [single-use first-admin signup](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/21), resulting API `dev` head `ed64953b445a3b027b2298205b36afd415b0c4db`. Adds registration status/register endpoints, scrypt password hashing, strict field allowlist, rate limit, HttpOnly session + CSRF issuance, an atomic single-use setup marker shared with the CLI bootstrap flow, guarded stale-marker recovery, tests, OpenAPI and security/setup documentation.
+- **Frontend PR #27 — merged:** [first-administrator signup page](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/27), resulting frontend `dev` head `aba792eb6934df160c6407d7b24b0c2267c24c47`. Adds `/signup`, status/closed/unavailable states, password confirmation, sign-in link, request-time rendering for per-response CSP nonce safety, browser tests and accessibility coverage.
+- **API CI — PASS:** [run #72](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40901298937) on the PR merge candidate containing the same source tree as the merged `dev` branch. Source lint, typecheck, HTTP/auth unit tests, MongoDB integration tests and production build passed.
+- **Frontend exact-candidate checks — PASS:** [Frontend CI #796](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762506), [synthetic E2E #651](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762548) (10/10 journeys), [accessibility #576](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762515) (22 passed, 2 expected skips), [real API + MongoDB #598](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762508) against the merged API `dev` SHA, and [dependency audit #463](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762487). These ran on candidate head `bd3772bb76115f0c50e33ed5cf29242a33b5202f`, whose source tree matches the merged frontend feature.
 
-| Gate | Result | Evidence |
-|---|---|---|
-| Frontend unit tests, lint, TypeScript, production build + observational benchmark comparison | PASS — benchmark itself is not an SLA gate | [Frontend CI #40697483960](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138375) |
-| Synthetic browser journeys | PASS | [Synthetic browser E2E #40697484066](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138214) |
-| Accessibility browser checks, including 320 CSS-pixel reflow | PASS — automated scope only | [Accessibility #40697484156](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138792) |
-| Real Express API + isolated MongoDB browser acceptance | PASS — disposable CI scope only | [Real API + MongoDB #40697483847](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138193) |
-| Frontend dependency audit | PASS — no high/critical published package advisory found by this gate | [Dependency audit #40697483931](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727137801) |
+## Security decision and current branch state
+
+- This is **first-administrator setup only**, not ongoing unrestricted public registration. The API is authoritative, always creates the initial account with the `ADMIN` role, rejects client-supplied role/activation fields, and closes registration after the first account exists.
+- The API and frontend `main` branches were **not changed**. Signup is on `dev`; do not imply production deployment.
+- Live HTTPS/browser cookie acceptance, manual screen-reader/keyboard/real-device checks, independent security review, and performance acceptance against an approved numeric target remain **NOT STARTED / BLOCKED**. Automated CI does not close these gates.
+
+## Historical project status and security-work notes
 
 ## Protected staging workflow — follow-up security hardening
 
