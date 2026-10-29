@@ -392,7 +392,7 @@ function SignInView({ onSubmit, pending, error, notice }: {
           </form>
           <div className="auth-security-note"><Icon name="shield" size={17} /><p><strong>Private administrator workspace</strong><span>Sessions are managed by the API using an HttpOnly cookie. Credentials and session tokens are never saved to localStorage.</span></p></div>
         </div>
-        <p className="auth-footer">No public registration. Your administrator account must be provisioned by the system operator.</p>
+        <p className="auth-footer">Setting up Doctor Tracker for the first time? <a className="auth-inline-link" href="/signup">Create the first administrator</a>. Registration closes after setup.</p>
       </section>
     </main>
   );
