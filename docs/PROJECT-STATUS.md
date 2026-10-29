@@ -2,13 +2,13 @@
 
 # Current scope decision — public signup removed (2026-10-29)
 
-**Current authentication scope:** Sign-in and secure session handling remain. Public `/signup`, `GET /auth/registration-status` and `POST /auth/register` are removed from current development scope by frontend PR #31 and backend API PR #23. Initial administrator provisioning is CLI-only through `pnpm bootstrap:admin`; it refuses overwrites and uses the durable setup marker. Historical setup-token/signup notes below describe prior work only and are not current configuration instructions. Login/session, doctor, patient and dashboard functionality is unaffected.
+**Current authentication scope:** Sign-in and secure session handling remain. Public `/signup`, `GET /auth/registration-status` and `POST /auth/register` are removed from current development scope by frontend PR #33 and backend API PR #23. Initial administrator provisioning is CLI-only through `pnpm bootstrap:admin`; it refuses overwrites and uses the durable setup marker. Historical setup-token/signup notes below describe prior work only and are not current configuration instructions. Login/session, doctor, patient and dashboard functionality is unaffected.
 
 The signup UI and setup-token sections that follow are historical implementation records, not current routes or environment requirements. API PR #23 removes the public registration endpoints and their setup-token configuration; operator CLI bootstrap is the only initial-admin path. Exact-head CI for the current UI candidate must pass before promotion; `main` remains untouched.
 
 
 **Current snapshot:** 2026-10-29  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. The browser signup UI was previously merged but is now excluded from frontend product scope and removed in this candidate. The white-canvas/hero refresh and signup-UI removal still require exact-head automated verification; live deployment and manual/independent release gates remain open.
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. The browser signup UI was previously merged but is now excluded from frontend product scope and removed in this candidate. The dashboard and patient-directory refresh, signup-UI removal and scope-aligned docs still require exact-head automated verification; live deployment and manual/independent release gates remain open.
 
 ## Historical record — first-administrator signup UI and setup-token flow (removed from current scope)
 
