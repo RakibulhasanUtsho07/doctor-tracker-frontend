@@ -33,6 +33,7 @@ function patientRecord(id, name, doctorId, condition) {
 async function installSyntheticApi(page, { rejectLogin = false } = {}) {
   const state = {
     session: false,
+    registrationOpen: true,
     doctors: [],
     patients: [],
     requests: []
@@ -76,6 +77,24 @@ async function installSyntheticApi(page, { rejectLogin = false } = {}) {
         body: JSON.stringify(payload)
       });
     };
+
+    if (path === "/auth/registration-status" && method === "GET") {
+      return send(200, { registrationOpen: state.registrationOpen });
+    }
+
+    if (path === "/auth/register" && method === "POST") {
+      if (!state.registrationOpen) return send(409, "Initial registration is unavailable.");
+      if (typeof body.email !== "string" || typeof body.password !== "string" || body.password.length < 14 || body.password.length > 128) {
+        return send(400, "Provide a valid email and a password between 14 and 128 characters.");
+      }
+      state.registrationOpen = false;
+      state.session = true;
+      return send(201, {
+        user: { id: "aaaaaaaaaaaaaaaaaaaaaaaa", email: body.email.trim().toLowerCase(), role: "ADMIN" },
+        csrfToken: CSRF,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      });
+    }
 
     if (path === "/auth/me" && method === "GET") {
       if (!state.session) return send(401, "Authentication required.");
@@ -257,6 +276,37 @@ async function signIn(page) {
   await page.getByRole("button", { name: /Sign in securely/ }).click();
   await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
 }
+
+test("first-admin sign-up creates a session and closes registration after one account", async ({ page }) => {
+  const state = await installSyntheticApi(page);
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Create your account." })).toBeVisible();
+  await page.getByLabel("Administrator email").fill("FIRST-ADMIN@example.test");
+  await page.getByLabel("Create password").fill("synthetic first-admin password 2026!");
+  await page.getByLabel("Confirm password").fill("synthetic first-admin password 2026!");
+  await expect(page.getByRole("button", { name: /Create administrator/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Create administrator/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
+  expect(state.registrationOpen).toBe(false);
+  expect(state.session).toBe(true);
+  const registration = state.requests.find((entry) => entry.method === "POST" && entry.path === "/auth/register");
+  expect(registration).toBeTruthy();
+  expect(registration.body).toEqual({
+    email: "FIRST-ADMIN@example.test",
+    password: "synthetic first-admin password 2026!"
+  });
+
+  const browserStorage = await page.evaluate(() => ({
+    local: Object.keys(localStorage),
+    session: Object.keys(sessionStorage)
+  }));
+  expect(browserStorage).toEqual({ local: [], session: [] });
+
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Your workspace is already configured." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
+});
 
 test("production frontend applies a fresh nonce CSP and hydrates correctly after reload", async ({ page }) => {
   const cspErrors = [];

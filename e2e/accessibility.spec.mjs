@@ -37,6 +37,7 @@ async function installSyntheticApi(page, options = {}) {
   const sessionPayload = () => ({ ...USER, expiresAt: new Date(Date.now() + sessionTtlMs).toISOString() });
   const state = {
     authenticated: false,
+    registrationOpen: true,
     doctors: options.seedDoctor || options.seedPatient ? [{ ...DOCTOR_RECORD }] : [],
     patients: options.seedPatient ? [{ ...PATIENT_RECORD }] : [],
     failNextAction: options.failNextAction ?? null
@@ -78,6 +79,22 @@ async function installSyntheticApi(page, options = {}) {
       });
     };
 
+    if (path === "/auth/registration-status" && method === "GET") {
+      return send(200, { registrationOpen: state.registrationOpen });
+    }
+    if (path === "/auth/register" && method === "POST") {
+      if (!state.registrationOpen) return send(409, "Initial registration is unavailable.");
+      if (typeof body.email !== "string" || typeof body.password !== "string" || body.password.length < 14 || body.password.length > 128) {
+        return send(400, "Provide a valid email and a password between 14 and 128 characters.");
+      }
+      state.registrationOpen = false;
+      state.authenticated = true;
+      return send(201, {
+        user: { id: "aaaaaaaaaaaaaaaaaaaaaaaa", email: body.email.trim().toLowerCase(), role: "ADMIN" },
+        csrfToken: CSRF,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      });
+    }
     if (path === "/auth/me" && method === "GET") {
       return state.authenticated ? send(200, sessionPayload()) : send(401, "Authentication required.");
     }
@@ -248,6 +265,10 @@ async function scanScreen(page, testInfo, name) {
 test("WCAG 2.1 A/AA scan blocks serious and critical violations on sign-in and workspace views", async ({ page }, testInfo) => {
   await installSyntheticApi(page);
   await page.setViewportSize(testInfo.project.name === "chromium-mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Create your account." })).toBeVisible();
+  await scanScreen(page, testInfo, "signup");
+
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
   await scanScreen(page, testInfo, "sign-in");
