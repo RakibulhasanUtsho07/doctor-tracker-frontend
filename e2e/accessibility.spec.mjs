@@ -38,6 +38,8 @@ async function installSyntheticApi(page, options = {}) {
   const state = {
     authenticated: false,
     registrationOpen: true,
+    setupCodeRequired: Boolean(options.setupCodeRequired),
+    setupCode: options.setupCode ?? "synthetic-one-time-setup-code-1234567890",
     doctors: options.seedDoctor || options.seedPatient ? [{ ...DOCTOR_RECORD }] : [],
     patients: options.seedPatient ? [{ ...PATIENT_RECORD }] : [],
     failNextAction: options.failNextAction ?? null
@@ -80,10 +82,12 @@ async function installSyntheticApi(page, options = {}) {
     };
 
     if (path === "/auth/registration-status" && method === "GET") {
-      return send(200, { registrationOpen: state.registrationOpen });
+      return send(200, { registrationOpen: state.registrationOpen, setupCodeRequired: state.setupCodeRequired, setupDisabled: false });
     }
     if (path === "/auth/register" && method === "POST") {
       if (!state.registrationOpen) return send(409, "Initial registration is unavailable.");
+      if (state.setupCodeRequired && body.setupToken !== state.setupCode) return send(403, "The one-time setup code is invalid.");
+      if (!state.setupCodeRequired && Object.hasOwn(body, "setupToken")) return send(400, "Unexpected registration field.");
       if (typeof body.email !== "string" || typeof body.password !== "string" || body.password.length < 14 || body.password.length > 128) {
         return send(400, "Provide a valid email and a password between 14 and 128 characters.");
       }
@@ -263,7 +267,7 @@ async function scanScreen(page, testInfo, name) {
 }
 
 test("WCAG 2.1 A/AA scan blocks serious and critical violations on sign-in and workspace views", async ({ page }, testInfo) => {
-  await installSyntheticApi(page);
+  await installSyntheticApi(page, { setupCodeRequired: true });
   await page.setViewportSize(testInfo.project.name === "chromium-mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
   await page.goto("/signup");
   await expect(page.getByRole("heading", { name: "Create your account." })).toBeVisible();

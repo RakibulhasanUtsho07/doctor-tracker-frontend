@@ -19,7 +19,7 @@ export default defineConfig({
     { name: "chromium-real-api", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } } }
   ],
   webServer: {
-    command: "pnpm build && pnpm start",
+    command: "pnpm start",
     url: "http://127.0.0.1:3000",
     timeout: 180000,
     reuseExistingServer: !process.env.CI,

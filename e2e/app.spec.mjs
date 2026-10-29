@@ -30,10 +30,13 @@ function patientRecord(id, name, doctorId, condition) {
   return { id, name, doctorId, condition, createdAt: now, updatedAt: now };
 }
 
-async function installSyntheticApi(page, { rejectLogin = false } = {}) {
+async function installSyntheticApi(page, { rejectLogin = false, setupCodeRequired = false, setupDisabled = false, setupCode = "synthetic-one-time-setup-code-1234567890" } = {}) {
   const state = {
     session: false,
     registrationOpen: true,
+    setupCodeRequired,
+    setupDisabled,
+    setupCode,
     doctors: [],
     patients: [],
     requests: []
@@ -79,11 +82,13 @@ async function installSyntheticApi(page, { rejectLogin = false } = {}) {
     };
 
     if (path === "/auth/registration-status" && method === "GET") {
-      return send(200, { registrationOpen: state.registrationOpen });
+      return send(200, { registrationOpen: state.registrationOpen && !state.setupDisabled, setupCodeRequired: state.setupCodeRequired, setupDisabled: state.setupDisabled });
     }
 
     if (path === "/auth/register" && method === "POST") {
       if (!state.registrationOpen) return send(409, "Initial registration is unavailable.");
+      if (state.setupCodeRequired && body.setupToken !== state.setupCode) return send(403, "The one-time setup code is invalid.");
+      if (!state.setupCodeRequired && Object.hasOwn(body, "setupToken")) return send(400, "Unexpected registration field.");
       if (typeof body.email !== "string" || typeof body.password !== "string" || body.password.length < 14 || body.password.length > 128) {
         return send(400, "Provide a valid email and a password between 14 and 128 characters.");
       }
@@ -306,6 +311,41 @@ test("first-admin sign-up creates a session and closes registration after one ac
   await page.goto("/signup");
   await expect(page.getByRole("heading", { name: "Your workspace is already configured." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
+});
+
+test("first-admin sign-up fails closed when production setup is disabled", async ({ page }) => {
+  await installSyntheticApi(page, { setupDisabled: true });
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Initial setup is not enabled." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
+  await expect(page.locator("#signup-form")).toHaveCount(0);
+});
+
+test("first-admin sign-up sends a configured setup code only to the API", async ({ page }) => {
+  const setupCode = "synthetic-one-time-setup-code-1234567890";
+  const state = await installSyntheticApi(page, { setupCodeRequired: true, setupCode });
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Create your account." })).toBeVisible();
+  await expect(page.getByLabel("One-time setup code")).toBeVisible();
+  await page.getByLabel("One-time setup code").fill(setupCode);
+  await page.getByLabel("Administrator email").fill("FIRST-ADMIN@example.test");
+  await page.getByLabel("Create password").fill("synthetic first-admin password 2026!");
+  await page.getByLabel("Confirm password").fill("synthetic first-admin password 2026!");
+  await page.getByRole("button", { name: /Create administrator/ }).click();
+  await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
+
+  const registration = state.requests.find((entry) => entry.method === "POST" && entry.path === "/auth/register");
+  expect(registration?.body).toEqual({
+    email: "FIRST-ADMIN@example.test",
+    password: "synthetic first-admin password 2026!",
+    setupToken: setupCode
+  });
+  const browserStorage = await page.evaluate(() => ({
+    local: Object.keys(localStorage),
+    session: Object.keys(sessionStorage)
+  }));
+  expect(browserStorage).toEqual({ local: [], session: [] });
 });
 
 test("production frontend applies a fresh nonce CSP and hydrates correctly after reload", async ({ page }) => {

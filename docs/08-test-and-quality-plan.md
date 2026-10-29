@@ -159,3 +159,8 @@ First-admin registration was implemented and merged to the API and frontend `dev
 - Latest candidate evidence: [API CI #72](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40901298937); [frontend CI #796](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762506); [synthetic E2E #651](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762548); [accessibility #576](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762515); [real API + MongoDB #598](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762508); [dependency audit #463](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762487).
 
 These results cover the tested CI scope only. Manual screen-reader/physical-device checks and live deployed HTTPS/session/cookie acceptance are still NOT STARTED; keep overall release status PARTIAL / BLOCKED.
+
+
+## Production first-admin setup-code UI — follow-up security acceptance
+
+The signup UI follows the API's `setupCodeRequired` and `setupDisabled` status fields. Synthetic Chromium tests must prove that: (1) configured setup code appears as a labelled password input and is sent only in the JSON body, (2) credentials and the code are not persisted in browser storage, (3) setup-disabled production status never renders the registration form, and (4) the code field passes the automated accessibility scan. The real-API workflow must use an exact API commit containing the setup-code gate before this integration is accepted.
