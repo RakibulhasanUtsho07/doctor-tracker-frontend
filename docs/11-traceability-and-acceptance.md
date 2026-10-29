@@ -2,11 +2,11 @@
 
 ## Current scope decision — public signup removed (2026-10-29)
 
-Public signup is not part of the current frontend product. The previous `/signup` page and setup-code UI are historical frontend integration records and do not establish current frontend route availability. This frontend change does not remove backend `GET /auth/registration-status` or `POST /auth/register`; those API endpoints remain a separate scope and must retain their existing setup-code controls unless removed by a separately reviewed API change.
+Public signup is not part of the current product. The previous `/signup` page, `GET /auth/registration-status`, `POST /auth/register` and setup-code UI are historical records only and do not establish current route availability. Backend API PR #23 removed the public registration routes and setup-token configuration; API `dev` retains login/session/CSRF and operator-only `pnpm bootstrap:admin`. Regression tests must continue to prove removed routes return 404 and CLI bootstrap cannot overwrite or create multiple administrators.
 
 | Requirement | Current implementation / evidence | Status |
 |---|---|---|
-| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite, and serializes competing bootstrap attempts with the durable setup marker. The frontend exposes no public signup route; backend registration endpoints are not removed by this UI change and retain their setup-code policy. | IN PROGRESS — rerun frontend exact-head CI; any API endpoint removal requires its own reviewed API PR |
+| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite and serializes competing bootstrap attempts with the durable setup marker. API PR #23 removes `GET /auth/registration-status` and `POST /auth/register`; frontend PR #31 removes `/signup` and signup browser journeys. | API removal CI PASS; frontend exact-head release checks pending |
 | Login/session, doctor/patient/dashboard screens | Existing credentialed login, server-side session, CSRF-protected mutations and data screens remain unchanged by this removal. | Existing baseline; rerun required workflows on removal PR heads |
 
 
@@ -153,7 +153,7 @@ The normal deployment preflight wrapper already uses only GET and CORS OPTIONS a
 The newer source/test/docs-inclusive SHA `f912e896a992c7455488d960981dcdfe44e86413` has now passed all five workflows: [Frontend CI #40712995190](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995190), [Synthetic E2E #40712995187](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995187), [Accessibility #40712995361](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995361), [Real API + MongoDB #40712995279](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995279), and [Dependency audit #40712995330](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995330). This closes the previously pending CI result for that exact SHA only. It does not close live deployment or manual release gates. This evidence note creates a new documentation commit and that resulting head must be reverified.
 
 
-## First-administrator signup — 2026-10-29
+## Historical record — first-administrator signup implementation (removed from current scope) — 2026-10-29
 
 | Requirement | Implementation | Exact acceptance evidence | Status |
 |---|---|---|---|
@@ -172,7 +172,7 @@ This section supersedes older dated branch-status statements for the first-admin
 | Signup UI follows setup-code status, does not persist code, and blocks disabled production setup | Frontend [PR #29](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29) merged to frontend `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9` passed all five workflows: [CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259), [synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324), [accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377), [real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) against API `dev` `7334b8783def285e5316c8d9dcf1b594c1a5afea`, and [dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216). | **PASS — automated candidate scope** |
 | Live production operation and manual acceptance | Operator-provisioned 32+ byte secret, out-of-band delivery, removal from API runtime after setup, deployed HTTPS/session/cookie verification, human screen-reader/keyboard/device review. | **NOT STARTED / BLOCKED** — no deployed URL or manual evidence recorded. |
 
-This supersedes older dated branch-state statements for current frontend scope. The browser signup page was merged in an earlier frontend change but is now removed from this candidate; this frontend PR does not claim the backend registration endpoints were deleted. `main` was not changed. Overall product release remains PARTIAL / BLOCKED.
+This supersedes older dated branch-state statements for current scope. API PR #23 removed the public registration endpoints; frontend PR #31 removes the browser signup page and journeys. `main` was not changed. Overall product release remains PARTIAL / BLOCKED pending exact-head frontend CI and live/manual acceptance.
 
 
 ## Dashboard visual system update — 2026-10-29
