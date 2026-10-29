@@ -103,7 +103,7 @@ export default function SignupPage() {
 
   return (
     <main className="auth-page">
-      <a className="skip-link" href="#signup-form">Skip to sign-up form</a>
+      <a className="skip-link" href={registrationState === "open" ? "#signup-form" : "#signup-heading"}>Skip to sign-up form</a>
       <div className="auth-backdrop auth-backdrop--one" aria-hidden="true" />
       <div className="auth-backdrop auth-backdrop--two" aria-hidden="true" />
       <section className="auth-shell signup-shell" aria-labelledby="signup-heading">
