@@ -1,9 +1,54 @@
-import { isIP } from "node:net";
+import { BlockList, isIP } from "node:net";
+import { lookup } from "node:dns/promises";
+import { request as httpsRequest } from "node:https";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example"];
+const FORBIDDEN_SUFFIXES = [".localhost", ".local", ".internal", ".test", ".invalid", ".example", ".example.com", ".example.net", ".example.org", ".onion", ".arpa", ".alt"];
 const RESERVED_HOSTS = new Set(["localhost", "example.com", "example.net", "example.org"]);
+const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+const DEFAULT_TRANSPORT_TIMEOUT_MS = 10_000;
+
+const NON_PUBLIC_IPV4 = new BlockList();
+for (const [subnet, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4]
+]) {
+  NON_PUBLIC_IPV4.addSubnet(subnet, prefix, "ipv4");
+}
+
+const GLOBAL_IPV6 = new BlockList();
+GLOBAL_IPV6.addSubnet("2000::", 3, "ipv6");
+const NON_PUBLIC_IPV6 = new BlockList();
+// IANA's IPv6 Special-Purpose registry marks benchmarking as not globally reachable;
+// the deprecated former ORCHID block is rejected conservatively as well.
+for (const [subnet, prefix] of [
+  ["2001::", 23],
+  ["2001:2::", 48],
+  ["2001:10::", 28],
+  ["2001:db8::", 32],
+  ["2002::", 16],
+  ["3fff::", 20],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8]
+]) {
+  NON_PUBLIC_IPV6.addSubnet(subnet, prefix, "ipv6");
+}
 
 export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {}) {
   if (typeof value !== "string" || value.trim() === "") {
@@ -18,6 +63,10 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   }
 
   const hostname = url.hostname.toLowerCase();
+  // Reject non-canonical FQDN spelling so reserved/local-host checks cannot be bypassed.
+  if (hostname.endsWith(".")) {
+    throw new Error(label + " must not use a trailing-dot hostname.");
+  }
   if (url.protocol !== "https:") {
     throw new Error(label + " must use HTTPS.");
   }
@@ -27,13 +76,21 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
   if (url.search || url.hash) {
     throw new Error(label + " must not contain a query string or fragment.");
   }
+  const labels = hostname.split(".");
+  const invalidDnsName = hostname.length > 253 ||
+    labels.some((label) => label.length > 63 || !DNS_LABEL_PATTERN.test(label));
+
   if (
     RESERVED_HOSTS.has(hostname) ||
     FORBIDDEN_SUFFIXES.some((suffix) => hostname.endsWith(suffix)) ||
     !hostname.includes(".") ||
+    invalidDnsName ||
     isIP(hostname) !== 0
   ) {
     throw new Error(label + " must use a public DNS hostname, not a local, reserved, or IP-literal host.");
+  }
+  if (url.port && url.port !== "443") {
+    throw new Error(label + " must use the default HTTPS port (443).");
   }
   if (requireApiBase && !/\/api\/v1\/?$/i.test(url.pathname)) {
     throw new Error("API base URL must end with /api/v1.");
@@ -41,6 +98,219 @@ export function parsePublicHttpsUrl(value, label, { requireApiBase = false } = {
 
   url.pathname = url.pathname.replace(/\/+$/, "") || "/";
   return url;
+}
+
+function isPublicIpAddress(address) {
+  const family = isIP(address);
+  if (family === 4) {
+    return !NON_PUBLIC_IPV4.check(address, "ipv4");
+  }
+  if (family === 6) {
+    return GLOBAL_IPV6.check(address, "ipv6") &&
+      !NON_PUBLIC_IPV6.check(address, "ipv6");
+  }
+  return false;
+}
+
+function createPublicHostnameGuard(lookupImpl) {
+  const resolutions = new Map();
+  return async (hostname) => {
+    if (!resolutions.has(hostname)) {
+      resolutions.set(hostname, (async () => {
+        const addresses = await lookupImpl(hostname, { all: true, verbatim: true });
+        if (!Array.isArray(addresses) || addresses.length === 0) {
+          throw new Error("Hostname did not resolve to any IP address.");
+        }
+        if (addresses.some((entry) => !entry || !isPublicIpAddress(entry.address))) {
+          throw new Error("Hostname must resolve only to globally routable IP addresses.");
+        }
+        return addresses.map((entry) => ({
+          address: entry.address,
+          family: entry.family || isIP(entry.address)
+        }));
+      })());
+    }
+    return resolutions.get(hostname);
+  };
+}
+
+/**
+ * Build a Node DNS lookup callback that pins a request to the addresses
+ * already validated by the public-hostname guard. The URL hostname remains
+ * unchanged, so HTTPS SNI and certificate verification still use the hostname.
+ */
+export function createPinnedLookup(hostname, addresses) {
+  const expectedHostname = hostname.toLowerCase();
+  const pinnedAddresses = addresses.map((entry) => ({
+    address: entry.address,
+    family: entry.family || isIP(entry.address)
+  }));
+
+  return (requestedHostname, options, callback) => {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    const requestedName = String(requestedHostname).toLowerCase();
+    const requestedFamily = typeof options === "number" ? options : (options?.family || 0);
+    const wantsAll = typeof options === "object" && options !== null && options.all === true;
+
+    process.nextTick(() => {
+      if (requestedName !== expectedHostname) {
+        callback(new Error("Pinned DNS lookup rejected an unexpected hostname."));
+        return;
+      }
+
+      const candidates = pinnedAddresses.filter((entry) =>
+        requestedFamily === 0 || entry.family === requestedFamily
+      );
+      if (candidates.length === 0) {
+        callback(new Error("No pinned DNS address matches the requested address family."));
+        return;
+      }
+
+      if (wantsAll) {
+        callback(null, candidates);
+        return;
+      }
+      callback(null, candidates[0].address, candidates[0].family);
+    });
+  };
+}
+
+/**
+ * HTTPS fetch adapter with connection-level DNS pinning.
+ * It intentionally does not follow redirects. Inject requestImpl only in tests.
+ */
+export function createPinnedHttpsFetch(requestImpl = httpsRequest) {
+  return async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.protocol !== "https:") {
+      throw new Error("Pinned preflight transport only permits HTTPS.");
+    }
+    // Keep this exported transport safe even when called outside runDeploymentPreflight.
+    parsePublicHttpsUrl(url.href, "Preflight request URL");
+    if (init.redirect !== "error") {
+      throw new Error("Pinned preflight transport requires redirect: error.");
+    }
+    if (!Array.isArray(init.pinnedAddresses) || init.pinnedAddresses.length === 0) {
+      throw new Error("Pinned public DNS addresses are required for HTTPS requests.");
+    }
+    const invalidPinnedAddress = init.pinnedAddresses.some((entry) => {
+      if (!entry || typeof entry.address !== "string") return true;
+      const family = isIP(entry.address);
+      return !isPublicIpAddress(entry.address) ||
+        (entry.family !== undefined && entry.family !== family);
+    });
+    if (invalidPinnedAddress) {
+      throw new Error("Pinned addresses must be public IPs with matching address families.");
+    }
+
+    const lookupPinned = createPinnedLookup(url.hostname, init.pinnedAddresses);
+    const method = typeof init.method === "string"
+      ? init.method.toUpperCase()
+      : init.method === undefined
+        ? "GET"
+        : "";
+    if (method !== "GET" && method !== "OPTIONS") {
+      throw new Error("Pinned preflight transport only permits GET and OPTIONS requests.");
+    }
+    if (init.body !== undefined && init.body !== null) {
+      throw new Error("Pinned preflight transport does not permit request bodies.");
+    }
+
+    const headers = new Headers(init.headers || {});
+    const allowedHeaders = new Set([
+      "accept-encoding",
+      "origin",
+      "access-control-request-method",
+      "access-control-request-headers"
+    ]);
+    for (const name of headers.keys()) {
+      if (!allowedHeaders.has(name)) {
+        throw new Error("Pinned preflight transport only permits credential-free preflight headers.");
+      }
+    }
+    const requestedEncoding = headers.get("accept-encoding");
+    if (requestedEncoding && requestedEncoding.toLowerCase() !== "identity") {
+      throw new Error("Pinned preflight transport only permits identity response encoding.");
+    }
+    headers.set("accept-encoding", "identity");
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const rejectOnce = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
+
+      let request;
+      try {
+        request = requestImpl(url, {
+          method,
+          headers: Object.fromEntries(headers.entries()),
+          lookup: lookupPinned,
+          autoSelectFamily: true,
+          rejectUnauthorized: true,
+          servername: url.hostname,
+          signal: init.signal ?? AbortSignal.timeout(DEFAULT_TRANSPORT_TIMEOUT_MS)
+        });
+      } catch (error) {
+        rejectOnce(error);
+        return;
+      }
+
+      request.once("error", rejectOnce);
+      request.once("response", (incoming) => {
+        const chunks = [];
+        let receivedBytes = 0;
+        incoming.on("data", (chunk) => {
+          if (settled) return;
+          const bytes = Buffer.from(chunk);
+          receivedBytes += bytes.length;
+          if (receivedBytes > MAX_RESPONSE_BYTES) {
+            const error = new Error("HTTPS response exceeded " + MAX_RESPONSE_BYTES + " bytes.");
+            request.destroy(error);
+            rejectOnce(error);
+            return;
+          }
+          chunks.push(bytes);
+        });
+        incoming.once("aborted", () => rejectOnce(new Error("HTTPS response was aborted.")));
+        incoming.once("error", rejectOnce);
+        incoming.once("end", () => {
+          if (settled) return;
+          const status = incoming.statusCode;
+          if (!Number.isInteger(status) || status < 200 || status > 599) {
+            rejectOnce(new Error("HTTPS response returned an invalid status code."));
+            return;
+          }
+
+          const responseHeaders = new Headers();
+          for (const [name, value] of Object.entries(incoming.headers || {})) {
+            if (value !== undefined) {
+              responseHeaders.set(name, Array.isArray(value) ? value.join(", ") : String(value));
+            }
+          }
+
+          const noBody = method.toUpperCase() === "HEAD" || [204, 205, 304].includes(status);
+          try {
+            const responseBody = noBody ? null : Buffer.concat(chunks);
+            settled = true;
+            resolve(new Response(responseBody, {
+              status,
+              statusText: incoming.statusMessage || "",
+              headers: responseHeaders
+            }));
+          } catch (error) {
+            rejectOnce(error);
+          }
+        });
+      });
+      request.end();
+    });
+  };
 }
 
 function addResult(results, name, passed, detail) {
@@ -55,12 +325,14 @@ async function responseJson(response) {
   }
 }
 
-async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeoutMs }) {
+async function getResponse(fetchImpl, url, { method = "GET", headers = {}, timeoutMs, assertPublicHostname }) {
+  const pinnedAddresses = await assertPublicHostname(url.hostname);
   return fetchImpl(url, {
     method,
     headers,
-    redirect: "follow",
-    signal: AbortSignal.timeout(timeoutMs)
+    redirect: "error",
+    signal: AbortSignal.timeout(timeoutMs),
+    pinnedAddresses
   });
 }
 
@@ -77,13 +349,18 @@ function stayedOnSameSecureOrigin(response, requestedUrl) {
 export async function runDeploymentPreflight({
   frontendUrl,
   apiBaseUrl,
-  fetchImpl = globalThis.fetch,
+  fetchImpl = createPinnedHttpsFetch(),
+  lookupImpl = lookup,
   timeoutMs = 10_000
 }) {
   if (typeof fetchImpl !== "function") {
     throw new Error("A fetch implementation is required.");
   }
+  if (typeof lookupImpl !== "function") {
+    throw new Error("A DNS lookup implementation is required.");
+  }
 
+  const assertPublicHostname = createPublicHostnameGuard(lookupImpl);
   const frontend = parsePublicHttpsUrl(frontendUrl, "Frontend URL");
   const apiBase = parsePublicHttpsUrl(apiBaseUrl, "API base URL", { requireApiBase: true });
   const apiBaseWithSlash = new URL(apiBase.href.replace(/\/+$/, "") + "/");
@@ -91,7 +368,7 @@ export async function runDeploymentPreflight({
 
   const frontendResponseUrl = new URL(frontend.href);
   try {
-    const response = await getResponse(fetchImpl, frontendResponseUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, frontendResponseUrl, { timeoutMs, assertPublicHostname });
     const contentType = response.headers.get("content-type") || "";
     const ok = response.status === 200 &&
       contentType.toLowerCase().includes("text/html") &&
@@ -109,7 +386,7 @@ export async function runDeploymentPreflight({
 
   const healthUrl = new URL("health", apiBaseWithSlash);
   try {
-    const response = await getResponse(fetchImpl, healthUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, healthUrl, { timeoutMs, assertPublicHostname });
     const body = await responseJson(response);
     const ok = response.status === 200 &&
       body?.data?.status === "ok" &&
@@ -128,7 +405,7 @@ export async function runDeploymentPreflight({
 
   const readyUrl = new URL("ready", apiBaseWithSlash);
   try {
-    const response = await getResponse(fetchImpl, readyUrl, { timeoutMs });
+    const response = await getResponse(fetchImpl, readyUrl, { timeoutMs, assertPublicHostname });
     const body = await responseJson(response);
     const ok = response.status === 200 &&
       body?.data?.status === "ready" &&
@@ -154,7 +431,8 @@ export async function runDeploymentPreflight({
         "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "content-type,x-csrf-token"
       },
-      timeoutMs
+      timeoutMs,
+      assertPublicHostname
     });
     const sameOrigin = stayedOnSameSecureOrigin(corsResponse, corsUrl);
     const preflightAccepted = (corsResponse.status === 200 || corsResponse.status === 204) && sameOrigin;
