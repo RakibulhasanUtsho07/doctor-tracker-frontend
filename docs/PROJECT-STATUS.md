@@ -1,5 +1,12 @@
 # Doctor Tracker — Current Project Status
 
+# Current scope decision — public signup removed (2026-10-29)
+
+**Current authentication scope:** Sign-in and secure session handling remain. Public /signup, registration status and registration API are not required and are being removed from the current dev branches. Initial administrator provisioning remains available only through the backend operator command pnpm bootstrap:admin; it refuses to overwrite existing accounts and keeps the durable setup marker. Login/session, doctor, patient and dashboard functionality is unaffected.
+
+The signup and setup-token sections that follow are historical records of work previously implemented. They are not instructions for current operation, do not describe current routes, and do not supersede this scope decision. The removal PRs must pass exact-head CI before this scope change is considered merged. main remains untouched.
+
+
 **Current snapshot:** 2026-10-29  
 **Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. First-admin signup is implemented and merged to both `dev` branches, including the production setup-code safety gate. Automated acceptance is green; live deployment and manual/independent release gates remain open.
 
