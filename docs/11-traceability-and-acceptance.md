@@ -152,3 +152,14 @@ The newer source/test/docs-inclusive SHA `f912e896a992c7455488d960981dcdfe44e864
 | Production/manual first-admin release acceptance | Live HTTPS, real browser cookie/session behavior, human keyboard/screen-reader and physical-device review. | No live deployment URL, deployed SHA, or manual evidence was supplied for this change. | **NOT STARTED / BLOCKED** |
 
 This section supersedes older dated branch-status statements for the first-admin signup feature only. Historical notes for unrelated stacked security PRs remain historical and their own release gates stay open. The signup feature is merged to `dev`; no changes were made to `main`.
+
+
+## Production first-admin setup-code gate — 2026-10-29
+
+| Requirement | Implementation / evidence | Status |
+|---|---|---|
+| Production must not allow any visitor to claim the first ADMIN on an empty database | API [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/22) merged to API `dev` at `7334b8783def285e5316c8d9dcf1b594c1a5afea). Empty production setup is disabled if `INITIAL_ADMIN_SETUP_TOKEN` is missing. If configured, the token is required in the request body and checked using fixed-length SHA-256 digests with `timingSafeEqual`. API CI [#75](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40905197587) passed lint, typecheck, unit, MongoDB integration and build. | **PASS — automated API scope** |
+| Signup UI follows setup-code status, does not persist code, and blocks disabled production setup | Frontend [PR #29](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29) merged to frontend `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9` passed all five workflows: [CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259), [synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324), [accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377), [real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) against API `dev` `7334b8783def285e5316c8d9dcf1b594c1a5afea`, and [dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216). | **PASS — automated candidate scope** |
+| Live production operation and manual acceptance | Operator-provisioned 32+ byte secret, out-of-band delivery, removal from API runtime after setup, deployed HTTPS/session/cookie verification, human screen-reader/keyboard/device review. | **NOT STARTED / BLOCKED** — no deployed URL or manual evidence recorded. |
+
+This supersedes older dated branch-state statements for first-admin signup only. Signup is merged to both `dev` branches; `main` was not changed. Overall product release remains PARTIAL / BLOCKED.
