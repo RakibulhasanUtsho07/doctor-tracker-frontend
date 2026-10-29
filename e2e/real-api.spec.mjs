@@ -21,6 +21,23 @@ function dashboardMetric(page, title) {
     .locator(".metric-value > span");
 }
 
+test("public signup page and API endpoints are not exposed", async ({ page }) => {
+  const signup = await page.goto("/signup");
+  expect(signup?.status()).toBe(404);
+
+  const client = await request.newContext();
+  try {
+    const status = await client.get(`${API}/auth/registration-status`);
+    expect(status.status()).toBe(404);
+    const registration = await client.post(`${API}/auth/register`, {
+      data: { email: "unapproved@example.test", password: "This account should not be created 2026!" }
+    });
+    expect(registration.status()).toBe(404);
+  } finally {
+    await client.dispose();
+  }
+});
+
 test("real API rejects invalid credentials without persisting a browser session", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Administrator email").fill(ADMIN_EMAIL);
