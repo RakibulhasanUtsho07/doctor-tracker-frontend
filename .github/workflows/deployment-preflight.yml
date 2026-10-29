@@ -1,0 +1,38 @@
+name: Deployed environment preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_url:
+        description: Public deployed frontend HTTPS URL (no query string or fragment)
+        required: true
+        type: string
+      api_base_url:
+        description: Public deployed API HTTPS base URL ending in /api/v1
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployed-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  read-only-preflight:
+    name: HTTPS, API readiness and credentialed CORS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v7.0.1
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+      - name: Probe deployed endpoints without mutations
+        env:
+          FRONTEND_URL: ${{ inputs.frontend_url }}
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        run: node scripts/deployment-preflight.mjs

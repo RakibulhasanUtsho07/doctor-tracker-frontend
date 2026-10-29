@@ -11,3 +11,8 @@ coverage/
 .DS_Store
 .vercel/
 .turbo/
+
+# Ephemeral Playwright tooling and generated browser artifacts
+.e2e-tools/
+test-results/
+playwright-report/
