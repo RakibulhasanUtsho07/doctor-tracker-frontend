@@ -287,7 +287,7 @@ test("first-admin sign-up creates a session and closes registration after one ac
   await expect(page.getByRole("button", { name: /Create administrator/ })).toBeEnabled();
   await page.getByRole("button", { name: /Create administrator/ }).click();
 
-  await expect(page.getByRole("heading", { name: "Your practice, in focus" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Good systems make better care." })).toBeVisible();
   expect(state.registrationOpen).toBe(false);
   expect(state.session).toBe(true);
   const registration = state.requests.find((entry) => entry.method === "POST" && entry.path === "/auth/register");
