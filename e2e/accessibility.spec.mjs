@@ -267,7 +267,7 @@ async function scanScreen(page, testInfo, name) {
 }
 
 test("WCAG 2.1 A/AA scan blocks serious and critical violations on sign-in and workspace views", async ({ page }, testInfo) => {
-  await installSyntheticApi(page);
+  await installSyntheticApi(page, { setupCodeRequired: true });
   await page.setViewportSize(testInfo.project.name === "chromium-mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
   await page.goto("/signup");
   await expect(page.getByRole("heading", { name: "Create your account." })).toBeVisible();
