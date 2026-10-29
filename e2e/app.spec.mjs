@@ -363,6 +363,10 @@ test("admin can create a doctor and patient, detach without deleting, then expli
   await expect(page.getByText("Synthetic Patient One")).toBeVisible();
   await page.getByRole("button", { name: "View all" }).click();
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find a doctor" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Search and filters" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Patient records/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh records" })).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "Synthetic Patient One" })).toBeVisible();
   await page.getByRole("button", { name: "Reset" }).click();
   await page.getByRole("button", { name: "Synthetic Patient One" }).click();
