@@ -6,7 +6,7 @@ Public signup is not part of the current product. The previous `/signup` page, `
 
 | Requirement | Current implementation / evidence | Status |
 |---|---|---|
-| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite and serializes competing bootstrap attempts with the durable setup marker. API PR #23 removes `GET /auth/registration-status` and `POST /auth/register`; frontend PR #31 removes `/signup` and signup browser journeys. | API removal CI PASS; frontend exact-head release checks pending |
+| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite and serializes competing bootstrap attempts with the durable setup marker. API PR #23 removes `GET /auth/registration-status` and `POST /auth/register`; frontend PR #33 removes `/signup` and signup browser journeys. | API removal CI PASS; frontend exact-head release checks pending |
 | Login/session, doctor/patient/dashboard screens | Existing credentialed login, server-side session, CSRF-protected mutations and data screens remain unchanged by this removal. | Existing baseline; rerun required workflows on removal PR heads |
 
 
@@ -172,7 +172,7 @@ This section supersedes older dated branch-status statements for the first-admin
 | Signup UI follows setup-code status, does not persist code, and blocks disabled production setup | Frontend [PR #29](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29) merged to frontend `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9` passed all five workflows: [CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259), [synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324), [accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377), [real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) against API `dev` `7334b8783def285e5316c8d9dcf1b594c1a5afea`, and [dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216). | **PASS — automated candidate scope** |
 | Live production operation and manual acceptance | Operator-provisioned 32+ byte secret, out-of-band delivery, removal from API runtime after setup, deployed HTTPS/session/cookie verification, human screen-reader/keyboard/device review. | **NOT STARTED / BLOCKED** — no deployed URL or manual evidence recorded. |
 
-This supersedes older dated branch-state statements for current scope. API PR #23 removed the public registration endpoints; frontend PR #31 removes the browser signup page and journeys. `main` was not changed. Overall product release remains PARTIAL / BLOCKED pending exact-head frontend CI and live/manual acceptance.
+This supersedes older dated branch-state statements for current scope. API PR #23 removed the public registration endpoints; frontend PR #33 removes the browser signup page and journeys. `main` was not changed. Overall product release remains PARTIAL / BLOCKED pending exact-head frontend CI and live/manual acceptance.
 
 
 ## Dashboard visual system update — 2026-10-29
