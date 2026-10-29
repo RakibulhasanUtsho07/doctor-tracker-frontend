@@ -1,6 +1,6 @@
 # Doctor Tracker Frontend
 
-Responsive administration UI for Doctor Tracker using Next.js App Router and React. The responsive shell and sign-in/dashboard, doctor and patient screens are implemented in stacked draft PRs #9–#12. Step 10 adds synthetic-API Chromium E2E in draft PR #13. Step 11 adds real API + MongoDB Chromium acceptance in draft PR #14; disposable-CI API/browser acceptance has passed, while manual accessibility and production/deployment release gates remain open.
+Responsive administration UI for Doctor Tracker using Next.js App Router and React. The `/signup` route provides single-use first-administrator setup only; the API closes it after the first account and will not accept public self-registration afterwards. The responsive shell and sign-in/dashboard, doctor and patient screens are implemented in stacked draft PRs #9–#12. Step 10 adds synthetic-API Chromium E2E in draft PR #13. Step 11 adds real API + MongoDB Chromium acceptance in draft PR #14; disposable-CI API/browser acceptance has passed, while manual accessibility and production/deployment release gates remain open.
 
 ## Current status
 - Frontend engineering documentation is merged to `dev` via [frontend PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
@@ -22,7 +22,7 @@ Use the package manager declared in `package.json`:
 pnpm install --frozen-lockfile
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` to the API base path (local default: `http://localhost:4000/api/v1`), then run `pnpm dev`. This variable is browser-visible and must contain only the base URL, never a secret. The API must allow the exact frontend origin and credentialed CORS requests. Browser cookie behaviour still needs verification in the target deployment.
+Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` to the API base path (local default: `http://localhost:4000/api/v1`), then run `pnpm dev`. On a fresh API database, open `/signup` to create the first administrator. Once setup is complete, the route displays that registration is closed and directs existing administrators to sign in. This variable is browser-visible and must contain only the base URL, never a secret. The API must allow the exact frontend origin and credentialed CORS requests. Browser cookie behaviour still needs verification in the target deployment.
 
 ## Commands
 - `pnpm test` — API-client unit tests for credentialed requests, CSRF headers, error envelopes, 204 logout and pagination metadata.
