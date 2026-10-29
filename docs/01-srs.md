@@ -2,12 +2,12 @@
 ## Purpose
 Doctor Tracker is a secure admin web application for managing doctors and corresponding patients, with dashboard analytics and efficient record discovery.
 ## Actors
-Administrator: authenticated user allowed to manage records and dashboard. Unauthenticated visitors can access only explicitly public sign-in, first-administrator setup and health routes.
+Administrator: authenticated user allowed to manage records and dashboard. Unauthenticated visitors can access only explicitly public sign-in and health routes; there is no public signup or account-creation page.
 ## Functional requirements
 - AUTH-01: secure sign-in; generic invalid-credential response and rate limiting.
 - AUTH-02: dashboard, doctors, patients and data APIs are protected.
 - AUTH-03: server enforces admin permissions for every operation.
-- AUTH-04: provide a single-use initial-administrator setup flow; first account is always ADMIN, role escalation through client fields is rejected, competing setup attempts are serialized, and registration closes when an account exists.
+- AUTH-04: initial administrator creation is operator-only through the backend CLI bootstrap command; public signup/account creation is not part of the product. The first account is always ADMIN, bootstrap refuses to overwrite an existing account, and concurrent bootstrap attempts are serialized.
 - DOC-01: create doctor with name, specialization, hospital, phone and email.
 - DOC-02: list/view doctors with search, date/relevant filters and pagination.
 - DOC-03: view associated patients, add patients under a doctor, remove patients from the doctor's list.
@@ -26,4 +26,4 @@ Accessibility: keyboard navigation, visible focus, labels, sufficient contrast a
 Maintainability: modular code, reusable UI, tests, README and ADRs.
 Privacy: minimum necessary data, synthetic tests/demo and no patient details in logs.
 ## Open decisions
-The assignment does not specify patient fields/condition vocabulary, hard-vs-soft delete, or whether removing from a doctor's list deletes or detaches the patient. Admin provisioning is resolved as single-use first-administrator setup with an operator CLI bootstrap alternative; ongoing public user registration is out of scope. Appointments, prescriptions, billing and clinical decision support are out of scope unless approved.
+The assignment does not specify patient fields/condition vocabulary, hard-vs-soft delete, or whether removing from a doctor's list deletes or detaches the patient. Admin provisioning is resolved as operator-only CLI bootstrap; public signup and public account creation are out of scope. Appointments, prescriptions, billing and clinical decision support are out of scope unless approved.
