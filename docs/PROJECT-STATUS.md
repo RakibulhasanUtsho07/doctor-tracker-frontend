@@ -2,15 +2,15 @@
 
 # Current scope decision — public signup removed (2026-10-29)
 
-**Current authentication scope:** Sign-in and secure session handling remain. Public /signup, registration status and registration API are not required and are being removed from the current dev branches. Initial administrator provisioning remains available only through the backend operator command pnpm bootstrap:admin; it refuses to overwrite existing accounts and keeps the durable setup marker. Login/session, doctor, patient and dashboard functionality is unaffected.
+**Current authentication scope:** Sign-in and secure session handling remain. The public frontend `/signup` page and signup-specific browser journeys are removed from the current frontend candidate. Provision the initial administrator through the backend operator command `pnpm bootstrap:admin`; it refuses to overwrite existing accounts and keeps the durable setup marker. This frontend change does not remove the backend registration-status/register endpoints; those remain a separate API scope and must preserve their existing setup-code protections. Login/session, doctor, patient and dashboard functionality is unaffected.
 
-The signup and setup-token sections that follow are historical records of work previously implemented. They are not instructions for current operation, do not describe current routes, and do not supersede this scope decision. The removal PRs must pass exact-head CI before this scope change is considered merged. main remains untouched.
+The signup UI and setup-token sections that follow are historical records of the previous browser flow. They are not current frontend requirements. Backend setup-code controls remain relevant to any retained API endpoint. Exact-head CI for the current removal/design candidate must pass before promotion; `main` remains untouched.
 
 
 **Current snapshot:** 2026-10-29  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. First-admin signup is implemented and merged to both `dev` branches, including the production setup-code safety gate. Automated acceptance is green; live deployment and manual/independent release gates remain open.
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. The browser signup UI was previously merged but is now excluded from frontend product scope and removed in this candidate. The white-canvas/hero refresh and signup-UI removal still require exact-head automated verification; live deployment and manual/independent release gates remain open.
 
-## First-administrator signup — current verified state
+## Historical record — first-administrator signup UI (2026-10-29)
 
 - **API PR #21 — merged:** [single-use first-admin signup](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/21).
 - **API PR #22 — merged:** [production setup-code gate](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/22). Current API `dev` head: `7334b8783def285e5316c8d9dcf1b594c1a5afea`. Production signup stays disabled on an empty database unless the API operator configures a 32+ byte `INITIAL_ADMIN_SETUP_TOKEN`; the first admin enters it out of band. After the first admin is created, remove the token from API runtime configuration and restart the API.
