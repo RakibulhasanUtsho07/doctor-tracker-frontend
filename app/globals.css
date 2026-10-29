@@ -1614,6 +1614,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 }
 
 
-/* Accessibility contrast follow-up for the dashboard hero */
+/* Accessibility contrast follow-up for dashboard and patient microcopy */
 .art-label { color: #46624f; font-size: 7px; }
 .art-floating-card small { color: #4f6557; font-size: 9px; }
+.patient-toolbar p:not(.section-kicker) { color: #576c5e; }
+.patient-lookup-heading p:not(.section-kicker),
+.patient-filter-heading p:not(.section-kicker) { color: #5b6e60; }
+.patient-doctor-lookup-status { color: #52685a; }
+.patient-filter-note { color: #586b5d; }
+.patient-results-heading p:not(.section-kicker) { color: #52675a; }
+.patient-row-id { color: #5d6f62; }
+.patient-pagination { color: #52675a; }
