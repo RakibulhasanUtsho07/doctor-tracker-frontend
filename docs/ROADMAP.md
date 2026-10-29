@@ -68,3 +68,11 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 - [x] Isolate frontend typecheck from the nested backend checkout used only by real-API CI; API typecheck continues to run separately.
 - [ ] Operator configures the production token via API secret environment, shares it out of band with the initial administrator, removes it after setup, and validates the live deployment. This operational production gate remains BLOCKED until performed.
 - [ ] Manual screen-reader/physical-device acceptance, independent security review and performance sign-off remain open. `main` was not changed.
+
+## Scope decision — public signup removed (2026-10-29)
+
+- Public /signup UI and unauthenticated registration endpoints are no longer required and are being removed from current dev scope.
+- Initial administrator provisioning remains supported through the operator-only backend CLI command pnpm bootstrap:admin, guarded by the durable singleton setup marker and existing-user checks.
+- Login/session, doctor, patient and dashboard workflows are unchanged.
+- Older first-admin signup delivery and setup-code sections above are historical implementation records only; they are not current product requirements and must not be interpreted as live routes.
+- Production release acceptance, manual accessibility/device review and independent security review remain separate release gates.
