@@ -30,11 +30,12 @@ function patientRecord(id, name, doctorId, condition) {
   return { id, name, doctorId, condition, createdAt: now, updatedAt: now };
 }
 
-async function installSyntheticApi(page, { rejectLogin = false, setupCodeRequired = false, setupCode = "synthetic-one-time-setup-code-1234567890" } = {}) {
+async function installSyntheticApi(page, { rejectLogin = false, setupCodeRequired = false, setupDisabled = false, setupCode = "synthetic-one-time-setup-code-1234567890" } = {}) {
   const state = {
     session: false,
     registrationOpen: true,
     setupCodeRequired,
+    setupDisabled,
     setupCode,
     doctors: [],
     patients: [],
@@ -81,7 +82,7 @@ async function installSyntheticApi(page, { rejectLogin = false, setupCodeRequire
     };
 
     if (path === "/auth/registration-status" && method === "GET") {
-      return send(200, { registrationOpen: state.registrationOpen, setupCodeRequired: state.setupCodeRequired, setupDisabled: false });
+      return send(200, { registrationOpen: state.registrationOpen && !state.setupDisabled, setupCodeRequired: state.setupCodeRequired, setupDisabled: state.setupDisabled });
     }
 
     if (path === "/auth/register" && method === "POST") {
@@ -310,6 +311,15 @@ test("first-admin sign-up creates a session and closes registration after one ac
   await page.goto("/signup");
   await expect(page.getByRole("heading", { name: "Your workspace is already configured." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
+});
+
+test("first-admin sign-up fails closed when production setup is disabled", async ({ page }) => {
+  await installSyntheticApi(page, { setupDisabled: true });
+  await page.goto("/signup");
+  await expect(page.getByRole("heading", { name: "Initial setup is not enabled." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
+  await expect(page.locator("#signup-form")).toHaveCount(0);
 });
 
 test("first-admin sign-up sends a configured setup code only to the API", async ({ page }) => {
