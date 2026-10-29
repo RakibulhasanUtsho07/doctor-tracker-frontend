@@ -458,14 +458,27 @@ export default function PatientManagement({
       {doctorsError && <div className="patient-warning" role="status"><strong>Doctor choices unavailable</strong><span>{doctorsError} Listing patients still works; add or reassign needs an existing doctor identifier.</span><button type="button" className="secondary-button" onClick={() => { setDoctorsLoading(true); setDoctorReload((value) => value + 1); }}>Retry doctors</button></div>}
 
       <section className="patient-filter-card patient-doctor-lookup" aria-label="Search all doctors">
-        <label className="patient-field">
-          <span>Find doctors (name, specialty, hospital or email prefix)</span>
+        <div className="patient-lookup-heading">
+          <span className="patient-lookup-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="10.8" cy="10.8" r="6.8" />
+              <path d="m16 16 4.2 4.2" />
+            </svg>
+          </span>
+          <div>
+            <p className="section-kicker">DIRECTORY TOOLS</p>
+            <h3>Find a doctor</h3>
+            <p>Search the full directory to find a doctor beyond the initial list.</p>
+          </div>
+        </div>
+        <label className="patient-field patient-lookup-field">
+          <span>Search by name, specialty, hospital or email</span>
           <input
             type="search"
             value={doctorChoiceSearch}
             maxLength={100}
             autoComplete="off"
-            placeholder="Enter at least 2 characters"
+            placeholder="Type at least 2 characters…"
             onChange={(event) => {
               const value = event.target.value;
               setDoctorChoiceSearch(value);
@@ -476,7 +489,7 @@ export default function PatientManagement({
           />
         </label>
         {doctorChoiceSearch.trim().length < 2
-          ? <p className="patient-doctor-lookup-status">The selectors start with the first 100 doctors. Search with at least 2 characters to find older or less-recently-created doctors; matches are added to both doctor selectors.</p>
+          ? <p className="patient-doctor-lookup-status">The selectors start with the 100 most recent doctors. Search here to find older records; matches are added to both doctor selectors.</p>
           : doctorSearchPending
             ? <p className="patient-doctor-lookup-status" role="status">Searching doctor records…</p>
             : doctorSearchError
@@ -528,7 +541,22 @@ export default function PatientManagement({
         </section>
       )}
 
-      <section className="patient-filter-card" aria-label="Search and filter patients">
+      <section className="patient-filter-card patient-filter-workspace" aria-label="Search and filter patients">
+        <div className="patient-filter-heading">
+          <span className="patient-filter-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+              <circle cx="9" cy="6" r="2" fill="white" />
+              <circle cx="15" cy="12" r="2" fill="white" />
+              <circle cx="7" cy="18" r="2" fill="white" />
+            </svg>
+          </span>
+          <div>
+            <p className="section-kicker">REFINE YOUR DIRECTORY</p>
+            <h3>Search and filters</h3>
+            <p>Find the right record using patient details, doctor, condition or date.</p>
+          </div>
+        </div>
         <form className="patient-filter-form" onSubmit={applyFilters}>
           <label className="patient-filter-search"><span>Search patients</span><input type="search" value={searchInput} maxLength={100} onChange={(event) => setSearchInput(event.target.value)} placeholder="Patient name or condition" /></label>
           <label><span>Doctor</span><select value={doctorFilterInput} onChange={(event) => setDoctorFilterInput(event.target.value)}><option value="">All doctors</option>{doctorChoices.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label>
@@ -576,8 +604,20 @@ export default function PatientManagement({
 
       <section className="patient-results-card" aria-label="Patient search results" aria-busy={loading}>
         <div className="patient-results-heading">
-          <div><p className="section-kicker">PERSISTED RECORDS</p><h3>Patients <span className="patient-total-count">{pagination.total.toLocaleString()}</span></h3><p role="status" aria-live="polite">{loading ? "Updating the directory…" : pagination.total === 0 ? "No patient records match these filters." : "Showing " + Math.min((page - 1) * limit + 1, pagination.total).toLocaleString() + "–" + Math.min(page * limit, pagination.total).toLocaleString() + " of " + pagination.total.toLocaleString() + " records."}</p></div>
-          <button type="button" className="secondary-button patient-refresh-button" onClick={refreshList} disabled={loading}>Refresh</button>
+          <div className="patient-results-title">
+            <span className="patient-results-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
+                <path d="M3.5 9h17M9 9v11" />
+              </svg>
+            </span>
+            <div className="patient-results-copy">
+              <p className="section-kicker">LIVE FROM YOUR DATABASE</p>
+              <h3>Patient records <span className="patient-total-count">{pagination.total.toLocaleString()}</span></h3>
+              <p role="status" aria-live="polite">{loading ? "Updating the directory…" : pagination.total === 0 ? "No patient records match these filters." : "Showing " + Math.min((page - 1) * limit + 1, pagination.total).toLocaleString() + "–" + Math.min(page * limit, pagination.total).toLocaleString() + " of " + pagination.total.toLocaleString() + " records."}</p>
+            </div>
+          </div>
+          <button type="button" className="secondary-button patient-refresh-button" onClick={refreshList} disabled={loading}>Refresh records</button>
         </div>
         {listError && <div className="patient-error patient-list-error" role="alert"><span>{listError}</span><button type="button" className="secondary-button" onClick={refreshList}>Try again</button></div>}
         <div className="patient-table-wrap">

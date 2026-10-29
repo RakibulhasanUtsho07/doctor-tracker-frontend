@@ -591,7 +591,7 @@ test("real UI finds a doctor beyond the first 100 and persists patient reassignm
   expect(createResponse.status()).toBe(201);
   await expect(page.getByRole("heading", { name: patientName })).toBeVisible();
 
-  await page.getByLabel(/Find doctors/).fill(boundary.target.name);
+  await page.getByLabel("Search by name, specialty, hospital or email").fill(boundary.target.name);
   await expect(page.locator(".patient-doctor-lookup-status")).toContainText("1 doctor match found");
   await page.getByRole("button", { name: "Edit details" }).click();
   await expect(page.getByRole("heading", { name: "Update patient details" })).toBeVisible();
@@ -705,7 +705,7 @@ test("real API session revocation clears the stale patient workspace on the next
   expect(revocation).toEqual({ currentSessionStatus: 200, logoutStatus: 204 });
 
   // The UI still believes it is signed in until this protected request returns 401.
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByRole("button", { name: "Refresh records", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible({ timeout: 8_000 });
   await expect(page.getByRole("status")).toContainText("Your administrator session expired. Sign in again to continue.");
   await expect(page.getByRole("heading", { name: "Patient directory" })).toHaveCount(0);

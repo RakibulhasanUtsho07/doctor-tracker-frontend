@@ -71,8 +71,10 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 
 ## Scope decision — public signup removed (2026-10-29)
 
-- Public /signup UI, setup-code form and unauthenticated registration endpoints are out of current product scope.
-- API PR #23 removed public registration-status/register endpoints and their production setup-token config; API CI passed. Initial-admin creation remains operator-only through pnpm bootstrap:admin with secure environment injection and the durable setup marker.
-- The frontend candidate removes both signup route files, the sign-in link, mocked signup journeys, and adds real-API negative tests asserting the removed routes return 404. It pins real-API acceptance to the API removal merge SHA.
-- The older signup delivery/setup-code sections above are historical implementation records, not current requirements.
-- Login/session, doctor, patient and dashboard workflows remain in scope. Release deployment, human accessibility/device review, and independent security review remain open. main is untouched.
+- Public `/signup` UI and unauthenticated registration endpoints are out of product scope. Frontend PR #33 removes the signup route/client and signup browser journeys; backend API PR #23 removes `GET /auth/registration-status`, `POST /auth/register` and setup-token configuration. Initial administrator creation remains operator-only via `pnpm bootstrap:admin`.
+- Initial administrator provisioning remains supported through the operator-only backend CLI command pnpm bootstrap:admin, guarded by the durable singleton setup marker and existing-user checks.
+- Login/session, doctor, patient and dashboard workflows are unchanged.
+- Older first-admin signup delivery and setup-code sections above are historical implementation records only; they are not current product requirements and must not be interpreted as live routes.
+- Production release acceptance, manual accessibility/device review and independent security review remain separate release gates.
+
+- Dashboard hero refreshed with a white surface, clearer typography, more spacing and responsive dashboard illustration; the page canvas is pure white (`#ffffff`). Exact-head CI is required before acceptance.

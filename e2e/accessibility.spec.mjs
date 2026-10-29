@@ -262,6 +262,9 @@ test("WCAG 2.1 A/AA scan blocks serious and critical violations on sign-in and w
 
   await navigateToSection(page, "Patients", testInfo.project.name === "chromium-mobile");
   await expect(page.getByRole("heading", { name: "Patient directory" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find a doctor" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Search and filters" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Patient records/ })).toBeVisible();
   await expect(page.locator(".patient-empty-state")).toBeVisible();
   await scanScreen(page, testInfo, "patients");
 });

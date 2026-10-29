@@ -2,7 +2,7 @@
 ## Purpose
 Doctor Tracker is a secure admin web application for managing doctors and corresponding patients, with dashboard analytics and efficient record discovery.
 ## Actors
-Administrator: authenticated user allowed to manage records and dashboard. Unauthenticated visitors can access only explicitly public sign-in and health routes; there is no public signup or account-creation page.
+Administrator: authenticated user allowed to manage records and dashboard. Unauthenticated visitors can access only explicitly public sign-in and health routes; the frontend does not expose first-administrator setup or public registration.
 ## Functional requirements
 - AUTH-01: secure sign-in; generic invalid-credential response and rate limiting.
 - AUTH-02: dashboard, doctors, patients and data APIs are protected.
