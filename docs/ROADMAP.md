@@ -59,3 +59,12 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 - [x] Exact-candidate API CI, frontend build, synthetic browser, accessibility, real API + MongoDB browser acceptance and dependency audit passed; detailed links and scopes are recorded in `docs/PROJECT-STATUS.md` and `docs/08-test-and-quality-plan.md`.
 - [ ] Live deployed HTTPS/session/cookie acceptance, manual screen-reader/physical-device checks, independent security review, and approved-target performance acceptance remain BLOCKED / NOT STARTED.
 - `main` was not changed by this work. Do not call the product release-ready based only on CI.
+
+
+## Production first-admin setup-code security — 2026-10-29
+
+- [x] Prevent unauthenticated claim of ADMIN on an empty production database — API PR #22 merged to `dev` at `7334b8783def285e5316c8d9dcf1b594c1a5afea`. Production first-admin signup remains disabled unless a random 32+ byte `INITIAL_ADMIN_SETUP_TOKEN` is configured by the operator; if configured, it is required in the API request body and compared with constant-time digest comparison.
+- [x] Update signup UI for the setup token and disabled state — frontend PR #29 merged to `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Five workflows passed on candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9`; see `docs/PROJECT-STATUS.md` and `docs/11-traceability-and-acceptance.md`.
+- [x] Isolate frontend typecheck from the nested backend checkout used only by real-API CI; API typecheck continues to run separately.
+- [ ] Operator configures the production token via API secret environment, shares it out of band with the initial administrator, removes it after setup, and validates the live deployment. This operational production gate remains BLOCKED until performed.
+- [ ] Manual screen-reader/physical-device acceptance, independent security review and performance sign-off remain open. `main` was not changed.
