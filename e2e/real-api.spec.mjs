@@ -21,11 +21,21 @@ function dashboardMetric(page, title) {
     .locator(".metric-value > span");
 }
 
-test("real API confirms first-admin signup is closed after the administrator has been provisioned", async ({ page }) => {
-  await page.goto("/signup");
-  await expect(page.getByRole("heading", { name: "Your workspace is already configured." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Return to sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+test("public signup page and API endpoints are not exposed", async ({ page }) => {
+  const signup = await page.goto("/signup");
+  expect(signup?.status()).toBe(404);
+
+  const client = await request.newContext();
+  try {
+    const status = await client.get(`${API}/auth/registration-status`);
+    expect(status.status()).toBe(404);
+    const registration = await client.post(`${API}/auth/register`, {
+      data: { email: "unapproved@example.test", password: "This account should not be created 2026!" }
+    });
+    expect(registration.status()).toBe(404);
+  } finally {
+    await client.dispose();
+  }
 });
 
 test("real API rejects invalid credentials without persisting a browser session", async ({ page }) => {
