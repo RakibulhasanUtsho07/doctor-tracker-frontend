@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { apiRequest, ApiClientError, getApiBaseUrl } from "../lib/api-client";
 
 type RegistrationState = "checking" | "open" | "closed" | "unavailable";
@@ -41,9 +41,6 @@ export default function SignupPage() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    setRegistrationState("checking");
-    setStatusError("");
-
     apiRequest<{ registrationOpen: boolean }>("/auth/registration-status", { signal: controller.signal })
       .then((result) => {
         if (!active) return;
@@ -61,7 +58,7 @@ export default function SignupPage() {
     };
   }, [retryCount]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -138,7 +135,7 @@ export default function SignupPage() {
             <h1 id="signup-heading">Setup is temporarily unavailable.</h1>
             <p>{statusError || "Configure the API URL and restart the frontend before creating the first administrator."}</p>
             {!getApiBaseUrl() && <pre className="env-snippet">NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api/v1</pre>}
-            <button type="button" className="auth-submit" onClick={() => setRetryCount((count) => count + 1)}>Try again <ArrowIcon /></button>
+            <button type="button" className="auth-submit" onClick={() => { setStatusError(""); setRegistrationState("checking"); setRetryCount((count) => count + 1); }}>Try again <ArrowIcon /></button>
             <p className="auth-status-foot"><Link href="/">Return to sign in</Link></p>
           </div>
         ) : (
