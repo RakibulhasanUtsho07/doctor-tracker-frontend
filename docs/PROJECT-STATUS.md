@@ -4,11 +4,11 @@
 
 **Current authentication scope:** Sign-in and secure session handling remain. Public `/signup`, `GET /auth/registration-status` and `POST /auth/register` are removed from current development scope by frontend PR #33 and backend API PR #23. Initial administrator provisioning is CLI-only through `pnpm bootstrap:admin`; it refuses overwrites and uses the durable setup marker. Historical setup-token/signup notes below describe prior work only and are not current configuration instructions. Login/session, doctor, patient and dashboard functionality is unaffected.
 
-The signup UI and setup-token sections that follow are historical implementation records, not current routes or environment requirements. API PR #23 removes the public registration endpoints and their setup-token configuration; operator CLI bootstrap is the only initial-admin path. Exact-head CI for the current UI candidate must pass before promotion; `main` remains untouched.
+The signup UI and setup-token sections that follow are historical implementation records, not current routes or environment requirements. API PR #23 removes public registration endpoints and setup-token configuration; operator CLI bootstrap is the only initial-admin path. Frontend PR #33's exact source head `e01ee0da678d787c5e81412a9eb9cf64f4ec9b59` passed all five required workflows and was merged to `dev` as `f8c37b9723cabc54b5555b49dfc6117a4b8a0704`. `main` remains untouched.
 
 
 **Current snapshot:** 2026-10-29  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. The browser signup UI was previously merged but is now excluded from frontend product scope and removed in this candidate. The dashboard and patient-directory refresh, signup-UI removal and scope-aligned docs still require exact-head automated verification; live deployment and manual/independent release gates remain open.
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. Dashboard and patient-directory refresh, signup UI removal and CLI-only provisioning documentation are merged to `dev`; Frontend CI, synthetic E2E, accessibility, real API + MongoDB acceptance and dependency audit passed on PR #33's exact source head. Live HTTPS frontend/API preflight, staging browser smoke, human accessibility/device review, independent security review and performance sign-off remain open, so production release is still blocked.
 
 ## Historical record — first-administrator signup UI and setup-token flow (removed from current scope)
 
