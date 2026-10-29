@@ -1,6 +1,6 @@
 # Doctor Tracker Frontend
 
-Responsive administration UI for Doctor Tracker using Next.js App Router and React. Login is the only public authentication screen; there is deliberately no signup page or public account-creation API. The first administrator is created by an operator through the backend's one-time pnpm bootstrap:admin command, not through the browser. The responsive shell and sign-in/dashboard, doctor and patient screens are implemented in stacked draft PRs #9–#12. Step 10 adds synthetic-API Chromium E2E in draft PR #13. Step 11 adds real API + MongoDB Chromium acceptance in draft PR #14; disposable-CI API/browser acceptance has passed, while manual accessibility and production/deployment release gates remain open.
+Responsive administration UI for Doctor Tracker using Next.js App Router and React. Public `/signup`, `GET /auth/registration-status` and `POST /auth/register` are out of scope and have been removed from the frontend/API development branches. Provision the initial administrator only through the backend operator-controlled `pnpm bootstrap:admin` command. The dashboard, secure sign-in/session handling, doctor and patient screens remain available; manual accessibility and production/deployment release gates remain open.
 
 ## Current status
 - Frontend engineering documentation is merged to `dev` via [frontend PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
