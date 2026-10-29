@@ -3,6 +3,9 @@
 Sign-in, dashboard overview, doctor search/filter/pagination, doctor detail with associated patients, dedicated patient edit/delete/search/filter/pagination and shared navigation.
 ## Visual system
 Use consistent spacing, type, color, border/radius, elevation and focus tokens. Maintain contrast and hierarchy; status must not rely on color alone.
+
+## Canvas and dashboard hero — 2026-10-29
+Use pure white (`#ffffff`) for the document/page canvas across the project, including `html`, `body`, the application frame, main shell and sidebar. Do not use tinted off-white as the global canvas. Component-level surfaces may use restrained semantic accents, pale icon wells, borders and shadows, but the dashboard hero itself uses a white base surface. Keep the hero's eyebrow, headline, supporting copy and primary action visually distinct; the dashboard illustration must remain decorative, accessible as hidden from assistive technology, and responsive without overlap at narrow widths. Preserve visible keyboard focus and the existing reduced-motion behaviour.
 ## Motion
 Use restrained, short opacity/transform transitions. Do not animate every row, block critical actions, flash, scroll-jack or use motion as the sole feedback. Respect prefers-reduced-motion.
 ## States and accessibility
