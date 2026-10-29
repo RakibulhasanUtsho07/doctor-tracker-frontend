@@ -2,11 +2,11 @@
 
 ## Current scope decision — public signup removed (2026-10-29)
 
-Public signup is not part of the current product. The previous rows/sections about GET /auth/registration-status, POST /auth/register, the /signup page and setup-code UI below are historical records only; they do not establish current route availability or current PASS status.
+Public signup is not part of the current frontend product. The previous `/signup` page and setup-code UI are historical frontend integration records and do not establish current frontend route availability. This frontend change does not remove backend `GET /auth/registration-status` or `POST /auth/register`; those API endpoints remain a separate scope and must retain their existing setup-code controls unless removed by a separately reviewed API change.
 
 | Requirement | Current implementation / evidence | Status |
 |---|---|---|
-| AUTH-04 — initial administrator provisioned by operator only | Backend pnpm bootstrap:admin uses securely injected ADMIN_EMAIL / ADMIN_PASSWORD, rejects overwrite, and serializes competing bootstrap attempts with the durable setup marker. Public signup page and registration API are being removed. | IN PROGRESS until the API removal PR and its CI pass |
+| AUTH-04 — initial administrator provisioned by operator only | Backend `pnpm bootstrap:admin` uses securely injected `ADMIN_EMAIL` / `ADMIN_PASSWORD`, rejects overwrite, and serializes competing bootstrap attempts with the durable setup marker. The frontend exposes no public signup route; backend registration endpoints are not removed by this UI change and retain their setup-code policy. | IN PROGRESS — rerun frontend exact-head CI; any API endpoint removal requires its own reviewed API PR |
 | Login/session, doctor/patient/dashboard screens | Existing credentialed login, server-side session, CSRF-protected mutations and data screens remain unchanged by this removal. | Existing baseline; rerun required workflows on removal PR heads |
 
 
@@ -172,4 +172,12 @@ This section supersedes older dated branch-status statements for the first-admin
 | Signup UI follows setup-code status, does not persist code, and blocks disabled production setup | Frontend [PR #29](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29) merged to frontend `dev` at `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Candidate `7561000c82c8ff08a003961f5330d0e0c8ebb1e9` passed all five workflows: [CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259), [synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324), [accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377), [real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) against API `dev` `7334b8783def285e5316c8d9dcf1b594c1a5afea`, and [dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216). | **PASS — automated candidate scope** |
 | Live production operation and manual acceptance | Operator-provisioned 32+ byte secret, out-of-band delivery, removal from API runtime after setup, deployed HTTPS/session/cookie verification, human screen-reader/keyboard/device review. | **NOT STARTED / BLOCKED** — no deployed URL or manual evidence recorded. |
 
-This supersedes older dated branch-state statements for first-admin signup only. Signup is merged to both `dev` branches; `main` was not changed. Overall product release remains PARTIAL / BLOCKED.
+This supersedes older dated branch-state statements for current frontend scope. The browser signup page was merged in an earlier frontend change but is now removed from this candidate; this frontend PR does not claim the backend registration endpoints were deleted. `main` was not changed. Overall product release remains PARTIAL / BLOCKED.
+
+
+## Dashboard visual system update — 2026-10-29
+
+| Requirement | Implementation / evidence | Status |
+|---|---|---|
+| UI-CANVAS-01 — full-white project canvas | Global `--canvas`, `html`, `body`, application frame, main shell and sidebar use `#ffffff`; cards retain semantic accents and borders. | IMPLEMENTED IN CANDIDATE — exact-head CI and visual regression required |
+| UI-HERO-01 — clearer responsive dashboard hero | White elevated panel, pill-style kicker, stronger heading hierarchy, improved spacing, refined floating workspace illustration and reduced rotation; existing responsive breakpoints and reduced-motion rules remain. | IMPLEMENTED IN CANDIDATE — exact-head CI and browser screenshot review required |
