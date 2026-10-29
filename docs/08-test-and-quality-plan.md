@@ -146,3 +146,13 @@ Exact tested source/test commit: `703f6f90451f90b03cabb9e2a26165fb57b95a81`. Fro
 ## Documentation-inclusive exact-head verification — 2026-10-28
 
 The source/test evidence above is now confirmed again on the documentation-inclusive branch head `f912e896a992c7455488d960981dcdfe44e86413`. All five pull-request workflows completed successfully on this exact SHA: [Frontend CI #40712995190](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995190), [Synthetic browser E2E #40712995187](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995187), [Accessibility #40712995361](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995361), [Real API + MongoDB #40712995279](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995279), and [Dependency audit #40712995330](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40712995330). This supersedes the earlier note that the docs-inclusive rerun was still in progress. Any later file commit creates a new SHA and needs fresh exact-head checks.
+
+
+## Patient directory UI refresh — 2026-10-29
+
+The UI candidate adds dedicated headings for the doctor lookup, patient filters and persisted-records table, with refined white surfaces, readable labels, responsive reflow and distinct record actions.
+
+- Synthetic browser E2E asserts the doctor lookup/filter/table headings and the records refresh control remain discoverable.
+- Automated accessibility acceptance asserts section heading visibility at desktop/mobile, retains the existing axe, keyboard, reduced-motion and narrow-width checks.
+- Verify persisted CRUD/search/filter/pagination and confirmed detach-versus-delete semantics continue to use the existing API and CSRF controls.
+- Current candidate results still require exact-head CI; CSS source checks do not count as browser acceptance. Manual keyboard/screen-reader, 200% zoom, physical-device and deployed HTTPS/session-cookie checks remain separate release gates.
