@@ -1625,3 +1625,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .patient-results-heading p:not(.section-kicker) { color: #52675a; }
 .patient-row-id { color: #5d6f62; }
 .patient-pagination { color: #52675a; }
+
+
+/* Accessibility contrast follow-up for dashboard and patient microcopy */
+.filter-panel-copy small { color: #52685a; }
