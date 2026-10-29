@@ -1,5 +1,15 @@
 # Traceability and Acceptance
 
+## Current scope decision — public signup removed (2026-10-29)
+
+Public signup is not part of the current product. The prior /signup page, GET /auth/registration-status, POST /auth/register and setup-code UI sections below are historical records only and do not establish current route availability or current PASS status.
+
+| Requirement | Current implementation / evidence | Status |
+|---|---|---|
+| AUTH-04 — initial administrator provisioned by operator only | Backend pnpm bootstrap:admin accepts securely injected ADMIN_EMAIL / ADMIN_PASSWORD, refuses overwrite and serializes bootstrap claims with a durable setup marker. The frontend signup route and signup-specific journeys are removed; API PR #23 removes public registration endpoints and passed API CI. | Frontend exact-head CI pending; API removal CI PASS |
+| Login/session, doctor/patient/dashboard screens | Existing credentialed login, server-side session, CSRF-protected mutations and data screens remain unchanged by signup removal. | Must reverify exact frontend candidate in CI |
+
+
 **Snapshot date:** 2026-10-28  
 **Latest verified pre-refresh baseline:** PR #24 head `84450c298757a462adc856fdae60b926aa4c5df7`; all five required workflows passed on that exact head: [Frontend CI #40727138375](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138375), [synthetic E2E #40727138214](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138214), [accessibility #40727138792](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138792), [real API + MongoDB #40727138193](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727138193), and [dependency audit #40727137801](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40727137801). Current work remains on open/draft [PR #24](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/24), stacked on [PR #23](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/23), [PR #22](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/22) and [PR #21](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/21). These baseline results do not apply to later documentation commits until their exact heads pass again. The policy covers standalone transport pin validation, HTTPS port enforcement, a 2 MiB response cap, a default 10-second direct-call timeout, IANA IPv6 range exclusions and IANA special-use DNS suffix/subdomain rejection. Automated evidence does not establish live deployment acceptance.  
 **Overall release status:** **PARTIAL / BLOCKED**.  

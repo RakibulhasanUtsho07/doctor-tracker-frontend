@@ -1,9 +1,16 @@
 # Doctor Tracker — Current Project Status
 
-**Current snapshot:** 2026-10-29  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. First-admin signup is implemented and merged to both `dev` branches, including the production setup-code safety gate. Automated acceptance is green; live deployment and manual/independent release gates remain open.
+# Current scope decision — public signup removed (2026-10-29)
 
-## First-administrator signup — current verified state
+**Current authentication scope:** Sign-in and secure session handling remain. Public /signup UI and unauthenticated registration endpoints are not part of the product. The initial administrator is created by an operator through the backend command pnpm bootstrap:admin, using securely injected ADMIN_EMAIL and ADMIN_PASSWORD. This frontend candidate deletes the signup page/client and removes signup links/journeys; the API removal is tracked separately in doctor-tracker-api PR #23 and has passed API CI. Login/session, doctor, patient and dashboard functionality is unaffected. No main branch has been changed.
+
+The signup and setup-token sections below are historical records of implementation work; they must not be used as current route or release status. Current route behavior is asserted by negative tests returning 404.
+
+
+**Current snapshot:** 2026-10-29  
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. Public signup is no longer part of current product scope. The frontend removal and CLI-only provisioning alignment must pass exact-head CI before promotion; live deployment and manual/independent release gates remain open.
+
+## Historical record — first-administrator signup UI (removed from current scope)
 
 - **API PR #21 — merged:** [single-use first-admin signup](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/21).
 - **API PR #22 — merged:** [production setup-code gate](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/22). Current API `dev` head: `7334b8783def285e5316c8d9dcf1b594c1a5afea`. Production signup stays disabled on an empty database unless the API operator configures a 32+ byte `INITIAL_ADMIN_SETUP_TOKEN`; the first admin enters it out of band. After the first admin is created, remove the token from API runtime configuration and restart the API.

@@ -68,3 +68,11 @@ All five job logs were inspected; the old pnpm v10/v11 `PNPM_HOME` layout warnin
 - [x] Isolate frontend typecheck from the nested backend checkout used only by real-API CI; API typecheck continues to run separately.
 - [ ] Operator configures the production token via API secret environment, shares it out of band with the initial administrator, removes it after setup, and validates the live deployment. This operational production gate remains BLOCKED until performed.
 - [ ] Manual screen-reader/physical-device acceptance, independent security review and performance sign-off remain open. `main` was not changed.
+
+## Scope decision — public signup removed (2026-10-29)
+
+- Public /signup UI, setup-code form and unauthenticated registration endpoints are out of current product scope.
+- API PR #23 removed public registration-status/register endpoints and their production setup-token config; API CI passed. Initial-admin creation remains operator-only through pnpm bootstrap:admin with secure environment injection and the durable setup marker.
+- The frontend candidate removes both signup route files, the sign-in link, mocked signup journeys, and adds real-API negative tests asserting the removed routes return 404. It pins real-API acceptance to the API removal merge SHA.
+- The older signup delivery/setup-code sections above are historical implementation records, not current requirements.
+- Login/session, doctor, patient and dashboard workflows remain in scope. Release deployment, human accessibility/device review, and independent security review remain open. main is untouched.
