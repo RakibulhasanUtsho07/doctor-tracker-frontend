@@ -1,22 +1,24 @@
 # Doctor Tracker — Current Project Status
 
 **Current snapshot:** 2026-10-29  
-**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. Automated acceptance for the first-administrator signup feature is green; live deployment, manual device/accessibility acceptance, independent security review and performance acceptance remain separate release gates.
+**Overall release decision:** **PARTIAL / BLOCKED — not release-ready**. First-admin signup is implemented and merged to both `dev` branches, including the production setup-code safety gate. Automated acceptance is green; live deployment and manual/independent release gates remain open.
 
-## First-administrator signup — merged to dev
+## First-administrator signup — current verified state
 
-The signup feature is implemented end-to-end and merged into the two `dev` branches. Older dated notes further below are historical snapshots and must not be read as the current branch state.
-
-- **API PR #21 — merged:** [single-use first-admin signup](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/21), resulting API `dev` head `ed64953b445a3b027b2298205b36afd415b0c4db`. Adds registration status/register endpoints, scrypt password hashing, strict field allowlist, rate limit, HttpOnly session + CSRF issuance, an atomic single-use setup marker shared with the CLI bootstrap flow, guarded stale-marker recovery, tests, OpenAPI and security/setup documentation.
-- **Frontend PR #27 — merged:** [first-administrator signup page](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/27), resulting frontend `dev` head `aba792eb6934df160c6407d7b24b0c2267c24c47`. Adds `/signup`, status/closed/unavailable states, password confirmation, sign-in link, request-time rendering for per-response CSP nonce safety, browser tests and accessibility coverage.
-- **API CI — PASS:** [run #72](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40901298937) on the PR merge candidate containing the same source tree as the merged `dev` branch. Source lint, typecheck, HTTP/auth unit tests, MongoDB integration tests and production build passed.
-- **Frontend exact-candidate checks — PASS:** [Frontend CI #796](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762506), [synthetic E2E #651](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762548) (10/10 journeys), [accessibility #576](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762515) (22 passed, 2 expected skips), [real API + MongoDB #598](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762508) against the merged API `dev` SHA, and [dependency audit #463](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40901762487). These ran on candidate head `bd3772bb76115f0c50e33ed5cf29242a33b5202f`, whose source tree matches the merged frontend feature.
-
-## Security decision and current branch state
-
-- This is **first-administrator setup only**, not ongoing unrestricted public registration. The API is authoritative, always creates the initial account with the `ADMIN` role, rejects client-supplied role/activation fields, and closes registration after the first account exists.
-- The API and frontend `main` branches were **not changed**. Signup is on `dev`; do not imply production deployment.
-- Live HTTPS/browser cookie acceptance, manual screen-reader/keyboard/real-device checks, independent security review, and performance acceptance against an approved numeric target remain **NOT STARTED / BLOCKED**. Automated CI does not close these gates.
+- **API PR #21 — merged:** [single-use first-admin signup](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/21).
+- **API PR #22 — merged:** [production setup-code gate](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/22). Current API `dev` head: `7334b8783def285e5316c8d9dcf1b594c1a5afea`. Production signup stays disabled on an empty database unless the API operator configures a 32+ byte `INITIAL_ADMIN_SETUP_TOKEN`; the first admin enters it out of band. After the first admin is created, remove the token from API runtime configuration and restart the API.
+- **Frontend PR #27 — merged:** [signup page](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/27).
+- **Frontend PR #29 — merged:** [production setup-code UI and CI isolation fix](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/29). Current frontend `dev` head: `5e81216ba1f35dd86b9856d717c82a91ca0d1e66`. Adds setup-code input only when required by the API, a fail-closed state when production setup isn't enabled, and regressions for not persisting/sending the code anywhere except the API body. Frontend TypeScript excludes only the nested CI-only `backend/` checkout; API types are checked separately.
+- **API CI — PASS:** [API CI #75](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40905197587) on the API hardening candidate. Source lint, typecheck, HTTP/auth unit tests, MongoDB integration tests and production build passed.
+- **Frontend exact-candidate checks — PASS** on `7561000c82c8ff08a003961f5330d0e0c8ebb1e9`, whose source tree is the merged frontend candidate:
+  - [Frontend CI #805](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769259) — lint, TypeScript and production build.
+  - [Synthetic E2E #660](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769324) — signup/session, setup-code and setup-disabled journeys included.
+  - [Accessibility #585](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769377) — browser accessibility acceptance.
+  - [Real API + MongoDB #607](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769145) — passed against API `dev` SHA `7334b8783def285e5316c8d9dcf1b594c1a5afea`.
+  - [Dependency audit #472](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40906769216) — passed.
+- This remains **first-administrator setup only**, not general public user registration. It always creates an `ADMIN`, rejects role mass-assignment, serializes simultaneous setup, and closes after an account exists. The API and frontend `main` branches were **not changed**.
+- Production operation: configure `INITIAL_ADMIN_SETUP_TOKEN` only as an API secret environment variable (never `NEXT_PUBLIC_*`, URL, browser storage or logs), provide the code to the initial administrator out of band, and remove it from API runtime config after setup. Local development `NODE_ENV=development` needs no setup token unless one is deliberately configured.
+- **Still BLOCKED / NOT STARTED:** deployed HTTPS/API cookie/session verification, manual screen-reader/physical-device checks, independent security review, and performance acceptance against an approved target. Automated CI is not production release acceptance.
 
 ## Historical project status and security-work notes
 
