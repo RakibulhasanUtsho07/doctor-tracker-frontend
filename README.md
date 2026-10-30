@@ -1,37 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Doctor Tracker Frontend
 
-## Getting Started
+Responsive administration UI for Doctor Tracker using Next.js App Router and React. Public `/signup`, `GET /auth/registration-status` and `POST /auth/register` are out of scope and have been removed from the frontend/API development branches. Provision the initial administrator only through the backend operator-controlled `pnpm bootstrap:admin` command. The dashboard, secure sign-in/session handling, doctor and patient screens remain available; manual accessibility and production/deployment release gates remain open.
 
-First, run the development server:
+## Current status
+- Frontend engineering documentation is merged to `dev` via [frontend PR #1](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/1).
+- Backend Step 3 Doctor API, Step 4 Patient API and Step 5 Dashboard API are merged to API `dev`; their exact tested CI evidence is recorded in the backend repository.
+- Backend API Step 1 foundation is merged and verified: [CI run #13](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40477435393).
+- Backend API Step 2 administrator authentication/session foundation is merged and verified: [API PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/pull/11), [CI run #28](https://github.com/RakibulhasanUtsho07/doctor-tracker-api/actions/runs/40479777698) (15/15 HTTP/auth tests, 1/1 MongoDB integration test, lint, typecheck and build passed).
+- Responsive shell, dashboard/doctors/patients navigation, focus styles and reduced-motion CSS are implemented in [draft PR #9](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/9). [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed lint and production build on code commit `dda345a84530ff224d30ace034af09ec369b717a`.
+- Step 7 sign-in/session and live dashboard UI are in stacked [draft PR #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/10). [CI #42](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40501396332) passed 5/5 API-client unit tests, lint and production build on code commit `3826645bd8a7f709033b584e3c795f949d706010`. Login uses the API-issued HttpOnly cookie, CSRF stays in memory, and dashboard cards/charts are sourced from `/dashboard/summary`; real API/browser E2E remains pending.
+- Doctor management (Issue #4) is in progress in stacked draft [PR #11](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/11): list/detail/create/update, server metadata pagination, prefix search, specialization/hospital filters and inclusive UTC date filters. [CI #78](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40502934194) passed 7/7 API-client tests, lint and production build/TypeScript checks on exact tested code commit `c3808a504c23873b2804895fc77375bc77fa70cc`; real API/browser acceptance remains pending. Doctor deletion is not supported by the current API contract.
+- Patient management (Issue #5) is in progress in stacked draft [PR #12](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/12): API-backed patient list/detail/create/update, filters and pagination, relationship-aware add-from-doctor-profile flow, explicit detach-versus-delete confirmations, CSRF-protected mutations, accessible field feedback and responsive layouts. [CI #119](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40504476161) passed 8/8 API-client tests, lint and production build/TypeScript checks on exact tested code commit `c980700e47abecb7f2587e970435bffd4d475c98`; real API/browser acceptance remains pending. The API contract limits records to doctor association, name and optional free-text condition. Deployment remains NOT STARTED.
+- Step 10 mock suite in [draft PR #13](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/13): [synthetic browser run #62](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488127) passed 2/2 Chromium journeys on `599cd3a68074704e1b65a18fa8f1e5e55182df24`; [artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488127/artifacts/12736981198). This validates UI wiring only.
+- Step 11 real API suite in [draft PR #14](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/pull/14): [real API browser run #10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268) passed on `599cd3a68074704e1b65a18fa8f1e5e55182df24`; [Frontend CI #198](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488429) and API lint/typecheck/build, 24/24 API unit/HTTP tests, 4/4 MongoDB integration tests and 2/2 Chromium real-backend journeys passed. [Real API screenshots/report/log](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268/artifacts/12736454230). The test used an isolated MongoDB and pinned API revision; it verifies CORS/CSRF, HttpOnly cookie, create/edit/detach/delete, state persistence after reload and session revocation. This does not prove production HTTPS third-party-cookie behaviour or deployment readiness.
+- Manual desktop/tablet/mobile, keyboard-only and reduced-motion checks plus synthetic-only screenshot evidence remain required before Issue #2 can close. PR #9 is intentionally still a draft; green CI alone does not prove the browser/accessibility acceptance criteria.
+
+## Local setup
+Use the package manager declared in `package.json`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install --frozen-lockfile
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` to the API base path (local default: `http://localhost:4000/api/v1`), then run `pnpm dev`. On a fresh database, an operator creates the initial administrator from the backend repository using pnpm bootstrap:admin with ADMIN_EMAIL and ADMIN_PASSWORD injected securely for that one command. This frontend environment variable is browser-visible and must contain only the API base URL, never a secret. The API must allow the exact frontend origin and credentialed CORS requests. Browser cookie behaviour still needs verification in the target deployment.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
+- `pnpm test` — API-client unit tests for credentialed requests, CSRF headers, error envelopes, 204 logout and pagination metadata.
+- `pnpm lint` — Next.js/React source lint.
+- `pnpm build` — production build and TypeScript checks.
+- Browser E2E (CI/local): `npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1`, then `./.e2e-tools/node_modules/.bin/playwright install chromium` and `./.e2e-tools/node_modules/.bin/playwright test --config=e2e/playwright.config.mjs`. The suite stubs the API with synthetic data; it does not replace live API acceptance.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Engineering references
+- [SRS](docs/01-srs.md)
+- [Architecture](docs/02-architecture.md)
+- [UI/UX and motion](docs/07-ui-ux-motion.md)
+- [Test plan](docs/08-test-and-quality-plan.md)
+- [Project Status](docs/PROJECT-STATUS.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Traceability and acceptance](docs/11-traceability-and-acceptance.md)
 
-## Learn More
+Any `NEXT_PUBLIC_*` variable is browser-visible and must not contain a secret. Use synthetic data in screenshots. Follow CONTRIBUTING.md and SECURITY.md.
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Real API browser acceptance
+Run [#10](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268) passed on exact tested commit `599cd3a68074704e1b65a18fa8f1e5e55182df24`. CI launches the API against disposable MongoDB and runs the built frontend in Chromium without API route mocking. The [uploaded artifact](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40510488268/artifacts/12736454230) includes screenshots, Playwright report and server log. Test credentials/records are synthetic and CI-only. Production HTTPS/third-party cookies, manual keyboard/touch/reduced-motion/accessibility, performance and deployment smoke remain required.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment preflight
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A manual [Deployed environment preflight workflow](.github/workflows/deployment-preflight.yml) probes an already deployed public HTTPS frontend/API pair. It verifies the frontend HTML response, API health/readiness and exact-origin credentialed CORS using GET/OPTIONS only. It does not log in, mutate data or deploy the app.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# doctor-tracker-frontend" 
+On exact candidate `b17bad713cccf231a6cb182a5ef46d8f9b472b20`, [Frontend CI #309](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647234) passed 13/13 unit tests, lint and production build; all four browser/regression workflows also passed: [synthetic E2E #173](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647608), [accessibility #100](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647762), [real API/MongoDB #121](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647462) and [dependency audit #14](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40543647453). This is automated-code evidence only. Both actual deployed URLs are still unrecorded, so live deployment acceptance remains BLOCKED/NOT STARTED; this probe cannot replace the complete release runbook.

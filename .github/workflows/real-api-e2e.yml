@@ -1,0 +1,157 @@
+name: Real API browser acceptance
+
+on:
+  pull_request:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+  push:
+    branches: [rakibul-hasan, dev, main, 'feat/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-api-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-api-browser:
+    name: Real Express API + MongoDB + Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      PORT: 4000
+      MONGODB_URI: mongodb://127.0.0.1:27017/doctor_tracker_real_api_e2e_test
+      FRONTEND_ORIGINS: http://127.0.0.1:3000
+      E2E_ADMIN_EMAIL: real-api-e2e@example.test
+      E2E_ADMIN_PASSWORD: CI-only-Real-API-E2E-Password-2026!
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v7.0.1
+
+      - name: Checkout pinned API snapshot
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: RakibulhasanUtsho07/doctor-tracker-api
+          ref: 7be0633516c3aeae61e28707a4d1dbbf7971e751
+          path: backend
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v3.1.2
+        with:
+          version: 11.21.0
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            backend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production frontend for real API acceptance
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4000/api/v1
+          NODE_ENV: production
+          PORT: "3000"
+
+      - name: Install API dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+
+      - name: API source hygiene, types, unit tests and build
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+          pnpm build
+        working-directory: backend
+
+      - name: API MongoDB integration tests
+        run: pnpm test:integration
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/doctor_tracker_api_ci_test
+          FRONTEND_ORIGINS: http://127.0.0.1:3000
+
+      - name: Bootstrap an isolated CI administrator
+        run: pnpm bootstrap:admin
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/doctor_tracker_real_api_e2e_test
+          FRONTEND_ORIGINS: http://127.0.0.1:3000
+          ADMIN_EMAIL: real-api-e2e@example.test
+          ADMIN_PASSWORD: CI-only-Real-API-E2E-Password-2026!
+
+      - name: Start real API and wait for MongoDB readiness
+        run: |
+          nohup pnpm start > ../real-api.log 2>&1 &
+          echo $! > ../real-api.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4000/api/v1/ready > /dev/null; then
+              echo "Real API is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          cat ../real-api.log
+          exit 1
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          PORT: 4000
+          MONGODB_URI: mongodb://127.0.0.1:27017/doctor_tracker_real_api_e2e_test
+          FRONTEND_ORIGINS: http://127.0.0.1:3000
+
+      - name: Install pinned isolated Playwright runner
+        run: npm install --prefix .e2e-tools --no-save --package-lock=false @playwright/test@1.64.1
+
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v6.1.0
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-1.64.1
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: ./.e2e-tools/node_modules/.bin/playwright install chromium
+
+      - name: Run real API browser acceptance
+        run: ./.e2e-tools/node_modules/.bin/playwright test --config=e2e/real-api.config.mjs
+        env:
+          CI: "true"
+          E2E_ADMIN_EMAIL: real-api-e2e@example.test
+          E2E_ADMIN_PASSWORD: CI-only-Real-API-E2E-Password-2026!
+
+      - name: Upload real API report, screenshots and server log
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: doctor-tracker-real-api-e2e
+          path: |
+            test-results/
+            playwright-report/
+            real-api.log
+          if-no-files-found: warn
+          retention-days: 14

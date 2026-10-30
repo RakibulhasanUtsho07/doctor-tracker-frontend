@@ -1,0 +1,21 @@
+# UI/UX and Motion Specification
+## Information architecture
+Sign-in, dashboard overview, doctor search/filter/pagination, doctor detail with associated patients, dedicated patient edit/delete/search/filter/pagination and shared navigation.
+## Visual system
+Use consistent spacing, type, color, border/radius, elevation and focus tokens. Maintain contrast and hierarchy; status must not rely on color alone.
+
+## Canvas and dashboard hero — 2026-10-29
+Use pure white (`#ffffff`) for the document/page canvas across the project, including `html`, `body`, the application frame, main shell and sidebar. Do not use tinted off-white as the global canvas. Component-level surfaces may use restrained semantic accents, pale icon wells, borders and shadows, but the dashboard hero itself uses a white base surface. Keep the hero's eyebrow, headline, supporting copy and primary action visually distinct; the dashboard illustration must remain decorative, accessible as hidden from assistive technology, and responsive without overlap at narrow widths. Preserve visible keyboard focus and the existing reduced-motion behaviour.
+## Motion
+Use restrained, short opacity/transform transitions. Do not animate every row, block critical actions, flash, scroll-jack or use motion as the sole feedback. Respect prefers-reduced-motion.
+## States and accessibility
+Every data view covers loading, populated, empty, error/retry and permission-denied. Forms cover inline validation, server errors, pending state, double-submit prevention and success. Destructive actions require confirmation. Use semantic structure, keyboard controls, visible focus, input labels, dialog focus management, touch-friendly targets and chart text alternatives.
+## Evidence
+Verify desktop/tablet/mobile, keyboard-only use and reduced-motion. Desktop/mobile screenshots must contain synthetic data only.
+
+## Shell implementation status
+The initial shell uses semantic landmarks, a skip-to-content link, visible keyboard focus, focus movement to the selected view heading, a keyboard-operable mobile menu with Escape-to-close, and a global reduced-motion override. [CI #16](https://github.com/RakibulhasanUtsho07/doctor-tracker-frontend/actions/runs/40496413752) passed source lint and the production build on code commit `dda345a84530ff224d30ace034af09ec369b717a`. These are implementation/CI claims, not completed manual acceptance. The shell PR remains in progress until browser checks at desktop/tablet/mobile widths, keyboard-only navigation, reduced-motion behaviour and synthetic-only screenshots are recorded.
+
+
+## Patient directory — search, filters and persisted records — 2026-10-29
+Use a distinct visual hierarchy for patient management: (1) a clear directory toolbar with a primary Add patient action, (2) a doctor lookup section with a search icon, concise explanation and accessible status feedback, (3) a labelled filter workspace with visible section heading and aligned controls, and (4) a persisted-records panel with a record-count indicator, explicit refresh action, readable table heading, generous row spacing and clearly differentiated View/Detach/Delete actions. Use white surfaces, restrained green accents, semantic warning/danger colors, fine borders and subtle elevation rather than tinted page backgrounds. Keep the table horizontally scrollable on narrow screens, allow filters to reflow without clipping, preserve visible focus, use text in addition to color, retain confirmation semantics for detach/delete, and disable motion when `prefers-reduced-motion` is active.
